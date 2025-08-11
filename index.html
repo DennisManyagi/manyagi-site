@@ -1,10 +1,74 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Manyagi Site</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Manyagi Management — Innovation • IP • Commerce</title>
+  <meta name="description" content="Manyagi Management — Publishing, Designs, Capital, Media & Tech. Join our newsletter for drops, signals, and preorders.">
+  <meta property="og:title" content="Manyagi Management" />
+  <meta property="og:description" content="Publishing, Designs, Capital, Media & Tech. Join our newsletter for drops, signals, and preorders." />
+  <meta property="og:image" content="og-image.jpg" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Hello Manyagi!</h1>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="brand">Manyagi</h1>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="publishing.html">Publishing</a>
+        <a href="designs.html">Designs</a>
+        <a href="capital.html">Capital</a>
+        <a href="media.html">Media</a>
+        <a href="daito.html">Daito</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h2>Build. Publish. Trade. Design. Deliver.</h2>
+      <p>Manyagi Management is the parent brand powering IP, products, and apps. Books, merch, trading signals and a marketplace — under one hub.</p>
+      <div class="cta-row">
+        <a class="btn" href="publishing.html">Explore Publishing</a>
+        <a class="btn ghost" href="#subscribe">Join the Manyagi list</a>
+      </div>
+    </section>
+
+    <section class="overview-grid" aria-label="divisions">
+      <article class="card"><h3>Manyagi Publishing</h3><p>Novels & poetry. Free chapter downloads & preorders.</p><a href="publishing.html" class="card-link">Open</a></article>
+      <article class="card"><h3>Manyagi Designs</h3><p>T-shirts, posters & prints. Book-driven merch.</p><a href="designs.html" class="card-link">Open</a></article>
+      <article class="card"><h3>Manyagi Capital</h3><p>Trading bots, signals & verified performance.</p><a href="capital.html" class="card-link">Open</a></article>
+      <article class="card"><h3>Manyagi Media</h3><p>Voice, audiobooks & podcasts.</p><a href="media.html" class="card-link">Open</a></article>
+      <article class="card"><h3>Daito</h3><p>Marketplace & delivery app (coming).</p><a href="daito.html" class="card-link">Open</a></article>
+    </section>
+
+    <section id="subscribe" class="subscribe">
+      <h3>Get chapter 1 — free</h3>
+      <p>Enter email for the free chapter, merch drops, and signal beta invites.</p>
+
+      <!-- Formspree example (replace ACTION with your Formspree endpoint or ConvertKit embed) -->
+      <form id="subscribeForm" action="https://formspree.io/f/your-form-id" method="POST">
+        <input type="email" name="email" placeholder="you@domain.com" required>
+        <input type="hidden" name="source" value="manyagi_home">
+        <button class="btn" type="submit">Send me chapter 1</button>
+      </form>
+      <p class="small">We respect your inbox. Unsubscribe anytime.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-left">
+        <p>© Manyagi Management LLC • All rights reserved</p>
+      </div>
+      <div class="footer-right">
+        <a href="https://instagram.com/manyagidesigns" target="_blank">Instagram</a> ·
+        <a href="https://t.me/your-signals" target="_blank">Telegram</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>

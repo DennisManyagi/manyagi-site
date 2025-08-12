@@ -4,11 +4,13 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Manyagi Designs — Merch & Art</title>
-  <link rel="shortcut icon" href="images/favicon.ico" />
+  <link rel="shortcut icon" href="images/favicon.ico">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
+
+  <header class="site-header">
     <div class="wrap brand-wrap">
       <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
       <nav class="nav" style="margin-left:auto;">
@@ -16,10 +18,16 @@
         <a href="designs.html">Designs</a>
         <a href="publishing.html">Publishing</a>
       </nav>
+      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
+    </div>
+    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
+      <a href="index.html">Home</a>
+      <a href="designs.html">Designs</a>
+      <a href="publishing.html">Publishing</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main id="maincontent" class="wrap">
     <section class="hero small">
       <h2>Wear the Story</h2>
       <p>Limited drops and print-on-demand collections inspired by our novels & poems.</p>
@@ -30,14 +38,14 @@
       <h3>Collections</h3>
       <div class="prod-grid">
         <article class="prod">
-          <img src="images/tee-mockup-1.jpg" alt="T-shirt mockup" style="width:100%;height:auto;border-radius:6px">
+          <img src="images/tee-mockup-1.jpg" alt="T-shirt mockup">
           <h4>Hidden Clans Tee</h4>
           <p>Quote tee — limited edition. Available on preorder.</p>
           <div class="prod-cta"><a class="btn" href="https://your-shopify-product-link">Preorder</a></div>
         </article>
 
         <article class="prod">
-          <img src="images/print-mockup-1.jpg" alt="Art print mockup" style="width:100%;height:auto;border-radius:6px">
+          <img src="images/print-mockup-1.jpg" alt="Art print mockup">
           <h4>Clan Print</h4>
           <p>Signed art print (A3) — limited run.</p>
           <div class="prod-cta"><a class="btn" href="https://your-shopify-product-link">Buy Print</a></div>
@@ -56,10 +64,8 @@
     </section>
   </main>
 
-  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
-    <div class="wrap">
-      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
-    </div>
+  <footer class="site-footer">
+    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
   </footer>
 
   <script src="js/script.js"></script>

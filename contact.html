@@ -1,54 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Us - Manyagi</title>
-  <link rel="shortcut icon" href="images/favicon.ico" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Contact Manyagi</title>
+  <meta name="description" content="Contact Manyagi Management for press, partnerships, and inquiry.">
+  <link rel="shortcut icon" href="images/favicon.ico">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
+
+  <header class="site-header">
     <div class="wrap brand-wrap">
       <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
       <nav class="nav" style="margin-left:auto;">
         <a href="index.html">Home</a>
-        <a href="contact.html" class="active">Contact</a>
+        <a href="contact.html">Contact</a>
         <a href="publishing.html">Publishing</a>
       </nav>
+      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
+    </div>
+    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
+      <a href="index.html">Home</a>
+      <a href="contact.html">Contact</a>
+      <a href="publishing.html">Publishing</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main id="maincontent" class="wrap">
     <section>
       <h2>Get in Touch</h2>
-      <p>We’d love to hear from you. Whether you have a business inquiry, partnership idea, or just want to connect — reach out anytime.</p>
+      <p>For business inquiries, partnerships, or media: email <a href="mailto:info@manyagi.net">info@manyagi.net</a> or use the form below.</p>
 
-      <form id="contactForm" action="https://formspree.io/f/your-form-id" method="POST">
-        <label for="name">Your Name</label>
-        <input type="text" id="name" name="name" required style="display:block;padding:10px;border-radius:6px;border:1px solid #ddd;margin-bottom:10px;width:100%;max-width:480px;">
-
-        <label for="email">Your Email</label>
-        <input type="email" id="email" name="email" required style="display:block;padding:10px;border-radius:6px;border:1px solid #ddd;margin-bottom:10px;width:100%;max-width:480px;">
-
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="6" required style="display:block;padding:10px;border-radius:6px;border:1px solid #ddd;margin-bottom:10px;width:100%;max-width:480px;"></textarea>
-
-        <button type="submit" class="btn">Send Message</button>
+      <form id="contactForm" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <input type="text" name="name" placeholder="Your name" required style="padding:10px;border-radius:6px;border:1px solid #ddd;margin-bottom:8px;width:100%;max-width:480px;">
+        <input type="email" name="email" placeholder="you@domain.com" required style="padding:10px;border-radius:6px;border:1px solid #ddd;margin-bottom:8px;width:100%;max-width:480px;">
+        <textarea name="message" rows="6" placeholder="Message" required style="padding:10px;border-radius:6px;border:1px solid #ddd;width:100%;max-width:480px;"></textarea>
+        <button type="submit" class="btn" style="margin-top:8px;">Send Message</button>
       </form>
-    </section>
-
-    <section>
-      <h2>Other Ways to Reach Us</h2>
-      <p>Email: <a href="mailto:info@manyagi.net">info@manyagi.net</a></p>
-      <p>Instagram: <a href="https://instagram.com/manyagidesigns" target="_blank">@manyagidesigns</a></p>
     </section>
   </main>
 
-  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
-    <div class="wrap">
-      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
-    </div>
+  <footer class="site-footer">
+    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
   </footer>
 
   <script src="js/script.js"></script>

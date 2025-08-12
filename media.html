@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Manyagi Media — Voice & Audiobooks</title>
   <meta name="description" content="Narration, audiobooks, and voice services. Listen to poetry & sample chapters narrated by Dennis.">
-  <link rel="shortcut icon" href="images/favicon.ico" />
+  <link rel="shortcut icon" href="images/favicon.ico">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
+
+  <header class="site-header">
     <div class="wrap brand-wrap">
       <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
       <nav class="nav" style="margin-left:auto;">
@@ -17,10 +19,16 @@
         <a href="media.html">Media</a>
         <a href="publishing.html">Publishing</a>
       </nav>
+      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
+    </div>
+    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
+      <a href="index.html">Home</a>
+      <a href="media.html">Media</a>
+      <a href="publishing.html">Publishing</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main id="maincontent" class="wrap">
     <section class="hero small">
       <h2>Voice, Audiobooks, & Podcast</h2>
       <p>Audio-first content: poetry reads, chapter samples, and guided meditations using Dennis' voice.</p>
@@ -48,10 +56,8 @@
     </section>
   </main>
 
-  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
-    <div class="wrap">
-      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
-    </div>
+  <footer class="site-footer">
+    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
   </footer>
 
   <script src="js/script.js"></script>

@@ -5,22 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Manyagi Tech — Daito, Nexu, Nurse Connect</title>
   <meta name="description" content="Manyagi Tech: Daito marketplace, Nexu for Africa, and Nurse Connect. App incubator and product hub.">
-  <link rel="shortcut icon" href="images/favicon.ico" />
+  <link rel="shortcut icon" href="images/favicon.ico">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
+
+  <header class="site-header">
     <div class="wrap brand-wrap">
       <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
       <nav class="nav" style="margin-left:auto;">
         <a href="index.html">Home</a>
         <a href="tech.html">Tech</a>
-        <a href="daito.html">Daito</a>
+        <a href="coming-soon.html">Daito</a>
       </nav>
+      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
+    </div>
+    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
+      <a href="index.html">Home</a>
+      <a href="tech.html">Tech</a>
+      <a href="coming-soon.html">Daito</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main id="maincontent" class="wrap">
     <section class="hero small">
       <h2>Manyagi Tech — Apps & Marketplaces</h2>
       <p>We incubate and launch apps that solve real problems — Daito (marketplace & delivery), Nexu (connect Africa), Nurse Connect (healthcare network).</p>
@@ -33,7 +41,7 @@
         <article class="prod">
           <h4>Daito</h4>
           <p>E-commerce & delivery app — sellers, buyers, and local delivery. Launching in ~3–4 weeks.</p>
-          <a class="btn" href="daito.html">Daito landing</a>
+          <a class="btn" href="coming-soon.html">Daito landing</a>
         </article>
         <article class="prod">
           <h4>Nexu</h4>
@@ -49,10 +57,8 @@
     </section>
   </main>
 
-  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
-    <div class="wrap">
-      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
-    </div>
+  <footer class="site-footer">
+    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
   </footer>
 
   <script src="js/script.js"></script>

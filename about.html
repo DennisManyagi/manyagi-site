@@ -1,50 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About Us - Manyagi</title>
-  <link rel="shortcut icon" href="images/favicon.ico" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>About Manyagi</title>
+  <meta name="description" content="About Manyagi — vision, mission, and divisions.">
+  <link rel="shortcut icon" href="images/favicon.ico">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
+
+  <header class="site-header">
     <div class="wrap brand-wrap">
       <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
       <nav class="nav" style="margin-left:auto;">
         <a href="index.html">Home</a>
-        <a href="about.html" class="active">About</a>
+        <a href="about.html">About</a>
         <a href="publishing.html">Publishing</a>
       </nav>
+      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
+    </div>
+    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="publishing.html">Publishing</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main id="maincontent" class="wrap">
     <section>
       <h2>Our Vision</h2>
-      <p>Manyagi is a forward-thinking conglomerate that unites innovation, creativity, and strategic business ventures under one brand. Our divisions — Capital, Designs, Media, and Publishing — work together to bring powerful ideas to life and deliver lasting value to our clients and audiences worldwide.</p>
+      <p>Manyagi is a forward-thinking conglomerate that unites innovation, creativity, and strategic business ventures under one brand. Our divisions — Capital, Designs, Media, Publishing & Tech — work together to bring powerful ideas to life and deliver lasting value to our clients and audiences worldwide.</p>
     </section>
 
     <section>
       <h2>Our Divisions</h2>
       <ul>
-        <li><strong>Manyagi Capital</strong> – Investment strategies, funding, and financial growth solutions.</li>
-        <li><strong>Manyagi Designs</strong> – High-quality apparel, merchandise, and custom design services.</li>
-        <li><strong>Manyagi Media</strong> – Digital marketing, video production, and social media management.</li>
-        <li><strong>Manyagi Publishing</strong> – Books, poetry, and thought leadership content for global readers.</li>
+        <li><strong>Manyagi Capital</strong> – Algorithmic trading, signals and portfolio products.</li>
+        <li><strong>Manyagi Designs</strong> – Apparel, prints and limited drops.</li>
+        <li><strong>Manyagi Media</strong> – Audiobooks, voice, and visual storytelling.</li>
+        <li><strong>Manyagi Publishing</strong> – Novels, poetry, and IP development.</li>
+        <li><strong>Manyagi Tech</strong> – Daito marketplace and app incubation.</li>
       </ul>
     </section>
 
     <section>
-      <h2>Our Mission</h2>
-      <p>To inspire, create, and scale ideas into successful ventures that positively impact people and communities worldwide.</p>
+      <h2>Mission</h2>
+      <p>To create, scale and preserve intellectual property — then monetize it across product lines and media to build generational value.</p>
     </section>
   </main>
 
-  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
-    <div class="wrap">
-      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
-    </div>
+  <footer class="site-footer">
+    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
   </footer>
 
   <script src="js/script.js"></script>

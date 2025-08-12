@@ -1,5 +1,21 @@
-// script.js — small animations + form UX
+// js/script.js — Manyagi small UI helpers + mobile nav + simple animations
+
 document.addEventListener('DOMContentLoaded', function() {
+
+  // Mobile nav toggle
+  (function(){
+    const toggle = document.getElementById('navToggle');
+    const mobile = document.getElementById('mobileNav');
+    if (!toggle || !mobile) return;
+    toggle.style.display = 'inline-block';
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      mobile.style.display = expanded ? 'none' : 'block';
+      mobile.setAttribute('aria-hidden', String(expanded));
+    });
+  })();
+
   // Intersection fade-in for cards
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(e => {
@@ -15,13 +31,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const forms = document.querySelectorAll('form')
   forms.forEach(form => {
     form.addEventListener('submit', (e) => {
-      // optional: show working state
       const btn = form.querySelector('button[type="submit"]')
       if (btn) { btn.disabled = true; btn.innerText = 'Sending…' }
-      // allow native submit to Formspree / external; if you use fetch, adapt
       setTimeout(()=> {
         if (btn) { btn.innerText = 'Check your email'; }
       }, 1200)
     })
   })
-})
+});

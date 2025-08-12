@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Manyagi Media — Voice & Audiobooks</title>
   <meta name="description" content="Narration, audiobooks, and voice services. Listen to poetry & sample chapters narrated by Dennis.">
-  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="images/favicon.ico" />
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <h1><a href="index.html" class="brand">Manyagi Media</a></h1>
-      <nav class="nav"><a href="index.html">Home</a></nav>
+  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+    <div class="wrap brand-wrap">
+      <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
+      <nav class="nav" style="margin-left:auto;">
+        <a href="index.html">Home</a>
+        <a href="media.html">Media</a>
+        <a href="publishing.html">Publishing</a>
+      </nav>
     </div>
   </header>
 
@@ -25,24 +30,30 @@
     <section id="samples" class="content">
       <h3>Sample Clips</h3>
       <div class="audio-grid">
-        <div><h4>Poem – True Heart (excerpt)</h4>
-          <audio controls src="audio/poem-sample.mp3"></audio></div>
-        <div><h4>Chapter 1 – Legends (excerpt)</h4>
-          <audio controls src="audio/ch1-sample.mp3"></audio></div>
+        <div>
+          <h4>Poem – True Heart (excerpt)</h4>
+          <audio controls src="audio/poem-sample.mp3"></audio>
+        </div>
+        <div>
+          <h4>Chapter 1 – Legends (excerpt)</h4>
+          <audio controls src="audio/ch1-sample.mp3"></audio>
+        </div>
       </div>
       <p class="small">Want custom narration? Contact via email on home page.</p>
     </section>
 
     <section class="monetize small">
       <h3>Monetization</h3>
-      <p>We publish audiobooks on ACX/Findaway (audible & Spotify), run YouTube channels for clips, and offer voice gigs via marketplace platforms (Fiverr / Upwork).</p>
+      <p>We publish audiobooks on ACX/Findaway (Audible & Spotify), run YouTube channels for clips, and offer voice gigs on platforms like Fiverr & Upwork.</p>
     </section>
   </main>
 
-  <footer class="site-footer wrap">
-    <a href="index.html">← Back</a>
+  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
+    <div class="wrap">
+      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
+    </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

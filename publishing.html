@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Manyagi Publishing — Books & Poetry</title>
   <meta name="description" content="Manyagi Publishing: Legends of the Hidden Clans, True Heart poetry, signed copies & audiobooks.">
-  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="images/favicon.ico" />
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <h1><a href="index.html" class="brand">Manyagi Publishing</a></h1>
-      <nav class="nav"><a href="index.html">Home</a></nav>
+  <header class="site-header" style="background:var(--brand);color:#fff;padding:18px 0;">
+    <div class="wrap brand-wrap">
+      <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
+      <nav class="nav" style="margin-left:auto;">
+        <a href="index.html">Home</a>
+        <a href="publishing.html">Publishing</a>
+        <a href="designs.html">Designs</a>
+      </nav>
     </div>
   </header>
 
@@ -26,22 +31,19 @@
       <h3>Featured Works</h3>
       <div class="prod-grid">
         <article class="prod">
-          <img src="cover-placeholder.jpg" alt="Legends cover">
+          <img src="images/cover-placeholder.jpg" alt="Legends cover" style="width:100%;height:auto;border-radius:6px">
           <h4>Legends of the Hidden Clans — (2nd draft)</h4>
-          <p>Fantasy novel / 24 chapters. Kindle & paperback.</p>
+          <p>Fantasy novel — 24 chapters. Kindle & paperback.</p>
           <div class="prod-cta">
             <a target="_blank" rel="noopener" href="https://www.amazon.com/dp/PLACEHOLDER" class="btn">Buy on Amazon</a>
             <a class="btn ghost" href="#freechapter">Free Chapter</a>
           </div>
         </article>
-
         <article class="prod">
-          <img src="poetry-cover-placeholder.jpg" alt="True Heart cover">
+          <img src="images/poetry-cover-placeholder.jpg" alt="True Heart cover" style="width:100%;height:auto;border-radius:6px">
           <h4>True Heart — Poetry</h4>
           <p>Collections of poems & short verse.</p>
-          <div class="prod-cta">
-            <a target="_blank" rel="noopener" href="https://www.amazon.com/dp/PLACEHOLDER" class="btn">Buy on Amazon</a>
-          </div>
+          <div class="prod-cta"><a target="_blank" rel="noopener" href="https://www.amazon.com/dp/PLACEHOLDER" class="btn">Buy on Amazon</a></div>
         </article>
       </div>
     </section>
@@ -49,9 +51,9 @@
     <section id="freechapter" class="subscribe small">
       <h3>Free chapter & updates</h3>
       <form action="https://formspree.io/f/your-form-id" method="POST">
-        <input type="email" name="email" placeholder="you@domain.com" required>
+        <input type="email" name="email" placeholder="you@domain.com" required style="padding:10px;border-radius:8px;border:1px solid #ddd;width:60%;max-width:360px;">
         <input type="hidden" name="product" value="Legends_free_chapter">
-        <button class="btn">Send free chapter</button>
+        <button class="btn" style="margin-left:8px">Send free chapter</button>
       </form>
       <p class="small">We’ll email the PDF + preorder discounts.</p>
     </section>
@@ -59,14 +61,15 @@
     <section class="how-to">
       <h3>Audio & Voice</h3>
       <p>We’re producing audiobook samples narrated by Dennis — join the list for early access and beta listens.</p>
-      <a class="btn ghost" href="#freechapter">Join audiobook beta</a>
     </section>
   </main>
 
-  <footer class="site-footer wrap">
-    <a href="index.html">← Back</a>
+  <footer class="site-footer" style="background:var(--brand);color:#fff;padding:18px 0;">
+    <div class="wrap">
+      <a href="index.html" style="color:#fff">← Back to Manyagi HQ</a>
+    </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>

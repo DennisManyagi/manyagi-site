@@ -5,36 +5,50 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>About Manyagi</title>
   <meta name="description" content="About Manyagi — vision, mission, and divisions.">
-  <link rel="shortcut icon" href="images/favicon.ico">
-  <link rel="stylesheet" href="css/style.css">
+  <meta property="og:title" content="About Manyagi">
+  <meta property="og:description" content="About Manyagi — vision, mission, and divisions.">
+  <meta property="og:image" content="https://manyagi.net/images/og-about.jpg">
+  <meta property="og:url" content="https://manyagi.net/about.html">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N05K791ESR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N05K791ESR');
+  </script>
 </head>
 <body>
-  <a class="skip-link" href="#maincontent" style="position:absolute;left:-9999px">Skip to content</a>
-
   <header class="site-header">
-    <div class="wrap brand-wrap">
-      <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
-      <nav class="nav" style="margin-left:auto;">
+    <div class="container header-inner">
+      <a class="brand" href="index.html"><span class="dot"></span> MANYAGI</a>
+      <nav class="nav">
         <a href="index.html">Home</a>
-        <a href="about.html">About</a>
         <a href="publishing.html">Publishing</a>
+        <a href="designs.html">Designs</a>
+        <a href="media.html">Media</a>
+        <a href="capital.html">Capital</a>
+        <a href="tech.html">Tech</a>
+        <a href="blog.html">Blog</a>
       </nav>
-      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
-    </div>
-    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
-      <a href="index.html">Home</a>
-      <a href="about.html">About</a>
-      <a href="publishing.html">Publishing</a>
     </div>
   </header>
 
-  <main id="maincontent" class="wrap">
-    <section>
+  <main class="container">
+    <section class="hero">
+      <span class="kicker">The Empire</span>
+      <h1>About Manyagi</h1>
+      <p class="lead">A global conglomerate building IP across publishing, designs, media, capital, and tech.</p>
+    </section>
+
+    <section class="section card">
       <h2>Our Vision</h2>
       <p>Manyagi is a forward-thinking conglomerate that unites innovation, creativity, and strategic business ventures under one brand. Our divisions — Capital, Designs, Media, Publishing & Tech — work together to bring powerful ideas to life and deliver lasting value to our clients and audiences worldwide.</p>
     </section>
 
-    <section>
+    <section class="section card">
       <h2>Our Divisions</h2>
       <ul>
         <li><strong>Manyagi Capital</strong> – Algorithmic trading, signals and portfolio products.</li>
@@ -45,16 +59,21 @@
       </ul>
     </section>
 
-    <section>
+    <section class="section card">
       <h2>Mission</h2>
       <p>To create, scale and preserve intellectual property — then monetize it across product lines and media to build generational value.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap"><a href="index.html" style="color:#fff">← Back to Manyagi HQ</a></div>
+    <div class="container flex" style="justify-content:space-between">
+      <div>© 2025 Manyagi Management LLC</div>
+      <div class="flex">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
   </footer>
-
-  <script src="js/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

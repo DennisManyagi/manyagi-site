@@ -4,37 +4,62 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Coming Soon — Manyagi</title>
-  <link rel="shortcut icon" href="images/favicon.ico">
-  <link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="This page is under construction. Sign up for updates.">
+  <meta property="og:title" content="Coming Soon — Manyagi">
+  <meta property="og:description" content="This page is under construction. Sign up for updates.">
+  <meta property="og:image" content="https://manyagi.net/images/og-coming-soon.jpg">
+  <meta property="og:url" content="https://manyagi.net/coming-soon.html">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N05K791ESR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N05K791ESR');
+  </script>
 </head>
 <body>
   <header class="site-header">
-    <div class="wrap brand-wrap">
-      <a href="index.html"><img src="images/logo.png" class="site-logo" alt="Manyagi"></a>
-      <nav class="nav" style="margin-left:auto;">
+    <div class="container header-inner">
+      <a class="brand" href="index.html"><span class="dot"></span> MANYAGI</a>
+      <nav class="nav">
         <a href="index.html">Home</a>
+        <a href="publishing.html">Publishing</a>
+        <a href="designs.html">Designs</a>
+        <a href="media.html">Media</a>
+        <a href="capital.html">Capital</a>
+        <a href="tech.html">Tech</a>
+        <a href="blog.html">Blog</a>
       </nav>
-      <button id="navToggle" aria-expanded="false" aria-controls="mobileNav" class="mobile-toggle">☰</button>
-    </div>
-    <div id="mobileNav" class="mobile-nav" aria-hidden="true">
-      <a href="index.html">Home</a>
     </div>
   </header>
 
-  <main class="wrap" style="text-align:center;padding-top:60px;">
-    <h1>Coming Soon</h1>
-    <p>We're building this page — join the Manyagi newsletter for updates and early access.</p>
+  <main class="container">
+    <section class="hero">
+      <span class="kicker">Coming Soon</span>
+      <h1>Page Under Construction</h1>
+      <p class="lead">We're building this page — join the Manyagi newsletter for updates and early access.</p>
+    </section>
 
-    <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" style="margin-top:18px;">
-      <input type="email" name="email" placeholder="you@domain.com" required style="padding:10px;border-radius:8px;border:1px solid #ddd;width:60%;max-width:360px;">
-      <button class="btn" type="submit" style="margin-left:8px;">Join Waitlist</button>
-    </form>
+    <section class="section card">
+      <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" style="margin-top:18px;">
+        <input type="email" name="email" placeholder="you@domain.com" required style="padding:10px;border-radius:8px;border:1px solid var(--line);width:100%;max-width:480px;">
+        <button class="btn block" type="submit" style="margin-top:8px;">Join Waitlist</button>
+      </form>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap"><a href="index.html" style="color:#fff">← Back</a></div>
+    <div class="container flex" style="justify-content:space-between">
+      <div>© 2025 Manyagi Management LLC</div>
+      <div class="flex">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
   </footer>
-
-  <script src="js/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

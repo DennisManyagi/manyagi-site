@@ -1,3 +1,4 @@
+// pages/api/stripe/charge.js
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { getSession } from 'next-auth/react';
@@ -20,30 +21,41 @@ export default async function handler(req, res) {
     }
 
     try {
-      const { priceId } = req.body;
-
-      // Create a Checkout Session for subscription
-      const checkoutSession = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId, // e.g., 'price_1Rwfe5IFtQrr5DjcidsMeAOM'
-            quantity: 1,
+      let checkoutSession;
+      if (req.body.priceId) { // For subscriptions (e.g., capital.js)
+        checkoutSession = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: req.body.priceId, // e.g., 'price_1Rwfe5IFtQrr5DjcidsMeAOM'
+              quantity: 1,
+            },
+          ],
+          mode: 'subscription',
+          success_url: 'https://manyagi.net/thank-you',
+          cancel_url: 'https://manyagi.net/capital',
+          customer_email: session.user.email,
+          metadata: {
+            userId: session.user.id,
           },
-        ],
-        mode: 'subscription',
-        success_url: 'https://manyagi.net/thank-you',
-        cancel_url: 'https://manyagi.net/capital',
-        customer_email: session.user.email,
-        metadata: {
-          userId: session.user.id,
-        },
-      });
-
-      return res.status(200).json({ sessionId: checkoutSession.id });
+        });
+        return res.status(200).json({ sessionId: checkoutSession.id });
+      } else if (req.body.paymentMethodId && req.body.amount && req.body.description) { // For one-time (e.g., designs.js)
+        // First, create payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: req.body.amount,
+          currency: 'usd',
+          description: req.body.description,
+          payment_method: req.body.paymentMethodId,
+          confirm: true,
+          return_url: 'https://manyagi.net/thank-you', // Handle return if needed
+        });
+        return res.status(200).json({ paymentIntent });
+      }
+      return res.status(200).json({ sessionId: checkoutSession?.id });
     } catch (error) {
       console.error('Stripe error:', error);
-      return res.status(500).json({ error: 'Failed to create checkout session' });
+      return res.status(500).json({ error: 'Failed to process payment' });
     }
   } else if (req.method === 'PUT') {
     // Handle webhook for subscription events

@@ -1,8 +1,22 @@
 import Head from 'next/head';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import Link from 'next/link';
+import { useForm } from '@formspree/react';
 
 export default function Contact() {
+  const [state, handleSubmit] = useForm('mldlvqnj');
+
+  if (state.succeeded) {
+    return (
+      <div className="my-10 text-center">
+        <h2 className="text-3xl mb-4">Thank You!</h2>
+        <p className="text-muted mb-4">Your message has been sent. We’ll respond within 48 hours.</p>
+        <Link href="/" className="btn">Return to Home</Link>
+      </div>
+    );
+  }
+
   return (
     <>
       <Head>
@@ -21,14 +35,42 @@ export default function Contact() {
       />
       <section className="my-10">
         <Card>
-          <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" aria-label="Contact form">
+          <form onSubmit={handleSubmit} aria-label="Contact form">
+            <input type="text" name="_gotcha" style={{ display: 'none' }} />
             <label htmlFor="name" className="sr-only">Your name</label>
-            <input id="name" type="text" name="name" placeholder="Your name" required className="w-full mb-4 p-3 border border-line rounded" />
+            <input
+              id="name"
+              type="text"
+              name="name"
+              placeholder="Your name"
+              required
+              className="w-full mb-4 p-3 border border-line rounded"
+            />
             <label htmlFor="email" className="sr-only">Email</label>
-            <input id="email" type="email" name="email" placeholder="you@domain.com" required className="w-full mb-4 p-3 border border-line rounded" />
+            <input
+              id="email"
+              type="email"
+              name="email"
+              placeholder="you@domain.com"
+              required
+              className="w-full mb-4 p-3 border border-line rounded"
+            />
             <label htmlFor="message" className="sr-only">Message</label>
-            <textarea id="message" name="message" rows="6" placeholder="Message" required className="w-full mb-4 p-3 border border-line rounded"></textarea>
-            <button type="submit" className="btn w-full">Send Message</button>
+            <textarea
+              id="message"
+              name="message"
+              rows="6"
+              placeholder="Message"
+              required
+              className="w-full mb-4 p-3 border border-line rounded"
+            ></textarea>
+            <button
+              type="submit"
+              className="btn w-full"
+              disabled={state.submitting}
+            >
+              Send Message
+            </button>
           </form>
         </Card>
       </section>

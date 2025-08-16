@@ -20,8 +20,8 @@ out/
 *.log
 *.log.*
 
-# Dependency lock files (uncomment if you want to exclude)
-package-lock.json
+# Dependency lock files (uncomment to ignore)
+# package-lock.json
 # yarn.lock
 
 # Editor and OS files
@@ -31,7 +31,7 @@ package-lock.json
 .vscode/
 .idea/
 
-# Prisma database files (if using Prisma)
+# Prisma database files
 prisma/*.db
 prisma/*.db-journal
 

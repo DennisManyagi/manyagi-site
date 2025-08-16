@@ -3,14 +3,35 @@ import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
-import StripeCheckout from '../components/StripeCheckout';
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn } from 'next-auth/react';
 import Image from 'next/image';
+import { loadStripe } from '@stripe/stripe-js';
+import { useState } from 'react';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 export default function Capital() {
   const { data: session, status } = useSession();
+  const [loading, setLoading] = useState(false);
 
-  if (status === "loading") return <p>Loading...</p>;
+  const handleCheckout = async (priceId) => {
+    setLoading(true);
+    try {
+      const stripe = await stripePromise;
+      const response = await fetch('/api/stripe/charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      });
+      const { sessionId } = await response.json();
+      await stripe.redirectToCheckout({ sessionId });
+    } catch (error) {
+      console.error('Checkout error:', error);
+    }
+    setLoading(false);
+  };
+
+  if (status === 'loading') return <p>Loading...</p>;
 
   if (!session) {
     return (
@@ -43,8 +64,14 @@ export default function Capital() {
       <section id="proof" className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
         <Card>
           <h3 className="text-2xl mb-2">Verified Performance</h3>
-          <p className="text-muted text-sm mb-4">View our our public Myfxbook widgets.</p>
-          <iframe src="https://www.myfxbook.com/widget/account/YOUR_ACCOUNT_ID" width="100%" height="360" frameBorder="0" loading="lazy"></iframe>
+          <p className="text-muted text-sm mb-4">View our public Myfxbook widgets.</p>
+          <iframe
+            src="https://www.myfxbook.com/widget/account/YOUR_ACCOUNT_ID" // Replace with your Myfxbook account ID
+            width="100%"
+            height="360"
+            frameBorder="0"
+            loading="lazy"
+          ></iframe>
         </Card>
         <Card>
           <h3 className="text-2xl mb-2">Strategy Overview</h3>
@@ -92,7 +119,13 @@ export default function Capital() {
             <li>Crypto/FX/Indices</li>
             <li>Weekly recap email</li>
           </ul>
-          <StripeCheckout product="Basic Signals" />
+          <button
+            onClick={() => handleCheckout('price_1Rwfe5IFtQrr5DjcidsMeAOM')}
+            className="btn w-full"
+            disabled={loading}
+          >
+            Subscribe to Basic Signals
+          </button>
         </Card>
         <Card>
           <h3 className="text-2xl mb-2">Pro + Copy (Waitlist)</h3>
@@ -102,13 +135,22 @@ export default function Capital() {
             <li>Priority support</li>
             <li>Education library</li>
           </ul>
-          <SubscriptionForm formId="8432549" uid="877716573d" title="Join Pro Waitlist" description="Get notified when available." />
+          <SubscriptionForm
+            formId="8432549"
+            uid="877716573d"
+            title="Join Pro Waitlist"
+            description="Get notified when available."
+          />
         </Card>
       </section>
       <section className="my-10 card">
         <h3 className="text-2xl mb-4">Risk Disclaimer</h3>
-        <p className="text-muted text-sm">Trading involves substantial risk and is not suitable for every investor. Signals are educational and informational only. Past performance does not guarantee future results.</p>
-        <p className="mt-4 text-muted text-sm">Use signals to trade on <Link href="/tech" className="text-accent">Daito app</Link> markets.</p>
+        <p className="text-muted text-sm">
+          Trading involves substantial risk and is not suitable for every investor. Signals are educational and informational only. Past performance does not guarantee future results.
+        </p>
+        <p className="mt-4 text-muted text-sm">
+          Use signals to trade on <Link href="/tech" className="text-accent">Daito app</Link> markets.
+        </p>
       </section>
     </>
   );

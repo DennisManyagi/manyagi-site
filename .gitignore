@@ -1,0 +1,43 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Next.js build output
+.next/
+out/
+
+# Cache and temporary files
+.cache/
+*.log
+*.log.*
+
+# Dependency lock files (optional, but typically included)
+# package-lock.json
+# yarn.lock
+
+# Editor and OS files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Prisma database files (if using Prisma for auth)
+prisma/*.db
+prisma/*.db-journal
+
+# Build artifacts
+dist/
+build/
+
+# Coverage reports (if you add tests later)
+coverage/

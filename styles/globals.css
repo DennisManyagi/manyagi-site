@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-bg text-fg font-inter antialiased;
+}
+
+h1, h2, h3 {
+  @apply font-playfair;
+}
+
+.card {
+  @apply bg-card border border-line rounded shadow-card p-5 opacity-0 transition-opacity duration-500;
+}
+
+.card.inview {
+  @apply opacity-100 translate-y-0;
+}
+
+.hero {
+  @apply p-10 bg-gradient-to-br from-black to-gray-900 rounded-2xl border border-line opacity-0 transition-opacity duration-500;
+}
+
+.hero.inview {
+  @apply opacity-100 translate-y-0;
+}
+
+/* Dark mode */
+.dark {
+  --bg: #fff;
+  --fg: #000;
+  --muted: #404040;
+  --card: #f0f0f0;
+  --line: #e5e5e5;
+  --accent: #b8860b;
+}
+
+.dark body {
+  @apply bg-[var(--bg)] text-[var(--fg)];
+}
+
+/* Btn styles */
+.btn {
+  @apply px-5 py-2 rounded-full bg-accent text-bg font-bold hover:bg-opacity-80 transition;
+}
+
+.btn.ghost {
+  @apply bg-transparent border border-accent text-accent hover:bg-accent hover:text-bg;
+}
+
+/* Add accessibility focus styles */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

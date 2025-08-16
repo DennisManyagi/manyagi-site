@@ -20,8 +20,8 @@ out/
 *.log
 *.log.*
 
-# Dependency lock files (optional, but typically included)
-# package-lock.json
+# Dependency lock files (uncomment if you want to exclude)
+package-lock.json
 # yarn.lock
 
 # Editor and OS files
@@ -31,7 +31,7 @@ out/
 .vscode/
 .idea/
 
-# Prisma database files (if using Prisma for auth)
+# Prisma database files (if using Prisma)
 prisma/*.db
 prisma/*.db-journal
 
@@ -39,5 +39,8 @@ prisma/*.db-journal
 dist/
 build/
 
-# Coverage reports (if you add tests later)
+# Coverage reports
 coverage/
+
+# Miscellaneous
+package\ copy.json

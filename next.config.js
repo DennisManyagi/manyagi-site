@@ -12,7 +12,8 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'mdx', 'ts', 'tsx'],
   reactStrictMode: true,
   images: {
-    domains: ['manyagi.net', 'images.unsplash.com', 'myfxbook.com', 'youtube.com'], // Added for embeds/images
+    domains: ['manyagi.net', 'images.unsplash.com', 'myfxbook.com', 'youtube.com'],
+    unoptimized: true, // Add this to disable Image Optimization for static export
   },
   async headers() {
     return [
@@ -25,7 +26,7 @@ const nextConfig = {
       },
     ];
   },
-  output: 'export', // Add this line for static export (replaces next export)
+  output: 'export', // Already added for static export
 };
 
 module.exports = withMDX(nextConfig);

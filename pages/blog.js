@@ -7,6 +7,7 @@ import { serialize } from 'next-mdx-remote/serialize';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
+import Link from 'next/link';
 
 const components = { h2: (props) => <h2 className="text-2xl mt-6 mb-2" {...props} />, p: (props) => <p className="text-muted mb-4" {...props} /> };
 

@@ -1,3 +1,4 @@
+// next.config.js (full updated version)
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
   options: {
@@ -24,6 +25,7 @@ const nextConfig = {
       },
     ];
   },
+  output: 'export', // Add this line for static export (replaces next export)
 };
 
 module.exports = withMDX(nextConfig);

@@ -1,24 +1,27 @@
 import { motion } from 'framer-motion';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
-import particlesJS from 'particles.js';
 import { useEffect } from 'react';
 
 const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
   useEffect(() => {
-    particlesJS('particles-js', {
-      particles: {
-        number: { value: 50 },
-        color: { value: '#50C878' },
-        shape: { type: 'circle' },
-        opacity: { value: 0.5 },
-        size: { value: 3 },
-        line_linked: { enable: false },
-        move: { speed: 1 },
-      },
-      interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'bubble' } } },
-      retina_detect: true,
-    });
+    if (typeof window !== 'undefined') {
+      import('particles.js').then(() => {
+        window.particlesJS('particles-js', {
+          particles: {
+            number: { value: 50 },
+            color: { value: '#50C878' },
+            shape: { type: 'circle' },
+            opacity: { value: 0.5 },
+            size: { value: 3 },
+            line_linked: { enable: false },
+            move: { speed: 1 },
+          },
+          interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'bubble' } } },
+          retina_detect: true,
+        });
+      });
+    }
   }, []);
 
   return (

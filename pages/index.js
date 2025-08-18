@@ -3,7 +3,8 @@ import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
-import { motion, useState } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
@@ -86,4 +87,4 @@ export default function Home() {
       )}
     </>
   );
-}
+};

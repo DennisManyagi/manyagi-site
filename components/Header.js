@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleDarkMode } from '../lib/darkModeSlice';
 import { FaSun, FaMoon, FaShoppingCart } from 'react-icons/fa';
+import Image from 'next/image';
 
 const Header = () => {
   const isDark = useSelector((state) => state.darkMode.isDark);
@@ -14,28 +15,27 @@ const Header = () => {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-0 bg-black/90 backdrop-blur-md z-10 border-b border-line"
+      className="sticky top-0 bg-white backdrop-blur-md z-10 border-b border-gray-300 text-black"
       aria-label="Main navigation"
     >
-      <div className="container header-inner flex items-center justify-between py-4">
-        <Link href="/" className="brand flex items-center gap-3 font-bold uppercase tracking-widest text-fg">
-          <span className="dot w-2.5 h-2.5 rounded-full bg-accent"></span> MANYAGI
+      <div className="container mx-auto flex items-center justify-between py-4 px-4">
+        <Link href="/" className="flex items-center gap-3 font-bold uppercase tracking-widest">
+          <Image src="/images/logo.png" alt="Manyagi Logo" width={100} height={50} />
         </Link>
-        <nav className="nav flex gap-6">
-          <Link href="/" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Home</Link>
-          <Link href="/publishing" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Publishing</Link>
-          <Link href="/designs" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Designs</Link>
-          <Link href="/media" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Media</Link>
-          <Link href="/capital" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Capital</Link>
-          <Link href="/tech" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Tech</Link>
-          <Link href="/blog" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Blog</Link>
-          <Link href="/about" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">About</Link>
-          <Link href="/contact" className="text-fg opacity-90 hover:opacity-100 hover:border-b-2 border-accent">Contact</Link>
-          <Link href="/cart" className="relative text-fg opacity-90 hover:opacity-100">
+        <nav className="flex gap-6 items-center">
+          <Link href="/" className="hover:text-yellow-500">Home</Link>
+          <Link href="/publishing" className="hover:text-yellow-500">Publishing</Link>
+          <Link href="/designs" className="hover:text-yellow-500">Designs</Link>
+          <Link href="/media" className="hover:text-yellow-500">Media</Link>
+          <Link href="/capital" className="hover:text-yellow-500">Capital</Link>
+          <Link href="/tech" className="hover:text-yellow-500">Tech</Link>
+          <Link href="/about" className="hover:text-yellow-500">About</Link>
+          <Link href="/contact" className="hover:text-yellow-500">Contact</Link>
+          <Link href="/cart" className="relative hover:text-yellow-500">
             <FaShoppingCart />
-            {cartItems > 0 && <span className="absolute -top-1 -right-2 bg-accent text-bg text-xs rounded-full px-1">{cartItems}</span>}
+           {cartItems > 0 && <span className="absolute -top-1 -right-2 bg-yellow-500 text-black text-xs rounded-full px-1">{cartItems}</span>}
           </Link>
-          <button onClick={() => dispatch(toggleDarkMode())} className="ml-4 text-fg" aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+          <button onClick={() => dispatch(toggleDarkMode())} className="ml-4" aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
             {isDark ? <FaSun /> : <FaMoon />}
           </button>
         </nav>

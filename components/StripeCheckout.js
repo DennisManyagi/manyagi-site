@@ -21,17 +21,22 @@ const CheckoutForm = ({ product, amount }) => {
       });
       const data = await response.json();
       if (data.success) {
-        // Handle success, e.g., redirect or message
+        // Handle success
+        alert('Payment successful!');
+      } else {
+        alert('Payment failed.');
       }
+    } else {
+      alert(error.message);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} aria-label={`Checkout for ${product}`}>
-      <div className="mb-4 p-3 border border-neutral-800 rounded bg-neutral-800">
-        <CardElement />
+      <div className="mb-4 p-3 border border-gray-300 rounded bg-white">
+        <CardElement options={{ style: { base: { color: '#000' } } }} />
       </div>
-      <button className="w-full py-2 bg-gold text-purple-900 rounded font-bold hover:bg-gold/90" type="submit">Pay ${(amount / 100).toFixed(2)} for {product}</button>
+      <button className="w-full py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400" type="submit">Pay ${(amount / 100).toFixed(2)} for {product}</button>
     </form>
   );
 };

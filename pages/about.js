@@ -11,45 +11,36 @@ export default function About() {
         <meta name="description" content="About Manyagi — vision, mission, and divisions." />
         <meta property="og:title" content="About Manyagi" />
         <meta property="og:description" content="About Manyagi — vision, mission, and divisions." />
-        <meta property="og:image" content="https://manyagi.net/images/og-about.jpg" />
+        <meta property="og:image" content="/images/og-about.jpg" />
         <meta property="og:url" content="https://manyagi.net/about" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
         kicker="The Empire"
         title="About Manyagi"
-        lead="A global conglomerate building IP across publishing, designs, media, capital, and tech."
+        lead="Manyagi is a visionary conglomerate dedicated to innovation across publishing, designs, capital, tech, and media. Founded on the principles of creativity and empowerment, we create compelling stories, stylish merchandise, smart trading tools, cutting-edge apps, and engaging content to build lasting value."
       />
-      <section className="my-10 card">
-        <h2 className="text-3xl mb-4">Our Vision</h2>
-        <p className="text-muted mb-4">Manyagi is a forward-thinking conglomerate that unites innovation, creativity, and strategic business ventures under one brand. Our divisions work together to bring powerful ideas to life and deliver lasting value to our clients and audiences worldwide.</p>
+      <section className="my-10">
+        <Card>
+          <h2 className="text-3xl mb-4 text-black">Our Mission</h2>
+          <p className="text-gray-600 mb-4">To inspire and enable a global audience to achieve their dreams.</p>
+          <p className="text-gray-600 mb-4">Key milestones: Launched with 2 novels and 1 poetry book; expanding into AI-driven bots and apps.</p>
+          <p className="text-gray-600 mb-4">Team: Passionate creators and experts driving multibillion-dollar growth.</p>
+          <Image src="/images/team-photo.jpg" alt="Team Photo" width={600} height={400} className="rounded mb-4" />
+          <p className="text-gray-600">From solo bootstrapping to global empire, aiming for $1B+ valuation through consistent content, cross-promotion, and scalable monetization.</p>
+        </Card>
       </section>
-      <section className="my-10 card">
-        <h2 className="text-3xl mb-4">Our Divisions</h2>
-        <ul className="text-muted list-disc pl-5">
-          <li><strong>Manyagi Capital</strong> – Algorithmic trading, signals and portfolio products.</li>
-          <li><strong>Manyagi Designs</strong> – Apparel, prints and limited drops.</li>
-          <li><strong>Manyagi Media</strong> – Audiobooks, voice, and visual storytelling.</li>
-          <li><strong>Manyagi Publishing</strong> – Novels, poetry, and IP development.</li>
-          <li><strong>Manyagi Tech</strong> – Daito marketplace and app incubation.</li>
-        </ul>
-      </section>
-      <section className="my-10 card">
-        <h2 className="text-3xl mb-4">Mission</h2>
-        <p className="text-muted mb-4">To create, scale and preserve intellectual property — then monetize it across product lines and media to build generational value.</p>
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Our Team</h3>
-        <p className="text-muted mb-4">A diverse group of creators, traders, developers, and storytellers.</p>
-        <Image src="/images/team-photo.jpg" alt="Team Photo" width={600} height={400} className="rounded mb-4" />
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Our Values</h3>
-        <ul className="text-muted text-sm list-disc pl-5">
-          <li>Innovation</li>
-          <li>Integrity</li>
-          <li>Community</li>
-        </ul>
+      <section className="my-10">
+        <Card>
+          <h2 className="text-3xl mb-4 text-black">Our Divisions</h2>
+          <ul className="text-gray-600 list-disc pl-5">
+            <li><strong>Publishing</strong>: Books, poetry, eBooks, audiobooks.</li>
+            <li><strong>Designs</strong>: Merchandise, NFTs inspired by content.</li>
+            <li><strong>Capital</strong>: Trading signals for Crypto, Forex, Indices.</li>
+            <li><strong>Tech</strong>: Apps like Daito, Nexu/Nurse.</li>
+            <li><strong>Media</strong>: YouTube, podcasts, vlogs.</li>
+          </ul>
+        </Card>
       </section>
     </>
   );

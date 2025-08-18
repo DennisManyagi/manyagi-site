@@ -1,13 +1,13 @@
 import { motion } from 'framer-motion';
 import { Parallax } from 'react-scroll-parallax';
 import { gsap } from 'gsap';
-import { useRef, useEffect } from 'react';  // Move React hooks here
+import { useRef, useEffect } from 'react';
 
 const Card = ({ children, className = '' }) => {
   const ref = useRef(null);
 
   useEffect(() => {
-    gsap.to(ref.current, { scale: 1.05, duration: 0.3, paused: true }); // Hover scale
+    gsap.to(ref.current, { scale: 1.05, duration: 0.3, paused: true });
     ref.current.addEventListener('mouseenter', () => gsap.to(ref.current, { scale: 1.05, duration: 0.3 }));
     ref.current.addEventListener('mouseleave', () => gsap.to(ref.current, { scale: 1, duration: 0.3 }));
   }, []);
@@ -20,7 +20,7 @@ const Card = ({ children, className = '' }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className={`bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-lg transition-shadow ${className}`}
+        className={`bg-gray-100 border border-gray-300 rounded-xl p-6 shadow-lg transition-shadow hover:shadow-xl ${className}`}
         role="article"
       >
         {children}

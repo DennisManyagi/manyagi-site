@@ -10,9 +10,9 @@ export default function Contact() {
   if (state.succeeded) {
     return (
       <div className="my-10 text-center">
-        <h2 className="text-3xl mb-4">Thank You!</h2>
-        <p className="text-muted mb-4">Your message has been sent. We’ll respond within 48 hours.</p>
-        <Link href="/" className="btn">Return to Home</Link>
+        <h2 className="text-3xl mb-4 text-black">Thank You!</h2>
+        <p className="text-gray-600 mb-4">Your message has been sent. We’ll respond within 48 hours.</p>
+        <Link href="/" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">Return to Home</Link>
       </div>
     );
   }
@@ -24,7 +24,7 @@ export default function Contact() {
         <meta name="description" content="Contact Manyagi Management for press, partnerships, and inquiry." />
         <meta property="og:title" content="Contact Manyagi" />
         <meta property="og:description" content="Contact Manyagi Management for press, partnerships, and inquiry." />
-        <meta property="og:image" content="https://manyagi.net/images/og-contact.jpg" />
+        <meta property="og:image" content="/images/og-contact.jpg" />
         <meta property="og:url" content="https://manyagi.net/contact" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
@@ -44,7 +44,7 @@ export default function Contact() {
               name="name"
               placeholder="Your name"
               required
-              className="w-full mb-4 p-3 border border-line rounded"
+              className="w-full mb-4 p-3 border border-gray-300 rounded bg-white text-black"
             />
             <label htmlFor="email" className="sr-only">Email</label>
             <input
@@ -53,7 +53,7 @@ export default function Contact() {
               name="email"
               placeholder="you@domain.com"
               required
-              className="w-full mb-4 p-3 border border-line rounded"
+              className="w-full mb-4 p-3 border border-gray-300 rounded bg-white text-black"
             />
             <label htmlFor="message" className="sr-only">Message</label>
             <textarea
@@ -62,30 +62,17 @@ export default function Contact() {
               rows="6"
               placeholder="Message"
               required
-              className="w-full mb-4 p-3 border border-line rounded"
+              className="w-full mb-4 p-3 border border-gray-300 rounded bg-white text-black"
             ></textarea>
             <button
               type="submit"
-              className="btn w-full"
+              className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 w-full"
               disabled={state.submitting}
             >
               Send Message
             </button>
           </form>
         </Card>
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Our Offices</h3>
-        <p className="text-muted text-sm mb-2">Headquarters: [Your Address, City, Country]</p>
-        <p className="text-muted text-sm mb-2">Email: info@manyagi.net</p>
-        <p className="text-muted text-sm">Phone: [Your Phone Number]</p>
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">FAQ</h3>
-        <details className="mb-2">
-          <summary className="cursor-pointer">Response time?</summary>
-          <p className="text-muted text-sm">Within 48 hours.</p>
-        </details>
       </section>
     </>
   );

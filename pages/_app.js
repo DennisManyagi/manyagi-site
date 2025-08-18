@@ -3,7 +3,6 @@ import { Provider } from 'react-redux';
 import { store } from '../lib/store';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import Chat from '../components/Chat';
 import { SessionProvider } from "next-auth/react";
 import { useEffect } from 'react';
 import { ParallaxProvider } from 'react-scroll-parallax';
@@ -28,11 +27,10 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
         <ParallaxProvider>
           <div className={store.getState().darkMode.isDark ? 'dark' : ''}>
             <Header />
-            <main className="container mx-auto px-4 py-8 min-h-screen">
+            <main className="container mx-auto px-4 py-8 min-h-screen bg-white text-black">
               <Component {...pageProps} />
             </main>
             <Footer />
-            <Chat />
           </div>
         </ParallaxProvider>
       </Provider>

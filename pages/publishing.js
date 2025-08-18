@@ -14,100 +14,57 @@ export default function Publishing() {
   const [showModal, setShowModal] = useState(false);
 
   const handleBundle = () => {
-    dispatch(addToCart({ id: 'book1', name: 'Legacy Book', price: 20 }));
-    dispatch(addToCart({ id: 'tee1', name: 'Hidden Clans Tee', price: 25 }));
+    dispatch(addToCart({ id: 'book1', name: 'Legacy Book', price: 9.99 }));
+    dispatch(addToCart({ id: 'merch1', name: 'Free Merch', price: 0 }));
     setShowModal(true);
   };
 
   return (
     <>
       <Head>
-        <title>Manyagi Publishing — Novels & Poetry</title>
-        <meta name="description" content="Read Chapter 1, join the series list, and get poetry releases." />
-        <meta property="og:title" content="Manyagi Publishing — Novels & Poetry" />
-        <meta property="og:description" content="Read Chapter 1, join the series list, and get poetry releases." />
-        <meta property="og:image" content="https://manyagi.net/images/og-publishing.jpg" />
+        <title>Manyagi Publishing — Books, Poetry, eBooks</title>
+        <meta name="description" content="High-quality eBooks and audiobooks with global reach." />
+        <meta property="og:title" content="Manyagi Publishing" />
+        <meta property="og:description" content="High-quality eBooks and audiobooks with global reach." />
+        <meta property="og:image" content="/images/og-publishing.jpg" />
         <meta property="og:url" content="https://manyagi.net/publishing" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
         kicker="Books & Poetry"
         title="Manyagi Publishing"
-        lead="Two novels. A poetry collection. A growing universe: Legacy of the Hidden Clans leads the charge."
+        lead="Join our waitlist for exclusive releases and build your library today!"
       >
-        <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Read Chapter 1 (PDF)</Link>
-        <Link href="#join" className="btn ghost">Get updates</Link>
+        <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">Read Sample</Link>
       </Hero>
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10" style={{ padding: '20px' }}>
         <Card>
-          <h3 className="text-2xl mb-2">Legacy of the Hidden Clans</h3>
-          <p className="text-muted mb-4">A cinematic saga of power, loyalty, and the unseen forces that bind — Book 1 now in late draft.</p>
-          <ul className="text-muted text-sm list-disc pl-5 mb-4">
-            <li>24 chapters • 2nd draft complete</li>
-            <li>Cover reveal soon</li>
-            <li>Audiobook chapters rolling out via Media</li>
-          </ul>
-          <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Download Chapter 1</Link>
-          <button onClick={handleBundle} className="btn mt-2">Buy with Free Merch</button>
-          <p className="mt-4 text-muted text-sm">Buy the book and get free merch from <Link href="/designs" className="text-accent">Designs</Link>.</p>
+          <Image src="/images/author-portrait.jpg" alt="Book Cover" width={300} height={400} className="rounded mb-4" />
+          <h3 className="text-2xl mb-2 text-black">Legacy of the Hidden Clans</h3>
+          <p className="text-gray-600 mb-4">An epic tale of mystery and adventure.</p>
+          <button onClick={handleBundle} className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">Buy with Free Merch</button>
         </Card>
         <Card>
-          <h3 className="text-2xl mb-2">Poetry: True Heart</h3>
-          <p className="text-muted mb-4">Remastered edition of the original collection. New poems, new commentary, new art prints.</p>
-          <ul className="text-muted text-sm list-disc pl-5 mb-4">
-            <li>New eBook edition</li>
-            <li>Signed print run</li>
-            <li>Merch capsule with Designs</li>
-          </ul>
-          <Link href="#join" className="btn">Join poetry updates</Link>
-          <p className="mt-4 text-muted text-sm">Listen to readings on <Link href="/media" className="text-accent">Media</Link>.</p>
+          <Image src="/images/book-cover-2.jpg" alt="Poetry Book" width={300} height={400} className="rounded mb-4" />
+          <h3 className="text-2xl mb-2 text-black">Echoes of the Ancestors</h3>
+          <p className="text-gray-600 mb-4">Poems that evoke deep emotions.</p>
         </Card>
       </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Author Bio</h3>
-        <p className="text-muted mb-4">Manyagi's founder is a visionary storyteller with roots in African heritage, blending traditional lore with modern narratives.</p>
-        <Image src="/images/author-portrait.jpg" alt="Author Portrait" width={400} height={400} className="rounded mb-4" />
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Upcoming Releases</h3>
-        <ul className="text-muted text-sm list-disc pl-5">
-          <li>Book 2 Teaser: Q4 2025</li>
-          <li>Poetry Anthology Vol. 2: 2026</li>
-        </ul>
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">Reader Testimonials</h3>
-        <p className="text-muted mb-2">"The world-building in Legacy is unparalleled!" - Reader A</p>
-        <p className="text-muted">"True Heart touched my soul." - Reader B</p>
-      </section>
-      <section className="my-10 card">
-        <h3 className="text-2xl mb-4">FAQ</h3>
-        <details className="mb-2">
-          <summary className="cursor-pointer">How can I preorder?</summary>
-          <p className="text-muted text-sm">Join the list for preorder links.</p>
-        </details>
-        <details>
-          <summary className="cursor-pointer">Are books available in audio?</summary>
-          <p className="text-muted text-sm">Yes, via Media division.</p>
-        </details>
-      </section>
-      <section id="join" className="my-10">
+      <section className="my-10">
         <Card>
-          <SubscriptionForm formId="8427848" uid="637df68a01" title="Join the Publishing list" description="Get chapters, cover reveals, and preorder windows first." />
+          <h3 className="text-2xl mb-4 text-black">Why Publish with Us</h3>
+          <p className="text-gray-600">High-quality eBooks and audiobooks with global reach.</p>
         </Card>
+      </section>
+      <section className="my-10">
+        <SubscriptionForm formId="8432549" uid="877716573d" title="Subscribe for Updates" description="Get exclusive releases." />
       </section>
       {showModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
-        >
-          <div className="card p-8">
-            <h3 className="text-2xl mb-4">Bundle Added!</h3>
-            <p className="text-muted mb-4">Book + Tee added to cart with discount.</p>
-            <Link href="/cart" className="btn">View Cart</Link>
-            <button onClick={() => setShowModal(false)} className="btn ghost mt-2">Close</button>
+        <motion.div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white p-8 rounded">
+            <h3 className="text-2xl mb-4 text-black">Added to Cart</h3>
+            <Link href="/cart" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">View Cart</Link>
+            <button onClick={() => setShowModal(false)} className="ml-2 text-gray-600">Close</button>
           </div>
         </motion.div>
       )}

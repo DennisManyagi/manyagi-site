@@ -10,7 +10,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
         particlesJS('particles-js', {
           particles: {
             number: { value: 50 },
-            color: { value: '#50C878' },
+            color: { value: '#FFD700' },
             shape: { type: 'circle' },
             opacity: { value: 0.5 },
             size: { value: 3 },
@@ -35,17 +35,17 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
     >
       <div id="particles-js" className="absolute inset-0 z-0 opacity-30" />
       {carouselImages.length > 0 && (
-        <Carousel autoPlay={false} interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover>
+        <Carousel autoPlay interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover showArrows>
           {carouselImages.map((img, i) => (
             <img key={i} src={img} alt={`Slide ${i+1}`} className="object-cover h-[60vh]" loading="lazy" />
           ))}
         </Carousel>
       )}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 to-gold opacity-70 z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-800 to-yellow-500 opacity-70 z-10" />
       <div className="relative z-20 p-8 text-white max-w-4xl">
-        <span className="uppercase tracking-wide text-sm text-emerald-300">{kicker}</span>
+        <span className="uppercase tracking-wide text-sm text-white">{kicker}</span>
         <h1 id="hero-title" className="text-5xl font-bold my-2">{title}</h1>
-        <p className="text-xl text-muted-foreground">{lead}</p>
+        <p className="text-xl">{lead}</p>
         <div className="flex gap-4 mt-6">{children}</div>
       </div>
     </motion.section>

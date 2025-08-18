@@ -6,8 +6,8 @@ import { useEffect } from 'react';
 const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      import('particles.js').then(() => {
-        window.particlesJS('particles-js', {
+      import('particles.js').then(({ default: particlesJS }) => {
+        particlesJS('particles-js', {
           particles: {
             number: { value: 50 },
             color: { value: '#50C878' },

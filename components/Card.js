@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Parallax } from 'react-scroll-parallax';
 import { gsap } from 'gsap';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';  // Move React hooks here
 
 const Card = ({ children, className = '' }) => {
   const ref = useRef(null);

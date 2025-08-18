@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 export default function Publishing() {
   const dispatch = useDispatch();

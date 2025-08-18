@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import CartComponent from '../components/Cart'; // Rename to avoid conflict
+import CartComponent from '../components/Cart';
 
 export default function CartPage() {
   return (

@@ -3,9 +3,11 @@ import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
-import Image from 'next/image'; // Added
+import { motion, useState } from 'framer-motion';
 
 export default function Home() {
+  const [showModal, setShowModal] = useState(false);
+
   return (
     <>
       <Head>
@@ -67,6 +69,21 @@ export default function Home() {
         <p className="text-muted mb-2">"Manyagi is building the future!" - User A</p>
         <p className="text-muted">"Love the cross-division synergy." - User B</p>
       </section>
+      {showModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+        >
+          <div className="card p-8">
+            <h3 className="text-2xl mb-4">Discount Applied!</h3>
+            <p className="text-muted mb-4">Buy book + get merch discount added.</p>
+            <Link href="/cart" className="btn">View Cart</Link>
+            <button onClick={() => setShowModal(false)} className="btn ghost mt-2">Close</button>
+          </div>
+        </motion.div>
+      )}
     </>
   );
 }

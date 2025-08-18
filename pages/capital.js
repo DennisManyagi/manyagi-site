@@ -13,6 +13,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 export default function Capital() {
   const { data: session, status } = useSession();
   const [loading, setLoading] = useState(false);
+  const [telegramId, setTelegramId] = useState('');
 
   const handleCheckout = async (priceId) => {
     setLoading(true);
@@ -21,7 +22,7 @@ export default function Capital() {
       const response = await fetch('/api/stripe/charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, telegramId }),
       });
       const { sessionId } = await response.json();
       await stripe.redirectToCheckout({ sessionId });
@@ -37,7 +38,7 @@ export default function Capital() {
     return (
       <>
         <Hero title="Capital Access" lead="Login to view full signals and performance." />
-        <button onClick={() => signIn()} className="btn mx-auto block">Login</button>
+        <button onClick={() => signIn()} className="btn mt-4 block text-center">Login</button>
       </>
     );
   }
@@ -66,7 +67,7 @@ export default function Capital() {
           <h3 className="text-2xl mb-2">Verified Performance</h3>
           <p className="text-muted text-sm mb-4">View our public Myfxbook widgets.</p>
           <iframe
-            src="https://www.myfxbook.com/widget/account/YOUR_ACCOUNT_ID" // Replace with your Myfxbook account ID
+            src="https://www.myfxbook.com/widget/account/YOUR_ACCOUNT_ID"
             width="100%"
             height="360"
             frameBorder="0"
@@ -113,23 +114,33 @@ export default function Capital() {
       <section id="plans" className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
         <Card>
           <h3 className="text-2xl mb-2">Basic Signals</h3>
-          <p className="text-muted text-sm mb-4">Telegram alerts: entries, exits, risk notes.</p>
+          <p className="text-muted text-sm mb-4">Telegram alerts: entries, exits, risk notes. Join our Telegram group for real-time signals after subscribing!</p>
           <ul className="text-muted text-sm list-disc pl-5 mb-4">
             <li>$29 / month</li>
             <li>Crypto/FX/Indices</li>
             <li>Weekly recap email</li>
           </ul>
+          <p className="text-muted text-sm mb-2">
+            Find your Telegram ID by messaging <a href="https://t.me/GetIDsBot" target="_blank" className="text-accent">@GetIDsBot</a>.
+          </p>
+          <input
+            type="text"
+            value={telegramId}
+            onChange={(e) => setTelegramId(e.target.value)}
+            placeholder="Telegram ID (e.g., 123456789)"
+            className="w-full p-3 border border-neutral-800 rounded bg-neutral-800 text-white mb-2"
+          />
           <button
             onClick={() => handleCheckout('price_1Rwfe5IFtQrr5DjcidsMeAOM')}
             className="btn w-full"
-            disabled={loading}
+            disabled={loading || !telegramId}
           >
             Subscribe to Basic Signals
           </button>
         </Card>
         <Card>
           <h3 className="text-2xl mb-2">Pro + Copy (Waitlist)</h3>
-          <p className="text-muted text-sm mb-4">Signals + copy trading when track record is live.</p>
+          <p className="text-muted text-sm mb-4">Signals + copy trading when track record is live. Join our Telegram group for updates!</p>
           <ul className="text-muted text-sm list-disc pl-5 mb-4">
             <li>$99 / month</li>
             <li>Priority support</li>
@@ -139,7 +150,8 @@ export default function Capital() {
             formId="8432549"
             uid="877716573d"
             title="Join Pro Waitlist"
-            description="Get notified when available."
+            description="Get notified when available and join our Telegram group."
+            includeTelegramId={true}
           />
         </Card>
       </section>

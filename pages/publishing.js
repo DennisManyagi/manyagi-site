@@ -6,13 +6,16 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 
 export default function Publishing() {
   const dispatch = useDispatch();
+  const [showModal, setShowModal] = useState(false);
 
   const handleBundle = () => {
     dispatch(addToCart({ id: 'book1', name: 'Legacy Book', price: 20 }));
     dispatch(addToCart({ id: 'tee1', name: 'Hidden Clans Tee', price: 25 }));
+    setShowModal(true);
   };
 
   return (
@@ -31,7 +34,7 @@ export default function Publishing() {
         title="Manyagi Publishing"
         lead="Two novels. A poetry collection. A growing universe: Legacy of the Hidden Clans leads the charge."
       >
-        <Link href="/assets/legacy-chapter-1.pdf" target="_blank" rel="noopener noreferrer" className="btn">Read Chapter 1 (PDF)</Link>
+        <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Read Chapter 1 (PDF)</Link>
         <Link href="#join" className="btn ghost">Get updates</Link>
       </Hero>
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
@@ -43,7 +46,7 @@ export default function Publishing() {
             <li>Cover reveal soon</li>
             <li>Audiobook chapters rolling out via Media</li>
           </ul>
-          <Link href="/assets/legacy-chapter-1.pdf" target="_blank" rel="noopener noreferrer" className="btn">Download Chapter 1</Link>
+          <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Download Chapter 1</Link>
           <button onClick={handleBundle} className="btn mt-2">Buy with Free Merch</button>
           <p className="mt-4 text-muted text-sm">Buy the book and get free merch from <Link href="/designs" className="text-accent">Designs</Link>.</p>
         </Card>
@@ -92,6 +95,21 @@ export default function Publishing() {
           <SubscriptionForm formId="8427848" uid="637df68a01" title="Join the Publishing list" description="Get chapters, cover reveals, and preorder windows first." />
         </Card>
       </section>
+      {showModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+        >
+          <div className="card p-8">
+            <h3 className="text-2xl mb-4">Bundle Added!</h3>
+            <p className="text-muted mb-4">Book + Tee added to cart with discount.</p>
+            <Link href="/cart" className="btn">View Cart</Link>
+            <button onClick={() => setShowModal(false)} className="btn ghost mt-2">Close</button>
+          </div>
+        </motion.div>
+      )}
     </>
   );
 }

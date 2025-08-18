@@ -9,6 +9,18 @@ export default function Document() {
         <meta name="robots" content="index,follow" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="sitemap" href="/sitemap.xml" type="application/xml" />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Manyagi",
+              "url": "https://manyagi.net",
+              "logo": "https://manyagi.net/images/logo.png",
+              "description": "Multibillion-dollar conglomerate spanning Publishing, Designs, Capital, Tech, and Media."
+            }
+          `}
+        </script>
       </Head>
       <body className="bg-bg text-fg">
         <Main />

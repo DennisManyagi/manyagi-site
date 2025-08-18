@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 import Chat from '../components/Chat';
 import { SessionProvider } from "next-auth/react";
 import { useEffect } from 'react';
+import { ParallaxProvider } from 'react-scroll-parallax';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   useEffect(() => {
@@ -24,14 +25,16 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
     <SessionProvider session={session}>
       <Provider store={store}>
-        <div className={store.getState().darkMode.isDark ? 'dark' : ''}>
-          <Header />
-          <main className="container mx-auto px-4 py-8 min-h-screen">
-            <Component {...pageProps} />
-          </main>
-          <Footer />
-          <Chat />
-        </div>
+        <ParallaxProvider>
+          <div className={store.getState().darkMode.isDark ? 'dark' : ''}>
+            <Header />
+            <main className="container mx-auto px-4 py-8 min-h-screen">
+              <Component {...pageProps} />
+            </main>
+            <Footer />
+            <Chat />
+          </div>
+        </ParallaxProvider>
       </Provider>
     </SessionProvider>
   );

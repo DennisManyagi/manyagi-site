@@ -1,19 +1,45 @@
-const SubscriptionForm = ({ formId, uid, title, description }) => {
+const SubscriptionForm = ({ formId, uid, title, description, includeTelegramId = false }) => {
   return (
-    <div aria-labelledby="form-title">
-      <h3 id="form-title">{title}</h3>
-      <p className="text-muted text-sm mb-4">{description}</p>
+    <div aria-labelledby="form-title" className="space-y-4">
+      <h3 id="form-title" className="text-2xl font-bold">{title}</h3>
+      <p className="text-muted-foreground text-sm">{description}</p>
       <script async src="https://f.convertkit.com/ckjs/ck.5.js"></script>
-      <form action={`https://app.kit.com/forms/${formId}/subscriptions`} className="seva-form formkit-form" method="post" data-sv-form={formId} data-uid={uid} data-format="inline" data-version="5">
-        <div className="formkit-field mb-4">
-          <label htmlFor="name" className="sr-only">First Name</label>
-          <input id="name" className="formkit-input w-full p-3 border border-line rounded" name="fields[first_name]" placeholder="First Name" type="text" />
-        </div>
-        <div className="formkit-field mb-4">
-          <label htmlFor="email" className="sr-only">Email Address</label>
-          <input id="email" className="formkit-input w-full p-3 border border-line rounded" name="email_address" placeholder="Email Address" required type="email" />
-        </div>
-        <button className="formkit-submit btn w-full" type="submit">Subscribe</button>
+      <form
+        action={`https://app.convertkit.com/forms/${formId}/subscriptions`}
+        className="seva-form formkit-form"
+        method="post"
+        data-sv-form={formId}
+        data-uid={uid}
+        data-format="inline"
+        data-version="5"
+      >
+        <input
+          className="w-full p-3 border border-neutral-800 rounded bg-neutral-800 text-white mb-2"
+          name="fields[first_name]"
+          placeholder="First Name"
+          type="text"
+        />
+        <input
+          className="w-full p-3 border border-neutral-800 rounded bg-neutral-800 text-white mb-2"
+          name="email_address"
+          placeholder="Email Address"
+          required
+          type="email"
+        />
+        {includeTelegramId && (
+          <input
+            className="w-full p-3 border border-neutral-800 rounded bg-neutral-800 text-white mb-2"
+            name="fields[telegram_id]"
+            placeholder="Telegram ID (e.g., 123456789)"
+            type="text"
+          />
+        )}
+        <button
+          className="w-full py-3 bg-gold text-purple-900 rounded font-bold hover:bg-gold/90"
+          type="submit"
+        >
+          Subscribe
+        </button>
       </form>
     </div>
   );

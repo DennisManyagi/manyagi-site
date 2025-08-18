@@ -28,7 +28,7 @@ export default function Blog({ posts }) {
         title="Manyagi Blog"
         lead="Transparent progress. Lessons learned. Drop calendars. Weekly signal recaps."
       >
-        <Link href="#subscribe" className="btn">Subscribe to Blog</Link>
+        <Link href="#subscribe" className="btn mt-4 block text-center">Subscribe to Blog</Link>
       </Hero>
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
         {posts.map((post) => (
@@ -41,7 +41,7 @@ export default function Blog({ posts }) {
       </section>
       <section id="subscribe" className="my-10">
         <Card>
-          <SubscriptionForm formId="YOUR_BLOG_FORM_ID" uid="YOUR_BLOG_UID" title="Get new posts via email" description="Stay updated with our latest blog entries." />
+          <SubscriptionForm formId="8432549" uid="877716573d" title="Get new posts via email" description="Stay updated with our latest blog entries." />
         </Card>
       </section>
     </>

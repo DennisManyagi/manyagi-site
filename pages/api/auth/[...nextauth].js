@@ -11,7 +11,6 @@ export default NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Add logic to verify credentials (e.g., check against DB)
         if (credentials.username === "user" && credentials.password === "pass") {
           return { id: 1, name: "User" };
         }

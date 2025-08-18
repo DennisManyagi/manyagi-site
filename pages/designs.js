@@ -16,7 +16,11 @@ export default function Designs() {
       <Head>
         <title>Manyagi Designs — Merch & Art</title>
         <meta name="description" content="Limited drops: tees, posters, and prints inspired by Manyagi books & poetry." />
-        {/* OG tags */}
+        <meta property="og:title" content="Manyagi Designs — Merch & Art" />
+        <meta property="og:description" content="Limited drops: tees, posters, and prints inspired by Manyagi books & poetry." />
+        <meta property="og:image" content="https://manyagi.net/images/og-designs.jpg" />
+        <meta property="og:url" content="https://manyagi.net/designs" />
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
         kicker="Merch & Prints"
@@ -32,7 +36,7 @@ export default function Designs() {
           <h3 className="text-2xl mb-2">Hidden Clans Tee</h3>
           <p className="text-muted text-sm mb-4">Quote tee • Heavyweight • Limited first run - $25</p>
           <button onClick={() => dispatch(addToCart({ id: 'tee1', name: 'Hidden Clans Tee', price: 25 }))} className="btn mb-2">Add to Cart</button>
-          <StripeCheckout product="Hidden Clans Tee" />
+          <StripeCheckout product="Hidden Clans Tee" amount={2500} />
           <p className="mt-4 text-muted text-sm">Inspired by <Link href="/publishing" className="text-accent">Publishing</Link> novels.</p>
         </Card>
         <Card>
@@ -40,14 +44,14 @@ export default function Designs() {
           <h3 className="text-2xl mb-2">Clan Poster (A3)</h3>
           <p className="text-muted text-sm mb-4">Matte museum-grade print • Signed variant - $15</p>
           <button onClick={() => dispatch(addToCart({ id: 'poster1', name: 'Clan Poster', price: 15 }))} className="btn mb-2">Add to Cart</button>
-          <StripeCheckout product="Clan Poster" />
+          <StripeCheckout product="Clan Poster" amount={1500} />
         </Card>
         <Card>
           <Image src="/images/mock-mug-1.jpg" alt="Poetry Mug" width={300} height={300} className="rounded mb-4" />
           <h3 className="text-2xl mb-2">Poetry Mug</h3>
           <p className="text-muted text-sm mb-4">“True Heart” excerpt • Dishwasher safe - $10</p>
           <button onClick={() => dispatch(addToCart({ id: 'mug1', name: 'Poetry Mug', price: 10 }))} className="btn mb-2">Add to Cart</button>
-          <StripeCheckout product="Poetry Mug" />
+          <StripeCheckout product="Poetry Mug" amount={1000} />
         </Card>
       </section>
       <section className="my-10 card">

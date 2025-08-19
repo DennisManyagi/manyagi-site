@@ -23,3 +23,7 @@ h1, h2, h3 {
   --text: #fff;
   --gray-100: #333;
 }
+
+.hover\:text-gold:hover {
+  color: #FFD700;
+}

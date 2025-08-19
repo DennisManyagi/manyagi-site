@@ -1,46 +1,52 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import Hero from '../components/Hero';
-import Card from '../components/Card';
-import Image from 'next/image';
 
 export default function About() {
   return (
     <>
       <Head>
-        <title>About Manyagi</title>
-        <meta name="description" content="About Manyagi — vision, mission, and divisions." />
-        <meta property="og:title" content="About Manyagi" />
-        <meta property="og:description" content="About Manyagi — vision, mission, and divisions." />
-        <meta property="og:image" content="/images/og-about.jpg" />
+        <title>About Manyagi — Our Vision</title>
+        <meta name="description" content="Learn about Manyagi’s mission, history, and divisions." />
+        <meta property="og:title" content="About Manyagi — Our Vision" />
+        <meta property="og:description" content="Learn about Manyagi’s mission, history, and divisions." />
+        <meta property="og:image" content="https://manyagi.net/images/og-about.jpg" />
         <meta property="og:url" content="https://manyagi.net/about" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
-        kicker="The Empire"
+        kicker="Our Story"
         title="About Manyagi"
-        lead="Manyagi is a visionary conglomerate dedicated to innovation across publishing, designs, capital, tech, and media. Founded on the principles of creativity and empowerment, we create compelling stories, stylish merchandise, smart trading tools, cutting-edge apps, and engaging content to build lasting value."
+        lead="A conglomerate inspired by storytelling, innovation, and wealth-building."
       />
-      <section className="my-10">
-        <Card>
-          <h2 className="text-3xl mb-4 text-black">Our Mission</h2>
-          <p className="text-gray-600 mb-4">To inspire and enable a global audience to achieve their dreams.</p>
-          <p className="text-gray-600 mb-4">Key milestones: Launched with 2 novels and 1 poetry book; expanding into AI-driven bots and apps.</p>
-          <p className="text-gray-600 mb-4">Team: Passionate creators and experts driving multibillion-dollar growth.</p>
-          <Image src="/images/team-photo.jpg" alt="Team Photo" width={600} height={400} className="rounded mb-4" />
-          <p className="text-gray-600">From solo bootstrapping to global empire, aiming for $1B+ valuation through consistent content, cross-promotion, and scalable monetization.</p>
-        </Card>
-      </section>
-      <section className="my-10">
-        <Card>
-          <h2 className="text-3xl mb-4 text-black">Our Divisions</h2>
-          <ul className="text-gray-600 list-disc pl-5">
-            <li><strong>Publishing</strong>: Books, poetry, eBooks, audiobooks.</li>
-            <li><strong>Designs</strong>: Merchandise, NFTs inspired by content.</li>
-            <li><strong>Capital</strong>: Trading signals for Crypto, Forex, Indices.</li>
-            <li><strong>Tech</strong>: Apps like Daito, Nexu/Nurse.</li>
-            <li><strong>Media</strong>: YouTube, podcasts, vlogs.</li>
-          </ul>
-        </Card>
+      <section className="prose max-w-3xl mx-auto text-gray-800">
+        <h2 className="text-3xl font-bold mb-6">About Manyagi</h2>
+        <p className="mb-4">Manyagi is a visionary conglomerate inspired by storytelling, innovation, and wealth-building. Founded in 2025 by D.N. Manyagi, we blend fantasy narratives with real-world solutions to empower individuals through creativity and opportunity. From humble beginnings with a single poetry book, we've grown into a multibillion-dollar empire spanning five divisions, drawing on themes of legacy, echoes, and hidden strengths.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Our Vision</h3>
+        <p className="mb-4">To create a unified ecosystem where stories inspire designs, fuel media content, drive financial insights, and power technological tools. Like Penguin Random House meets Nike, Bloomberg, Shopify, and Disney, we aim to scale IP across mediums for generational impact.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">History and Milestones</h3>
+        <ul className="list-disc pl-6 mb-4">
+          <li>2025: Founded with "True Heart" poetry and "Legacy of the Hidden Clans" draft.</li>
+          <li>Q2 2025: Launched manyagi.net, initial merch drops, forex bots.</li>
+          <li>Q3 2025: Daito app beta, Media channel hits 1K subs.</li>
+          <li>Q4 2025: First book release, signals subs reach 100, NFT collection.</li>
+          <li>Future: Expand to crypto/stocks, global licensing, $1B valuation by 2030.</li>
+        </ul>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Our Divisions</h3>
+        <p className="mb-4">Publishing: Diverse stories like fantasy sagas. Designs: IP-inspired merch. Capital: Data-driven signals (Forex now, Crypto/Stocks soon). Tech: Apps for commerce/community. Media: Content hub for all.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Mission</h3>
+        <p className="mb-4">Empower through stories, wealth, and innovation. Cross-promote: Books inspire merch, signals in tutorials, apps sell everything.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Future Goals</h3>
+        <p className="mb-4">Become a multibillion conglomerate like Disney: IP films, global apps, ventures. Sustainability focus: Eco-merch, ethical signals.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Team</h3>
+        <p className="mb-4">Led by D.N. Manyagi (Founder/CEO). [Add team member names/roles/photos as we grow.]</p>
+        <img src="/images/team-photo.jpg" alt="Team Photo" className="w-full rounded-lg mb-4" />
+        <h3 className="text-2xl font-bold mt-6 mb-4">Values</h3>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Innovation: Push boundaries in IP and tech.</li>
+          <li>Integrity: Transparent signals, fair practices.</li>
+          <li>Community: Empower via apps and stories.</li>
+        </ul>
       </section>
     </>
   );

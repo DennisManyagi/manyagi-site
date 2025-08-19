@@ -2,78 +2,159 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import SubscriptionForm from '../components/SubscriptionForm';
-import StripeCheckout from '../components/StripeCheckout';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
-import Image from 'next/image';
-import { Carousel } from 'react-responsive-carousel';
+import { useState, useEffect } from 'react';
 
 export default function Designs() {
   const dispatch = useDispatch();
+  const [showModal, setShowModal] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [error, setError] = useState(null);
+  const [selectedVariants, setSelectedVariants] = useState({}); // Track selected size/color per product
 
-  const productImages = [
-    '/images/mock-tee-1.jpg',
-    '/images/mock-print-1.jpg',
-    '/images/mock-mug-1.jpg',
-  ];
+  // Fetch products on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/printful/products');
+        const data = await res.json();
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        setProducts(data);
+        // Initialize selected variants
+        const initialVariants = {};
+        data.forEach(product => {
+          initialVariants[product.id] = {
+            variantId: product.variants[0]?.id,
+            size: product.variants[0]?.size || '',
+            color: product.variants[0]?.color || '',
+          };
+        });
+        setSelectedVariants(initialVariants);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const handleAddToCart = (product) => {
+    const selected = selectedVariants[product.id];
+    dispatch(
+      addToCart({
+        id: `${product.id}-${selected.variantId}`,
+        name: `${product.name} (${selected.size}, ${selected.color})`,
+        price: product.price,
+        variantId: selected.variantId,
+      })
+    );
+    setShowModal(true);
+  };
+
+  const handleVariantChange = (productId, variantId, size, color) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [productId]: { variantId, size, color },
+    }));
+  };
 
   return (
     <>
       <Head>
-        <title>Manyagi Designs — Merch & Art</title>
-        <meta name="description" content="Transform ideas into wearable art and collectibles. Our merch is inspired by captivating stories, perfect for fans and creators." />
-        <meta property="og:title" content="Manyagi Designs — Merch & Art" />
-        <meta property="og:description" content="Transform ideas into wearable art and collectibles. Our merch is inspired by captivating stories, perfect for fans and creators." />
-        <meta property="og:image" content="/images/og-designs.jpg" />
+        <title>Manyagi Designs — Wear the Story</title>
+        <meta name="description" content="Shop T-shirts, mugs, posters, and NFTs inspired by our books." />
+        <meta property="og:title" content="Manyagi Designs — Wear the Story" />
+        <meta property="og:description" content="Shop T-shirts, mugs, posters, and NFTs inspired by our books." />
+        <meta property="og:image" content="https://manyagi.net/images/og-designs.jpg" />
         <meta property="og:url" content="https://manyagi.net/designs" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
-        kicker="Merch & Prints"
-        title="Wear the Story"
-        lead="Transform ideas into wearable art and collectibles. Our merch is inspired by captivating stories, perfect for fans and creators."
+        kicker="Merch & Art"
+        title="Manyagi Designs"
+        lead="Wear the saga with T-shirts, mugs, posters, and digital NFTs inspired by our stories."
+        carouselImages={['/images/merch-carousel-1.jpg', '/images/merch-carousel-2.jpg', '/images/merch-carousel-3.jpg', '/images/merch-carousel-4.jpg', '/images/merch-carousel-5.jpg']}
       >
-        <Link href="#products" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">View Products</Link>
+        <Link href="#shop" className="btn">Shop Now</Link>
       </Hero>
-      <section className="my-10">
-        <Carousel autoPlay interval={5000} showThumbs={false} infiniteLoop>
-          {productImages.map((img, i) => (
-            <Image key={i} src={img} alt={`Product ${i+1}`} width={600} height={400} className="rounded" />
-          ))}
-        </Carousel>
+      <section id="shop" className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10">
+        {error && <p className="text-red-600">Error: {error}</p>}
+        {products.length === 0 && !error && <p>Loading products...</p>}
+        {products.map(product => (
+          <Card key={product.id}>
+            <img src={product.image} alt={product.name} className="w-full rounded mb-4" />
+            <h3 className="text-2xl mb-2">{product.name}</h3>
+            <p className="text-muted mb-4">${product.price.toFixed(2)}</p>
+            <div className="mb-4">
+              <label htmlFor={`size-${product.id}`} className="block text-sm mb-1">Size:</label>
+              <select
+                id={`size-${product.id}`}
+                value={selectedVariants[product.id]?.size || ''}
+                onChange={(e) => {
+                  const selectedVariant = product.variants.find(v => v.size === e.target.value);
+                  handleVariantChange(product.id, selectedVariant.id, e.target.value, selectedVariants[product.id]?.color);
+                }}
+                className="border p-2 w-full"
+              >
+                {[...new Set(product.variants.map(v => v.size))].map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-4">
+              <label htmlFor={`color-${product.id}`} className="block text-sm mb-1">Color:</label>
+              <select
+                id={`color-${product.id}`}
+                value={selectedVariants[product.id]?.color || ''}
+                onChange={(e) => {
+                  const selectedVariant = product.variants.find(v => v.color === e.target.value);
+                  handleVariantChange(product.id, selectedVariant.id, selectedVariants[product.id]?.size, e.target.value);
+                }}
+                className="border p-2 w-full"
+              >
+                {[...new Set(product.variants.map(v => v.color))].map(color => (
+                  <option key={color} value={color}>{color}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => handleAddToCart(product)}
+              className="btn"
+            >
+              Add to Cart
+            </button>
+          </Card>
+        ))}
       </section>
-      <section id="products" className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10">
-        <Card>
-          <Image src="/images/mock-tee-1.jpg" alt="T-shirt Mockup" width={300} height={300} className="rounded mb-4" />
-          <h3 className="text-2xl mb-2 text-black">Featured T-shirt ($29.99)</h3>
-          <button onClick={() => dispatch(addToCart({ id: 'tee1', name: 'T-shirt', price: 29.99 }))} className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 mb-2">Add to Cart</button>
-          <StripeCheckout product="T-shirt" amount={2999} />
-        </Card>
-        <Card>
-          <Image src="/images/mock-mug-1.jpg" alt="Mug Mockup" width={300} height={300} className="rounded mb-4" />
-          <h3 className="text-2xl mb-2 text-black">Featured Mug ($15.99)</h3>
-          <button onClick={() => dispatch(addToCart({ id: 'mug1', name: 'Mug', price: 15.99 }))} className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 mb-2">Add to Cart</button>
-          <StripeCheckout product="Mug" amount={1599} />
-        </Card>
-        <Card>
-          <Image src="/images/mock-print-1.jpg" alt="Poster Mockup" width={300} height={300} className="rounded mb-4" />
-          <h3 className="text-2xl mb-2 text-black">Featured Poster ($19.99)</h3>
-          <button onClick={() => dispatch(addToCart({ id: 'poster1', name: 'Poster', price: 19.99 }))} className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 mb-2">Add to Cart</button>
-          <StripeCheckout product="Poster" amount={1999} />
-        </Card>
+      <section className="division-desc prose max-w-3xl mx-auto text-gray-800">
+        <h2 className="text-3xl font-bold mb-6">Manyagi Designs: Wear the Inspiration</h2>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Overview</h3>
+        <p className="mb-4">Inspired by Publishing IP, Designs offers merch like T-shirts, mugs, posters, NFTs—creative like Redbubble but tied to stories. Fantasy motifs from books become wearable art.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Products/Services</h3>
+        <p className="mb-4">T-shirts ($29.99), mugs ($15.99), posters ($19.99), NFTs (OpenSea). Bundles with books. Global shipping via Printful.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Why Choose Us</h3>
+        <p className="mb-4">High-quality, limited drops. Cross-promote: Wear a 'Legacy' tee while watching Media narrations or trading Capital signals.</p>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Testimonials</h3>
+        <p className="mb-4">"Stylish and meaningful!" - Buyer A. "Perfect fit!" - Buyer B.</p>
+        <p className="mt-6"><Link href="/cart" className="btn">Shop Now</Link></p>
       </section>
-      <section className="my-10">
-        <Card>
-          <h3 className="text-2xl mb-4 text-black">NFT Collection</h3>
-          <p className="text-gray-600">View on OpenSea.</p>
-        </Card>
-      </section>
-      <section className="my-10">
-        <Card>
-          <SubscriptionForm formId="8432506" uid="a194031db7" title="Get Drop Alerts" description="Join for exclusive discounts." />
-        </Card>
-      </section>
+      <aside className="social-widget mt-8 max-w-3xl mx-auto">
+        <h3 className="text-xl mb-4">Latest from @manyagi_designs</h3>
+        <a className="twitter-timeline" data-height="400" href="https://twitter.com/manyagi_designs?ref_src=twsrc%5Etfw">Tweets by manyagi_designs</a>
+        <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
+      </aside>
+      {showModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>{error ? 'Error' : 'Added to Cart!'}</h2>
+            <p>{error ? error : 'Item added. Proceed to checkout?'}</p>
+            {!error && <Link href="/cart" className="btn">Go to Cart</Link>}
+            <button onClick={() => setShowModal(false)} className="btn ghost">Continue {error ? 'Trying' : 'Shopping'}</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

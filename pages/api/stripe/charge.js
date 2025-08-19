@@ -30,43 +30,39 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     const session = await getSession({ req });
-    if (!session) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    const { items, telegramId, priceId } = req.body;
 
     try {
-      let checkoutSession;
-      if (req.body.priceId) {
-        checkoutSession = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
-          line_items: [
+      const lineItems = items
+        ? items.map(item => ({
+            price_data: {
+              currency: 'usd',
+              product_data: { name: item.name },
+              unit_amount: Math.round(item.price * 100),
+            },
+            quantity: item.quantity || 1,
+          }))
+        : [
             {
-              price: req.body.priceId,
+              price: priceId,
               quantity: 1,
             },
-          ],
-          mode: 'subscription',
-          success_url: 'https://manyagi.net/thank-you',
-          cancel_url: 'https://manyagi.net/capital',
-          customer_email: session.user.email,
-          metadata: {
-            userId: session.user.id,
-            telegramId: req.body.telegramId || '',
-          },
-        });
-        return res.status(200).json({ sessionId: checkoutSession.id });
-      } else if (req.body.paymentMethodId && req.body.amount && req.body.description) {
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: req.body.amount,
-          currency: 'usd',
-          description: req.body.description,
-          payment_method: req.body.paymentMethodId,
-          confirm: true,
-          return_url: 'https://manyagi.net/thank-you',
-        });
-        return res.status(200).json({ paymentIntent });
-      }
-      return res.status(200).json({ sessionId: checkoutSession?.id });
+          ];
+
+      const checkoutSession = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: items ? 'payment' : 'subscription',
+        success_url: 'https://manyagi.net/thank-you?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: 'https://manyagi.net/cart',
+        customer_email: session?.user?.email || req.body.email,
+        metadata: {
+          userId: session?.user?.id || 'guest',
+          telegramId: telegramId || '',
+        },
+      });
+
+      return res.status(200).json({ sessionId: checkoutSession.id, url: checkoutSession.url });
     } catch (error) {
       console.error('Stripe error:', error);
       return res.status(500).json({ error: 'Failed to process payment' });
@@ -88,18 +84,21 @@ export default async function handler(req, res) {
       const session = event.data.object;
       const telegramId = session.metadata.telegramId || '';
 
-      // Save subscription to Firestore
-      await setDoc(doc(db, 'subscriptions', session.id), {
+      await setDoc(doc(db, 'orders', session.id), {
         userId: session.metadata.userId,
         email: session.customer_email,
         telegramId: telegramId,
         created: new Date(),
-        plan: session.mode === 'subscription' ? 'Basic Signals' : 'One-Time Purchase',
+        plan: session.mode === 'subscription' ? 'Basic Signals' : 'Merch Purchase',
         amount: session.amount_total ? session.amount_total / 100 : null,
+        items: session.mode === 'payment' ? session.line_items?.data.map(item => ({
+          name: item.description,
+          quantity: item.quantity,
+          amount: item.amount_total / 100,
+        })) : null,
       });
 
-      // Send Telegram invite link if telegramId is provided
-      if (telegramId) {
+      if (telegramId && session.mode === 'subscription') {
         const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
         const telegramInviteLink = 'https://t.me/+HGRgldHTRlxjMThh';
         const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${telegramInviteLink}`;
@@ -115,7 +114,7 @@ export default async function handler(req, res) {
         }
       }
 
-      console.log('Subscription saved to Firestore:', session);
+      console.log('Order saved to Firestore:', session);
     }
 
     return res.status(200).json({ received: true });

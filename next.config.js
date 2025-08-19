@@ -1,3 +1,5 @@
+// next.config.js
+const withTM = require('next-transpile-modules')(['gsap']);
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
   options: {
@@ -7,12 +9,11 @@ const withMDX = require('@next/mdx')({
 });
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig = withTM({
   pageExtensions: ['js', 'jsx', 'mdx', 'ts', 'tsx'],
   reactStrictMode: true,
   images: {
     domains: ['manyagi.net', 'images.unsplash.com', 'myfxbook.com', 'youtube.com'],
-    // Removed unoptimized: true (not needed without static export; enables optimization)
   },
   async headers() {
     return [
@@ -25,7 +26,9 @@ const nextConfig = {
       },
     ];
   },
-  // Removed output: 'export' to enable dynamic features (APIs, SSR) on Netlify
-};
+  experimental: {
+    esmExternals: 'loose',
+  },
+});
 
 module.exports = withMDX(nextConfig);

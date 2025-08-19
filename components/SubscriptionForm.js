@@ -1,3 +1,4 @@
+// components/SubscriptionForm.js
 const SubscriptionForm = ({ formId, uid, title, description, includeTelegramId = false }) => {
   return (
     <div aria-labelledby="form-title" className="space-y-4 glass p-4 rounded">

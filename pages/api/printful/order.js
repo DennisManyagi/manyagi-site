@@ -1,3 +1,4 @@
+// pages/api/printful/order.js
 import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
@@ -36,10 +37,6 @@ export default async function handler(req, res) {
     if (data.error) {
       throw new Error(data.error.message);
     }
-
-    // Save to Firestore (optional, for tracking)
-    // const db = admin.firestore();
-    // await db.collection('orders').add({ printfulOrderId: data.result.id, items, customer });
 
     res.status(200).json({ orderId: data.result.id });
   } catch (error) {

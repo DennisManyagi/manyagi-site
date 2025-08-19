@@ -1,16 +1,29 @@
-import { motion } from 'framer-motion';
+// components/Hero.js
+import { motion, useRef, useEffect } from 'react';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
-import { useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
+  const sectionRef = useRef(null);
+
   useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
-    gsap.fromTo('.hero-content', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.hero-section', start: 'top 80%' } });
-    // Particles.js setup remains
     if (typeof window !== 'undefined') {
+      import('gsap').then(({ gsap }) => {
+        import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
+          gsap.registerPlugin(ScrollTrigger);
+          gsap.fromTo(
+            '.hero-content',
+            { opacity: 0, y: 50 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: 1,
+              ease: 'power3.out',
+              scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+            }
+          );
+        });
+      });
       import('particles.js').then(({ default: particlesJS }) => {
         particlesJS('particles-js', {
           particles: {
@@ -31,6 +44,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
 
   return (
     <motion.section
+      ref={sectionRef}
       className="relative h-screen flex items-center justify-center overflow-hidden hero-section gradient-bg"
       aria-labelledby="hero-title"
     >

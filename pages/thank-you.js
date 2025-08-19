@@ -1,3 +1,4 @@
+// pages/thank-you.js
 import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
@@ -76,4 +77,4 @@ export default function ThankYou() {
       <Recommender />
     </>
   );
-}
+};

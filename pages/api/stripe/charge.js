@@ -1,3 +1,4 @@
+// pages/api/stripe/charge.js
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import Stripe from 'stripe';

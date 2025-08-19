@@ -1,3 +1,4 @@
+// pages/_document.js
 import { Html, Head, Main, NextScript } from 'next/document';
 
 export default function Document() {
@@ -19,12 +20,12 @@ export default function Document() {
               "logo": "https://manyagi.net/images/logo.png",
               "description": "Multibillion-dollar conglomerate spanning Publishing, Designs, Capital, Tech, and Media.",
               "sameAs": [
-                "https://instagram.com/manyagi",
-                "https://tiktok.com/@manyagi",
-                "https://youtube.com/@manyagi_media",
-                "https://twitter.com/manyagi",
+                "https://instagram.com/manyagi.official",
+                "https://tiktok.com/@manyagi.official",
+                "https://youtube.com/@ManyagiOfficial",
+                "https://twitter.com/ManyagiOfficial",
                 "https://linkedin.com/company/manyagi",
-                "https://pinterest.com/manyagi"
+                "https://pinterest.com/ManyagiOfficial"
               ]
             }
           `}

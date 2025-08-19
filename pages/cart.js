@@ -1,3 +1,4 @@
+// pages/cart.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useSelector, useDispatch } from 'react-redux';
@@ -128,7 +129,6 @@ export default function Cart() {
             <div className="max-w-md mx-auto glass p-4 rounded">
               <h2 className="text-2xl font-bold mb-4 kinetic">Shipping Details</h2>
               <form className="space-y-4">
-                {/* Inputs with ARIA labels */}
                 <div>
                   <label htmlFor="name" className="block text-sm mb-1">
                     Full Name *
@@ -143,7 +143,76 @@ export default function Cart() {
                     required
                   />
                 </div>
-                {/* ... other inputs similar ... */}
+                <div>
+                  <label htmlFor="address" className="block text-sm mb-1">
+                    Address *
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    value={customerDetails.address}
+                    onChange={handleInputChange}
+                    className="border p-2 w-full rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="city" className="block text-sm mb-1">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={customerDetails.city}
+                    onChange={handleInputChange}
+                    className="border p-2 w-full rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="state" className="block text-sm mb-1">
+                    State *
+                  </label>
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={customerDetails.state}
+                    onChange={handleInputChange}
+                    className="border p-2 w-full rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="country" className="block text-sm mb-1">
+                    Country *
+                  </label>
+                  <input
+                    type="text"
+                    id="country"
+                    name="country"
+                    value={customerDetails.country}
+                    onChange={handleInputChange}
+                    className="border p-2 w-full rounded"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="zip" className="block text-sm mb-1">
+                    Zip Code *
+                  </label>
+                  <input
+                    type="text"
+                    id="zip"
+                    name="zip"
+                    value={customerDetails.zip}
+                    onChange={handleInputChange}
+                    className="border p-2 w-full rounded"
+                    required
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleCheckout}
@@ -178,4 +247,4 @@ export default function Cart() {
       <Recommender />
     </>
   );
-}
+};

@@ -1,3 +1,4 @@
+// pages/about.js
 import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
@@ -48,8 +49,10 @@ export default function About() {
           <li>Integrity: Transparent signals, fair practices.</li>
           <li>Community: Empower via apps and stories.</li>
         </ul>
+        <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Cohesive Vision with Website</h3>
+        <p className="mb-4">Manyagi is a unified ecosystem where storytelling from Publishing inspires Designs and Media, fuels Capital's insights, and powers Tech's tools. The website mirrors this: Home introduces divisions, each page deep-dives with cross-links (e.g., Publishing to Designs for merch), Hero sections align with vision themes (legacy, innovation), and footer dropdowns connect social pages. Content is purposeful—excerpts, signals, demos—to drive engagement and sales, scaling to multibillion status through IP cross-promotion like Disney.</p>
       </section>
       <Recommender />
     </>
   );
-}
+};

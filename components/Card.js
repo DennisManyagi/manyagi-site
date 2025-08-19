@@ -1,3 +1,4 @@
+// components/Card.js
 import { motion } from 'framer-motion';
 import { Parallax } from 'react-scroll-parallax';
 import { gsap } from 'gsap';

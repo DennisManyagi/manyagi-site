@@ -1,3 +1,4 @@
+// pages/coming-soon.js
 import Head from 'next/head';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
@@ -29,4 +30,4 @@ export default function ComingSoon() {
       <Recommender />
     </>
   );
-}
+};

@@ -30,13 +30,14 @@ export default function Publishing() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
+        className="division-publishing"
         kicker="Books & Poetry"
         title="Manyagi Publishing"
         lead="Two novels. A poetry collection. A growing universe: Legacy of the Hidden Clans leads the charge."
         carouselImages={['/images/book-carousel-1.webp', '/images/book-carousel-2.webp', '/images/book-carousel-3.webp', '/images/book-carousel-4.webp']}
       >
-        <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Read Chapter 1 (PDF)</Link>
-        <Link href="#join" className="btn ghost">Get updates</Link>
+        <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn btn-publishing">Read Chapter 1 (PDF)</Link>
+        <Link href="#join" className="btn btn-publishing ghost">Get updates</Link>
       </Hero>
       <section className="bento-grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
         <Card image="/images/legacy-chapter-1.webp" alt="Legacy Book" title="Legacy of the Hidden Clans" description="A cinematic saga of power, loyalty, and the unseen forces that bind — Book 1 now in late draft." category="publishing">
@@ -45,18 +46,19 @@ export default function Publishing() {
             <li>Cover reveal soon</li>
             <li>Audiobook chapters rolling out via Media</li>
           </ul>
-          <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Download Chapter 1</Link>
-          <button onClick={handleBundle} className="btn mt-2">Buy with Free Merch</button>
-          <Link href="https://www.amazon.com/dp/[BOOK_ASIN]" className="btn mt-2">Buy eBook on Amazon</Link>
-          <Link href="https://www.audible.com/pd/[AUDIO_ASIN]" className="btn mt-2">Listen on Audible</Link>
+          <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn btn-publishing">Download Chapter 1</Link>
+          <button onClick={handleBundle} className="btn btn-publishing mt-2">Buy with Free Merch</button>
+          <Link href="https://www.amazon.com/dp/[BOOK_ASIN]" className="btn btn-publishing mt-2">Buy eBook on Amazon</Link>
+          <Link href="https://www.audible.com/pd/[AUDIO_ASIN]" className="btn btn-publishing mt-2">Listen on Audible</Link>
           <p className="mt-4 text-muted text-sm">Inspired? Check <Link href="/designs">Designs</Link> for merch or <Link href="/media">Media</Link> for narrations.</p>
         </Card>
-        <Card image="/images/author-portrait.webp" alt="Author Portrait" title="True Heart Poetry" description="Emotional poetry collection by D.N. Manyagi, available now." category="publishing">
-          <Link href="https://www.amazon.com/dp/[POETRY_ASIN]" className="btn">Buy Poetry eBook</Link>
+        <Card image="/images/author-portrait.webp" alt="True Heart Poetry" title="True Heart" description="Emotional poetry collection by D.N. Manyagi, available now." category="publishing">
+          <Link href="https://www.amazon.com/dp/[POETRY_ASIN]" className="btn btn-publishing">Buy Poetry eBook</Link>
         </Card>
       </section>
       <section className="division-desc prose max-w-3xl mx-auto text-gray-800">
         <h2 className="text-3xl font-bold mb-6 kinetic">Manyagi Publishing: Stories That Inspire</h2>
+        <p className="mb-4">Manyagi Publishing crafts compelling narratives that blend fantasy with real-world themes, empowering readers through imagination and insight. Our books and poetry explore legacy and hidden strengths, serving as the foundation for the entire Manyagi ecosystem. Like Penguin Random House, we prioritize quality and diversity in storytelling. (Added: Generic overview from web search on 'publishing company description'; intention: Establish core IP role in vision, goal to attract readers and cross-sell.)</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Overview</h3>
         <p className="mb-4">Manyagi Publishing is the heart of our empire, crafting immersive narratives in books, poetry, eBooks, and audiobooks. Like HarperCollins, we focus on diverse, inspirational stories that blend fantasy with real-world themes. Our flagship "Legacy of the Hidden Clans" explores power and loyalty, while "Echoes of the Ancestors" delves into heritage. Poetry collections like "True Heart" offer emotional depth.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Products/Services</h3>
@@ -64,12 +66,12 @@ export default function Publishing() {
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Why Choose Us</h3>
         <p className="mb-4">Unique fantasy worlds, high-quality production, community focus. Readers love the depth and visuals—pair with signals tutorials in Capital for wealth-building stories.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Testimonials</h3>
-        <p className="mb-4">"Captivating worlds!" - Reader A. "Emotional poetry!" - Reader B.</p>
-        <p className="mt-6"><Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" className="btn">Download Free Chapter</Link> | <Link href="https://www.amazon.com/dp/[BOOK_ASIN]" className="btn">Buy eBook on Amazon</Link></p>
+        <p className="mb-4">"Captivating worlds!" - Reader A. "Emotional poetry!" - Reader B. (Added: Generic testimonials from web search on 'book reviews'; intention: Encourage purchases, align with goal of IP growth.)</p>
+        <p className="mt-6"><Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" className="btn btn-publishing">Download Free Chapter</Link> | <Link href="https://www.amazon.com/dp/[BOOK_ASIN]" className="btn btn-publishing">Buy eBook on Amazon</Link></p>
       </section>
       <aside className="social-widget mt-8 max-w-3xl mx-auto glass p-4 rounded">
-        <h3 className="text-xl mb-4 kinetic">Latest from @manyagi_publishing</h3>
-        <a className="twitter-timeline" data-height="400" href="https://twitter.com/manyagi_publishing?ref_src=twsrc%5Etfw">Tweets by manyagi_publishing</a>
+        <h3 className="text-xl mb-4 kinetic">Latest from @ManyagiPublishing</h3>
+        <a className="twitter-timeline" data-height="400" href="https://twitter.com/ManyagiPublishing?ref_src=twsrc%5Etfw">Tweets by ManyagiPublishing</a>
         <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
       </aside>
       {showModal && (
@@ -77,12 +79,12 @@ export default function Publishing() {
           <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
             <h2 className="kinetic">Added to Cart!</h2>
             <p>Legacy Book + Hidden Clans Tee added. Proceed to checkout?</p>
-            <Link href="/cart" className="btn">Go to Cart</Link>
-            <button onClick={() => setShowModal(false)} className="btn ghost">Continue Shopping</button>
+            <Link href="/cart" className="btn btn-publishing">Go to Cart</Link>
+            <button onClick={() => setShowModal(false)} className="btn btn-publishing ghost">Continue Shopping</button>
           </div>
         </div>
       )}
       <Recommender />
     </>
   );
-}
+};

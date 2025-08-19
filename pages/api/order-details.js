@@ -1,3 +1,4 @@
+// pages/api/order-details.js
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 

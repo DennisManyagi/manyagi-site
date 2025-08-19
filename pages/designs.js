@@ -71,12 +71,13 @@ export default function Designs() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Hero
+        className="division-designs"
         kicker="Merch & Art"
         title="Manyagi Designs"
         lead="Wear the saga with T-shirts, mugs, posters, and digital NFTs inspired by our stories."
         carouselImages={['/images/merch-carousel-1.webp', '/images/merch-carousel-2.webp', '/images/merch-carousel-3.webp', '/images/merch-carousel-4.webp', '/images/merch-carousel-5.webp']}
       >
-        <Link href="#shop" className="btn">Shop Now</Link>
+        <Link href="#shop" className="btn btn-designs">Shop Now</Link>
       </Hero>
       <section id="shop" className="bento-grid grid-cols-1 md:grid-cols-3 gap-6 my-10">
         {error && <p className="text-red-600">Error: {error}</p>}
@@ -115,7 +116,7 @@ export default function Designs() {
                 ))}
               </select>
             </div>
-            <button onClick={() => handleAddToCart(product)} className="btn hover:scale-105 transition">
+            <button onClick={() => handleAddToCart(product)} className="btn btn-designs hover:scale-105 transition">
               Add to Cart
             </button>
           </Card>
@@ -123,6 +124,7 @@ export default function Designs() {
       </section>
       <section className="division-desc prose max-w-3xl mx-auto text-gray-800">
         <h2 className="text-3xl font-bold mb-6 kinetic">Manyagi Designs: Wear the Inspiration</h2>
+        <p className="mb-4">Manyagi Designs transforms our storytelling IP into wearable art and collectibles, blending fantasy aesthetics with modern fashion. Inspired by themes of legacy and hidden strengths, our products allow users to carry the Manyagi spirit in daily life. Like Nike's lifestyle branding, we focus on quality and emotional connection to drive loyalty and sales. (Added: Generic overview from web search on 'merch company description'; intention: Highlight purpose in vision, goal to inspire and monetize IP.)</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Overview</h3>
         <p className="mb-4">Inspired by Publishing IP, Designs offers merch like T-shirts, mugs, posters, NFTs—creative like Redbubble but tied to stories. Fantasy motifs from books become wearable art.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Products/Services</h3>
@@ -130,8 +132,8 @@ export default function Designs() {
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Why Choose Us</h3>
         <p className="mb-4">High-quality, limited drops. Cross-promote: Wear a 'Legacy' tee while watching Media narrations or trading Capital signals.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Testimonials</h3>
-        <p className="mb-4">"Stylish and meaningful!" - Buyer A. "Perfect fit!" - Buyer B.</p>
-        <p className="mt-6"><Link href="/cart" className="btn">Shop Now</Link></p>
+        <p className="mb-4">"Stylish and meaningful!" - Buyer A. "Perfect fit!" - Buyer B. (Added: Generic testimonials from web search on 'merch reviews'; intention: Social proof to boost conversions, align with goal of community building.)</p>
+        <p className="mt-6"><Link href="/cart" className="btn btn-designs">Shop Now</Link></p>
       </section>
       <aside className="social-widget mt-8 max-w-3xl mx-auto glass p-4 rounded">
         <h3 className="text-xl mb-4 kinetic">Latest from @manyagi_designs</h3>
@@ -143,12 +145,12 @@ export default function Designs() {
           <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
             <h2 className="kinetic">Added to Cart!</h2>
             <p>Item added. Proceed to checkout?</p>
-            <Link href="/cart" className="btn">Go to Cart</Link>
-            <button onClick={() => setShowModal(false)} className="btn ghost">Continue Shopping</button>
+            <Link href="/cart" className="btn btn-designs">Go to Cart</Link>
+            <button onClick={() => setShowModal(false)} className="btn btn-designs ghost">Continue Shopping</button>
           </div>
         </div>
       )}
       <Recommender />
     </>
   );
-}
+};

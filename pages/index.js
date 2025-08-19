@@ -1,3 +1,4 @@
+// pages/index.js
 import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
@@ -40,11 +41,11 @@ export default function Home() {
         </Card>
       </section>
       <aside className="social-widget mt-8 max-w-3xl mx-auto glass p-4 rounded">
-        <h3 className="text-xl mb-4 kinetic">Latest from @manyagi</h3>
-        <a className="twitter-timeline" data-height="400" href="https://twitter.com/manyagi?ref_src=twsrc%5Etfw">Tweets by manyagi</a>
+        <h3 className="text-xl mb-4 kinetic">Latest from @ManyagiOfficial</h3>
+        <a className="twitter-timeline" data-height="400" href="https://twitter.com/ManyagiOfficial?ref_src=twsrc%5Etfw">Tweets by ManyagiOfficial</a>
         <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
       </aside>
       <Recommender />
     </>
   );
-}
+};

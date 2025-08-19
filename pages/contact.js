@@ -1,3 +1,4 @@
+// pages/contact.js
 import Head from 'next/head';
 import Hero from '../components/Hero';
 import Card from '../components/Card';

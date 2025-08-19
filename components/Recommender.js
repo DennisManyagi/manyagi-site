@@ -1,3 +1,4 @@
+// components/Recommender.js
 import { useEffect, useState } from 'react';
 
 const Recommender = () => {

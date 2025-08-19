@@ -1,3 +1,4 @@
+// components/Cart.js
 import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart } from '../lib/cartSlice';
 import Link from 'next/link';

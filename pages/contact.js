@@ -1,18 +1,18 @@
 import Head from 'next/head';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import Link from 'next/link';
 import { useForm } from '@formspree/react';
+import Recommender from '../components/Recommender';
 
 export default function Contact() {
   const [state, handleSubmit] = useForm('mldlvqnj');
 
   if (state.succeeded) {
     return (
-      <div className="my-10 text-center">
-        <h2 className="text-3xl mb-4 text-black">Thank You!</h2>
+      <div className="my-10 text-center glass p-4 rounded">
+        <h2 className="text-3xl mb-4 text-black kinetic">Thank You!</h2>
         <p className="text-gray-600 mb-4">Your message has been sent. We’ll respond within 48 hours.</p>
-        <Link href="/" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400">Return to Home</Link>
+        <Link href="/" className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 hover:scale-105 transition">Return to Home</Link>
       </div>
     );
   }
@@ -34,9 +34,9 @@ export default function Contact() {
         lead="For business inquiries, partnerships, or media: email info@manyagi.net or use the form below."
       />
       <section className="my-10">
-        <Card>
+        <Card className="glass">
           <form onSubmit={handleSubmit} aria-label="Contact form">
-            <input type="text" name="_gotcha" style={{ display: 'none' }} />
+            <input type="text" name="_gotcha" style={{ display: 'none' } } />
             <label htmlFor="name" className="sr-only">Your name</label>
             <input
               id="name"
@@ -66,7 +66,7 @@ export default function Contact() {
             ></textarea>
             <button
               type="submit"
-              className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 w-full"
+              className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 hover:scale-105 transition w-full"
               disabled={state.submitting}
             >
               Send Message
@@ -74,6 +74,7 @@ export default function Contact() {
           </form>
         </Card>
       </section>
+      <Recommender />
     </>
   );
 }

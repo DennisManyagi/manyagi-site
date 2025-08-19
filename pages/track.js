@@ -11,11 +11,10 @@ export default function Track() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Auto-fill order ID from query parameter and fetch details
   useEffect(() => {
     if (order_id) {
       setOrderId(order_id);
-      handleTrackOrder({ preventDefault: () => {} }); // Simulate form submission
+      handleTrackOrder({ preventDefault: () => {} });
     }
   }, [order_id]);
 
@@ -53,8 +52,8 @@ export default function Track() {
         <meta property="og:url" content="https://manyagi.net/track" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
-      <section className="container mx-auto px-4 py-10">
-        <h1 className="text-4xl font-bold mb-6">Track Your Order</h1>
+      <section className="container mx-auto px-4 py-10 glass">
+        <h1 className="text-4xl font-bold mb-6 kinetic">Track Your Order</h1>
         <p className="mb-6">Enter your order ID (from your confirmation email) to check the status of your purchase.</p>
         <form className="max-w-md mx-auto space-y-4" onSubmit={handleTrackOrder}>
           <div>
@@ -73,68 +72,69 @@ export default function Track() {
           </div>
           <button
             type="submit"
-            className="btn w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+            className="btn w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 hover:scale-105 transition"
           >
             Track Order
           </button>
         </form>
-        {showModal && (
-          <div className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
-              <h2 className="text-xl font-bold mb-4">{error ? 'Error' : 'Order Status'}</h2>
-              {error ? (
-                <p className="mb-4">{error}</p>
-              ) : (
-                <div className="mb-4">
-                  <p>
-                    <strong>Status:</strong> {orderDetails?.status || 'Unknown'}
-                  </p>
-                  {orderDetails?.items && (
-                    <div className="mt-2">
-                      <strong>Items:</strong>
-                      <ul className="list-disc pl-5">
-                        {orderDetails.items.map((item, index) => (
-                          <li key={index}>
-                            {item.name} (x{item.quantity})
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {orderDetails?.shipment && (
-                    <div className="mt-2">
-                      <strong>Shipping:</strong>
-                      <p>Carrier: {orderDetails.shipment.carrier}</p>
-                      <p>Tracking Number: {orderDetails.shipment.tracking_number}</p>
-                      <p>
-                        <a
-                          href={orderDetails.shipment.tracking_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Track Shipment
-                        </a>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-              <button
-                onClick={() => setShowModal(false)}
-                className="btn ghost mt-2 text-gray-600 border border-gray-300 py-2 px-4 rounded hover:bg-gray-100"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-        <p className="mt-6 text-center">
-          <Link href="/designs" className="text-blue-600 hover:underline">
-            Continue Shopping
-          </Link>
-        </p>
       </section>
+      {showModal && (
+        <div className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center glass">
+          <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
+            <h2 className="text-xl font-bold mb-4 kinetic">{error ? 'Error' : 'Order Status'}</h2>
+            {error ? (
+              <p className="mb-4">{error}</p>
+            ) : (
+              <div className="mb-4">
+                <p>
+                  <strong>Status:</strong> {orderDetails?.status || 'Unknown'}
+                </p>
+                {orderDetails?.items && (
+                  <div className="mt-2">
+                    <strong>Items:</strong>
+                    <ul className="list-disc pl-5">
+                      {orderDetails.items.map((item, index) => (
+                        <li key={index}>
+                          {item.name} (x{item.quantity})
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {orderDetails?.shipment && (
+                  <div className="mt-2">
+                    <strong>Shipping:</strong>
+                    <p>Carrier: {orderDetails.shipment.carrier}</p>
+                    <p>Tracking Number: {orderDetails.shipment.tracking_number}</p>
+                    <p>
+                      <a
+                        href={orderDetails.shipment.tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline hover:scale-105 transition"
+                      >
+                        Track Shipment
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => setShowModal(false)}
+              className="btn ghost mt-2 text-gray-600 border border-gray-300 py-2 px-4 rounded hover:bg-gray-100 hover:scale-105 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      <p className="mt-6 text-center">
+        <Link href="/designs" className="text-blue-600 hover:underline hover:scale-105 transition">
+          Continue Shopping
+        </Link>
+      </p>
+      <Recommender />
     </>
   );
 }

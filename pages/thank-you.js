@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Hero from '../components/Hero';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import Recommender from '../components/Recommender';
 
 export default function ThankYou() {
   const router = useRouter();
@@ -56,37 +57,23 @@ export default function ThankYou() {
         }
       >
         <div className="flex flex-col items-center gap-4">
-          <Link href="/designs" className="btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">
+          <Link href="/designs" className="btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 hover:scale-105 transition">
             Continue Shopping
           </Link>
           <div className="flex gap-4">
-            <a
-              href={twitterUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn bg-blue-400 text-white py-2 px-4 rounded hover:bg-blue-500"
-            >
+            <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="btn bg-blue-400 text-white py-2 px-4 rounded hover:bg-blue-500 hover:scale-105 transition">
               Share on Twitter/X
             </a>
-            <a
-              href={facebookUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-            >
+            <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 hover:scale-105 transition">
               Share on Facebook
             </a>
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn bg-pink-500 text-white py-2 px-4 rounded hover:bg-pink-600"
-            >
+            <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="btn bg-pink-500 text-white py-2 px-4 rounded hover:bg-pink-600 hover:scale-105 transition">
               Follow on Instagram
             </a>
           </div>
         </div>
       </Hero>
+      <Recommender />
     </>
   );
 }

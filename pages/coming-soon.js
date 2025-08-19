@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
+import Recommender from '../components/Recommender';
 
 export default function ComingSoon() {
   return (
@@ -25,6 +26,7 @@ export default function ComingSoon() {
           <SubscriptionForm formId="8427635" uid="db12290300" title="Get Notified" description="Be the first to know when it's live." />
         </Card>
       </section>
+      <Recommender />
     </>
   );
 }

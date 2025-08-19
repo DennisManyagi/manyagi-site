@@ -8,8 +8,9 @@ import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Link from 'next/link';
+import Recommender from '../components/Recommender';
 
-const components = { h2: (props) => <h2 className="text-2xl mt-6 mb-2" {...props} />, p: (props) => <p className="text-muted mb-4" {...props} /> };
+const components = { h2: (props) => <h2 className="text-2xl mt-6 mb-2 kinetic" {...props} />, p: (props) => <p className="text-muted mb-4" {...props} /> };
 
 export default function Blog({ posts }) {
   return (
@@ -30,10 +31,10 @@ export default function Blog({ posts }) {
       >
         <Link href="#subscribe" className="btn mt-4 block text-center">Subscribe to Blog</Link>
       </Hero>
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+      <section className="bento-grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
         {posts.map((post) => (
           <Card key={post.slug}>
-            <h3 className="text-2xl mb-2">{post.frontMatter.title}</h3>
+            <h3 className="text-2xl mb-2 kinetic">{post.frontMatter.title}</h3>
             <p className="text-muted text-sm mb-4">{post.frontMatter.date}</p>
             <MDXRemote {...post.source} components={components} />
           </Card>
@@ -44,6 +45,7 @@ export default function Blog({ posts }) {
           <SubscriptionForm formId="8432549" uid="877716573d" title="Get new posts via email" description="Stay updated with our latest blog entries." />
         </Card>
       </section>
+      <Recommender />
     </>
   );
 }

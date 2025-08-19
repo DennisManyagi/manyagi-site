@@ -19,6 +19,30 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-N05K791ESR');
+
+    // Custom cursor
+    const cursor = document.createElement('div');
+    cursor.className = 'cursor';
+    document.body.appendChild(cursor);
+
+    const moveCursor = (e) => {
+      cursor.style.left = `${e.clientX}px`;
+      cursor.style.top = `${e.clientY}px`;
+    };
+
+    const addHover = () => cursor.classList.add('cursor--hover');
+    const removeHover = () => cursor.classList.remove('cursor--hover');
+
+    document.addEventListener('mousemove', moveCursor);
+    document.querySelectorAll('a, button, .card').forEach((el) => {
+      el.addEventListener('mouseenter', addHover);
+      el.addEventListener('mouseleave', removeHover);
+    });
+
+    return () => {
+      document.removeEventListener('mousemove', moveCursor);
+      document.body.removeChild(cursor);
+    };
   }, []);
 
   return (
@@ -27,7 +51,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
         <ParallaxProvider>
           <div className={store.getState().darkMode.isDark ? 'dark' : ''}>
             <Header />
-            <main className="container mx-auto px-4 py-8 min-h-screen bg-white text-black">
+            <main className="container mx-auto px-4 py-8 min-h-screen bg-white text-black gradient-bg">
               <Component {...pageProps} />
             </main>
             <Footer />

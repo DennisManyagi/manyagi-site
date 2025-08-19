@@ -21,7 +21,6 @@ const CheckoutForm = ({ product, amount }) => {
       });
       const data = await response.json();
       if (data.success) {
-        // Handle success
         alert('Payment successful!');
       } else {
         alert('Payment failed.');
@@ -32,11 +31,11 @@ const CheckoutForm = ({ product, amount }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} aria-label={`Checkout for ${product}`}>
+    <form onSubmit={handleSubmit} aria-label={`Checkout for ${product}`} className="glass p-4 rounded">
       <div className="mb-4 p-3 border border-gray-300 rounded bg-white">
         <CardElement options={{ style: { base: { color: '#000' } } }} />
       </div>
-      <button className="w-full py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400" type="submit">Pay ${(amount / 100).toFixed(2)} for {product}</button>
+      <button className="w-full py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400 hover:scale-105 transition" type="submit">Pay ${(amount / 100).toFixed(2)} for {product}</button>
     </form>
   );
 };

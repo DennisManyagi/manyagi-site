@@ -17,12 +17,20 @@ export default function Document() {
               "name": "Manyagi",
               "url": "https://manyagi.net",
               "logo": "https://manyagi.net/images/logo.png",
-              "description": "Multibillion-dollar conglomerate spanning Publishing, Designs, Capital, Tech, and Media."
+              "description": "Multibillion-dollar conglomerate spanning Publishing, Designs, Capital, Tech, and Media.",
+              "sameAs": [
+                "https://instagram.com/manyagi",
+                "https://tiktok.com/@manyagi",
+                "https://youtube.com/@manyagi_media",
+                "https://twitter.com/manyagi",
+                "https://linkedin.com/company/manyagi",
+                "https://pinterest.com/manyagi"
+              ]
             }
           `}
         </script>
       </Head>
-      <body className="bg-white text-black">
+      <body className="bg-white text-black custom-cursor">
         <Main />
         <NextScript />
       </body>

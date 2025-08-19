@@ -1,7 +1,7 @@
 const SubscriptionForm = ({ formId, uid, title, description, includeTelegramId = false }) => {
   return (
-    <div aria-labelledby="form-title" className="space-y-4">
-      <h3 id="form-title" className="text-2xl font-bold text-black">{title}</h3>
+    <div aria-labelledby="form-title" className="space-y-4 glass p-4 rounded">
+      <h3 id="form-title" className="text-2xl font-bold text-black kinetic">{title}</h3>
       <p className="text-gray-600 text-sm">{description}</p>
       <script async src="https://f.convertkit.com/ckjs/ck.5.js"></script>
       <form
@@ -36,7 +36,7 @@ const SubscriptionForm = ({ formId, uid, title, description, includeTelegramId =
           />
         )}
         <button
-          className="w-full py-3 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400"
+          className="w-full py-3 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400 hover:scale-105 transition"
           type="submit"
         >
           Subscribe

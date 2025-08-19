@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Recommender from '../components/Recommender';
 
 export default function Track() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function Track() {
       </Head>
       <section className="container mx-auto px-4 py-10 glass">
         <h1 className="text-4xl font-bold mb-6 kinetic">Track Your Order</h1>
-        <p className="mb-6">Enter your order ID (from your confirmation email) to check the status of your purchase.</p>
+        <p className="mb-6 text-center">Enter your order ID (from your confirmation email) to check the status of your purchase.</p>
         <form className="max-w-md mx-auto space-y-4" onSubmit={handleTrackOrder}>
           <div>
             <label htmlFor="orderId" className="block text-sm mb-1">

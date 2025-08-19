@@ -1,5 +1,6 @@
 // components/Hero.js
-import { motion, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
 

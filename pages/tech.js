@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import SubscriptionForm from '../components/SubscriptionForm'; // Added import
 
 export default function Tech() {
   return (

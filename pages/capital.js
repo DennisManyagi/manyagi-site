@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import SubscriptionForm from '../components/SubscriptionForm'; // Added import
 import { useState } from 'react';
 
 export default function Capital() {
@@ -96,7 +97,7 @@ export default function Capital() {
       </aside>
       <section id="join" className="my-10">
         <Card>
-          <SubscriptionForm formId="8427635" uid="db12290300" title="Join Capital Waitlist" description="Get updates on Crypto and Stock signals." />
+          <SubscriptionForm formId="8427635" uid="db12290300" title="Join Capital Waitlist" description="Get updates on Crypto and Stock signals." includeTelegramId={true} /> {/* Added includeTelegramId for cohesion with signals */}
         </Card>
       </section>
     </>

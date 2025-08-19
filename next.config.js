@@ -1,4 +1,3 @@
-// next.config.js (full updated version)
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
   options: {
@@ -13,7 +12,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: ['manyagi.net', 'images.unsplash.com', 'myfxbook.com', 'youtube.com'],
-    unoptimized: true, // Add this to disable Image Optimization for static export
+    // Removed unoptimized: true (not needed without static export; enables optimization)
   },
   async headers() {
     return [
@@ -26,7 +25,7 @@ const nextConfig = {
       },
     ];
   },
-  output: 'export', // Already added for static export
+  // Removed output: 'export' to enable dynamic features (APIs, SSR) on Netlify
 };
 
 module.exports = withMDX(nextConfig);

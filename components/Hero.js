@@ -11,10 +11,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // GSAP: Register plugin and animate (synchronous)
       gsap.registerPlugin(ScrollTrigger);
-
-      // Null-check for the target element
       const heroContent = document.querySelector('.hero-content');
       if (heroContent) {
         gsap.fromTo(
@@ -32,20 +29,25 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
         console.warn('Hero content element not found for GSAP animation.');
       }
 
-      // Dynamically import and load tsParticles to avoid SSR issues
-      import("tsparticles-engine").then(({ tsParticles }) => {
-        tsParticles.load('particles-js', {
-          particles: {
-            number: { value: 50 },
-            color: { value: '#FFD700' },
-            shape: { type: 'circle' },
-            opacity: { value: 0.5 },
-            size: { value: 3 },
-            line_linked: { enable: false },
-            move: { speed: 1 },
+      import('@tsparticles/engine').then(({ tsParticles }) => {
+        tsParticles.load({
+          id: 'particles-js',
+          options: {
+            particles: {
+              number: { value: 50 },
+              color: { value: '#FFD700' },
+              shape: { type: 'circle' },
+              opacity: { value: 0.5 },
+              size: { value: 3 },
+              links: { enable: false },
+              move: { speed: 1 },
+            },
+            interactivity: {
+              detectsOn: 'canvas',
+              events: { onHover: { enable: true, mode: 'bubble' } },
+            },
+            detectRetina: true,
           },
-          interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'bubble' } } },
-          retina_detect: true,
         });
       }).catch(err => console.error('Failed to load tsParticles:', err));
     }

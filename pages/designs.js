@@ -1,14 +1,15 @@
 // pages/designs.js
 import Head from 'next/head';
 import Link from 'next/link';
-import { useDispatch, useState } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { useState } from 'react'; // Fixed import: useState from 'react', not 'react-redux'
 import { addToCart } from '../lib/cartSlice';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 
 export default function Designs() {
   const dispatch = useDispatch();
-  const [showModal, setShowModal] = useState(false); // Fixed syntax error
+  const [showModal, setShowModal] = useState(false); // Corrected useState syntax from previous fix
 
   const handleAddToCart = (product) => {
     dispatch(addToCart(product));

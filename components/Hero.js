@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { useRef, useEffect } from 'react';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
-import { tsParticles } from 'tsparticles';
 
 const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
   const sectionRef = useRef(null);
@@ -32,19 +31,23 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
       } else {
         console.warn('Hero content element not found for GSAP animation.');
       }
-      tsParticles.load('particles-js', {
-        particles: {
-          number: { value: 50 },
-          color: { value: '#FFD700' },
-          shape: { type: 'circle' },
-          opacity: { value: 0.5 },
-          size: { value: 3 },
-          line_linked: { enable: false },
-          move: { speed: 1 },
-        },
-        interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'bubble' } } },
-        retina_detect: true,
-      });
+
+      // Dynamically import and load tsParticles to avoid SSR issues
+      import("tsparticles-engine").then(({ tsParticles }) => {
+        tsParticles.load('particles-js', {
+          particles: {
+            number: { value: 50 },
+            color: { value: '#FFD700' },
+            shape: { type: 'circle' },
+            opacity: { value: 0.5 },
+            size: { value: 3 },
+            line_linked: { enable: false },
+            move: { speed: 1 },
+          },
+          interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'bubble' } } },
+          retina_detect: true,
+        });
+      }).catch(err => console.error('Failed to load tsParticles:', err));
     }
   }, []);
 

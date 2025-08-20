@@ -1,5 +1,5 @@
 // next.config.js
-const withTM = require('next-transpile-modules')(['gsap']);
+const withTM = require('next-transpile-modules')(['gsap', 'tsparticles-engine']); // Add 'tsparticles-engine'
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
   options: {

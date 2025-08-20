@@ -12,7 +12,7 @@ export default function About() {
         <meta name="description" content="Learn about Manyagi’s mission, history, and divisions." />
         <meta property="og:title" content="About Manyagi — Our Vision" />
         <meta property="og:description" content="Learn about Manyagi’s mission, history, and divisions." />
-        <meta property="og:image" content="https://manyagi.net/images/og-about.jpg" />
+        <meta property="og:image" content="https://manyagi.net/images/og-about.webp" />
         <meta property="og:url" content="https://manyagi.net/about" />
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
@@ -23,7 +23,7 @@ export default function About() {
       />
       <section className="prose max-w-3xl mx-auto text-gray-800 bento-grid">
         <h2 className="text-3xl font-bold mb-6">About Manyagi</h2>
-        <p className="mb-4">Manyagi is a visionary conglomerate inspired by storytelling, innovation, and wealth-building. Founded in 2025 by D.N. Manyagi, we blend fantasy narratives with real-world solutions to empower individuals through creativity and opportunity. From humble beginnings with a single poetry book, we've grown into a multibillion-dollar empire spanning five divisions, drawing on themes of legacy, echoes, and hidden strengths.</p>
+        <p className="mb-4">Manyagi is a visionary conglomerate inspired by storytelling, innovation, and wealth-building. Founded in 2025 by D.N. Manyagi, we blend fantasy narratives with real-world solutions to empower individuals through creativity and opportunity. From humble beginnings with a single poetry book, we've grown into a business spanning five divisions, drawing on themes of legacy, echoes, and hidden strengths.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4">Our Vision</h3>
         <p className="mb-4">To create a unified ecosystem where stories inspire designs, fuel media content, drive financial insights, and power technological tools. Like Penguin Random House meets Nike, Bloomberg, Shopify, and Disney, we aim to scale IP across mediums for generational impact.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4">History and Milestones</h3>
@@ -41,8 +41,8 @@ export default function About() {
         <h3 className="text-2xl font-bold mt-6 mb-4">Future Goals</h3>
         <p className="mb-4">Become a multibillion conglomerate like Disney: IP films, global apps, ventures. Sustainability focus: Eco-merch, ethical signals.</p>
         <h3 className="text-2xl font-bold mt-6 mb-4">Team</h3>
-        <p className="mb-4">Led by D.N. Manyagi (Founder/CEO). [Add team member names/roles/photos as we grow.]</p>
-        <img src="/images/team-photo.jpg" alt="Team Photo" className="w-full rounded-lg mb-4" loading="lazy" />
+        <p className="mb-4">Led by D.N. Manyagi (Founder/CEO). </p>
+        <img src="/images/team-photo.webp" alt="Team Photo" className="w-full rounded-lg mb-4" loading="lazy" />
         <h3 className="text-2xl font-bold mt-6 mb-4">Values</h3>
         <ul className="list-disc pl-6 mb-4">
           <li>Innovation: Push boundaries in IP and tech.</li>

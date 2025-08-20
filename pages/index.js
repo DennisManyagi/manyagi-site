@@ -1,10 +1,7 @@
 // pages/index.js
 import Head from 'next/head';
 import Link from 'next/link';
-import Hero from '../components/Hero';
-import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
-import { motion } from 'framer-motion';
 import Recommender from '../components/Recommender';
 
 export default function Home() {
@@ -12,47 +9,33 @@ export default function Home() {
     <>
       <Head>
         <title>Manyagi — Innovation • IP • Commerce</title>
-        <meta name="description" content="Manyagi unifies Publishing, Designs, Capital, Tech, and Media. Join for drops, chapters, signals, and app launches." />
-        <meta property="og:title" content="Manyagi — Innovation • IP • Commerce" />
-        <meta property="og:description" content="Manyagi unifies Publishing, Designs, Capital, Tech, and Media. Join for drops, chapters, signals, and app launches." />
-        <meta property="og:image" content="https://manyagi.net/images/og-home.webp" />
-        <meta property="og:url" content="https://manyagi.net/" />
-        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="description" content="Manyagi unifies Publishing, Designs, Capital, Tech, and Media." />
       </Head>
-      <Hero
-        kicker="Manyagi Management"
-        title="Build. Publish. Design. Trade. Launch."
-        lead="One HQ powering books & poetry, fashion & art, trading signals, audio & film, and apps like Daito."
-        carouselImages={['/images/home-carousel-1.webp', '/images/home-carousel-2.webp', '/images/home-carousel-3.webp']}
-      >
-        <Link href="https://manyagi.net/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" target="_blank" rel="noopener noreferrer" className="btn">Join the list</Link>
-        <Link href="https://manyagi.net/publishing" className="btn ghost">Read Chapter 1</Link>
-      </Hero>
-      <section className="bento-grid grid-cols-1 md:grid-cols-3 gap-6 my-10">
-        <Card image="/images/legacy-chapter-1.webp" alt="Featured Publishing" title="Publishing" description="Two novels + poetry. Read the opening chapter and get updates." link="https://manyagi.net/publishing" category="publishing" />
-        <Card image="/images/mock-tee-1.webp" alt="Featured Designs" title="Designs" description="Wear our stories with T-shirts, mugs, and posters." link="https://manyagi.net/designs" category="designs" />
-        <Card image="/images/chart-hero.webp" alt="Featured Capital" title="Capital" description="Forex signals via bots. Crypto and stocks coming soon." link="https://manyagi.net/capital" category="capital" />
-        <Card image="/images/daito-screenshot.webp" alt="Featured Tech" title="Tech" description="Apps like Daito for buying, selling, and community." link="https://manyagi.net/tech" category="tech" />
-        <Card image="/images/og-media.webp" alt="Featured Media" title="Media" description="Videos, podcasts, and narrations across our universe." link="https://manyagi.net/media" category="media" />
-      </section>
-      <section className="my-10">
-        <h2 className="text-3xl font-bold mb-6 text-center">Cross-Promote Across Divisions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card title="From Publishing to Designs" description="Read Legacy, then shop inspired merch." link="https://manyagi.net/designs" />
-          <Card title="Media to Capital" description="Watch tutorials, subscribe to signals." link="https://manyagi.net/capital" />
-          <Card title="Tech to All" description="Download Daito to buy books/merch." link="https://manyagi.net/tech" />
+      <section className="hero relative h-96 flex items-center justify-center overflow-hidden bg-white">
+        <video autoPlay loop muted className="absolute inset-0 w-full h-full object-cover" src="/videos/hero-video.mp4" />
+        <div className="relative z-10 text-center text-black">
+          <h1 className="text-5xl font-bold mb-4">Explore our worlds</h1>
+          <p className="text-xl mb-8">One HQ powering books, fashion, trading, audio, and apps.</p>
         </div>
       </section>
-      <section id="subscribe" className="my-10">
-        <Card>
-          <SubscriptionForm formId="8427635" uid="db12290300" title="Get chapter 1 + drops + early access" description="Be the first to know about updates across all Manyagi divisions." />
-        </Card>
+      <section className="container mx-auto px-4 py-12 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="tile bg-gray-100 rounded p-4 text-center">
+          <img src="/images/publishing-tile.webp" alt="Publishing" className="w-full h-48 object-cover mb-4" />
+          <h2 className="text-2xl font-bold">Publishing</h2>
+          <p>Two novels + poetry. Read the opening chapter.</p>
+          <Link href="/publishing" className="btn bg-purple-600 text-white py-2 px-4 rounded mt-4">Explore</Link>
+        </div>
+        <div className="tile bg-gray-100 rounded p-4 text-center">
+          <img src="/images/designs-tile.webp" alt="Designs" className="w-full h-48 object-cover mb-4" />
+          <h2 className="text-2xl font-bold">Designs</h2>
+          <p>Wear our stories with T-shirts, mugs.</p>
+          <Link href="/designs" className="btn bg-purple-600 text-white py-2 px-4 rounded mt-4">Explore</Link>
+        </div>
+        {/* Repeat for Capital, Tech, Media */}
       </section>
-      <aside className="social-widget mt-8 max-w-3xl mx-auto glass p-4 rounded">
-        <h3 className="text-xl mb-4">Latest from @ManyagiOfficial</h3>
-        <a className="twitter-timeline" data-height="400" href="https://twitter.com/ManyagiOfficial?ref_src=twsrc%5Etfw" target="_blank" rel="noopener noreferrer">Tweets by ManyagiOfficial</a>
-        <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
-      </aside>
+      <section id="subscribe" className="container mx-auto px-4 py-12">
+        <SubscriptionForm formId="8427635" uid="db12290300" title="Get chapter 1 + drops + early access" description="Be the first to know about updates." />
+      </section>
       <Recommender />
     </>
   );

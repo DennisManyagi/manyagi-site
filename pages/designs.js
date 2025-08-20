@@ -1,3 +1,4 @@
+// pages/designs.js
 import Head from 'next/head';
 import Link from 'next/link';
 import Hero from '../components/Hero';
@@ -6,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
 import { useState, useEffect } from 'react';
 import Recommender from '../components/Recommender';
+import SubscriptionForm from '../components/SubscriptionForm';
 
 export default function Designs() {
   const dispatch = useDispatch();
@@ -122,34 +124,39 @@ export default function Designs() {
           </Card>
         ))}
       </section>
-      <section className="division-desc prose max-w-3xl mx-auto text-gray-800">
-        <h2 className="text-3xl font-bold mb-6 kinetic">Manyagi Designs: Wear the Inspiration</h2>
+      <section className="prose max-w-3xl mx-auto text-gray-800">
+        <h2 className="text-3xl font-bold mb-6">Manyagi Designs: Wear the Inspiration</h2>
         <p className="mb-4">Manyagi Designs transforms our storytelling IP into wearable art and collectibles, blending fantasy aesthetics with modern fashion. Inspired by themes of legacy and hidden strengths, our products allow users to carry the Manyagi spirit in daily life. Like Nike's lifestyle branding, we focus on quality and emotional connection to drive loyalty and sales. (Added: Generic overview from web search on 'merch company description'; intention: Highlight purpose in vision, goal to inspire and monetize IP.)</p>
-        <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Overview</h3>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Overview</h3>
         <p className="mb-4">Inspired by Publishing IP, Designs offers merch like T-shirts, mugs, posters, NFTs—creative like Redbubble but tied to stories. Fantasy motifs from books become wearable art.</p>
-        <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Products/Services</h3>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Products/Services</h3>
         <p className="mb-4">T-shirts ($29.99), mugs ($15.99), posters ($19.99), NFTs (OpenSea). Bundles with books. Global shipping via Printful.</p>
-        <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Why Choose Us</h3>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Why Choose Us</h3>
         <p className="mb-4">High-quality, limited drops. Cross-promote: Wear a 'Legacy' tee while watching Media narrations or trading Capital signals.</p>
-        <h3 className="text-2xl font-bold mt-6 mb-4 kinetic">Testimonials</h3>
+        <h3 className="text-2xl font-bold mt-6 mb-4">Testimonials</h3>
         <p className="mb-4">"Stylish and meaningful!" - Buyer A. "Perfect fit!" - Buyer B. (Added: Generic testimonials from web search on 'merch reviews'; intention: Social proof to boost conversions, align with goal of community building.)</p>
         <p className="mt-6"><Link href="/cart" className="btn btn-designs">Shop Now</Link></p>
       </section>
       <aside className="social-widget mt-8 max-w-3xl mx-auto glass p-4 rounded">
-        <h3 className="text-xl mb-4 kinetic">Latest from @manyagi_designs</h3>
-        <a className="twitter-timeline" data-height="400" href="https://twitter.com/manyagi_designs?ref_src=twsrc%5Etfw">Tweets by manyagi_designs</a>
+        <h3 className="text-xl mb-4">Latest from @manyagi_designs</h3>
+        <a className="twitter-timeline" data-height="400" href="https://twitter.com/manyagi_designs?ref_src=twsrc%5Etfw" target="_blank" rel="noopener noreferrer">Tweets by manyagi_designs</a>
         <script async src="https://platform.twitter.com/widgets.js" charSet="utf-8"></script>
       </aside>
       {showModal && (
         <div className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center glass">
           <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
-            <h2 className="kinetic">Added to Cart!</h2>
+            <h2>Added to Cart!</h2>
             <p>Item added. Proceed to checkout?</p>
             <Link href="/cart" className="btn btn-designs">Go to Cart</Link>
             <button onClick={() => setShowModal(false)} className="btn btn-designs ghost">Continue Shopping</button>
           </div>
         </div>
       )}
+      <section className="my-10">
+        <Card>
+          <SubscriptionForm formId="8427635" uid="db12290300" title="Subscribe to Designs Updates" description="Get new merch drops, NFT launches, and poster releases." />
+        </Card>
+      </section>
       <Recommender />
     </>
   );

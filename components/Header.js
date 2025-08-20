@@ -16,7 +16,7 @@ const Header = () => {
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-0 bg-white backdrop-blur-md z-10 border-b border-gray-300 text-black glass"
+      className="sticky top-0 bg-white/90 z-10 border-b border-gray-300 text-black glass"
       aria-label="Main navigation"
     >
       <div className="container mx-auto flex items-center justify-between py-4 px-4 md:px-8">

@@ -36,10 +36,10 @@ const Card = ({ children, className = '', title, description, image, link, categ
       >
         {image && <img src={image} alt={title || 'Card Image'} className="w-full h-48 object-cover" loading="lazy" />}
         <div className="p-6">
-          {title && <h3 className="text-2xl font-bold mb-2 kinetic">{title}</h3>}
+          {title && <h3 className="text-2xl font-bold mb-2">{title}</h3>}
           {description && <p className="text-gray-700 mb-4">{description}</p>}
-          {link && <a href={link} className="btn bg-purple-600 text-white hover:bg-purple-500">Learn More</a>}
-          {children}
+          {link && <a href={link} className="btn bg-purple-600 text-white hover:bg-purple-500" target="_blank" rel="noopener noreferrer">Learn More</a>}
+          <div className="flex space-x-4">{children}</div>
         </div>
       </motion.article>
     </Parallax>

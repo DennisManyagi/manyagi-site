@@ -33,7 +33,7 @@ const nextConfig = withTM({
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.hotjar.com https://cdn.mxpnl.com https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com; connect-src 'self' https://api.stripe.com https://api.printful.com https://api.telegram.org https://api.mixpanel.com https://api.formspree.io https://app.convertkit.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com; font-src 'self' https://fonts.gstatic.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.hotjar.com https://script.hotjar.com https://cdn.mxpnl.com https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://syndication.twitter.com; connect-src 'self' https://api.stripe.com https://api.printful.com https://api.telegram.org https://api.mixpanel.com https://api-js.mixpanel.com https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; font-src 'self' https://fonts.gstatic.com;",
           },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],

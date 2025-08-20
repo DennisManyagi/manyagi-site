@@ -63,17 +63,17 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/70 to-yellow-500/70 z-10 blur-bg" />
       <div id="particles-js" className="absolute inset-0 z-0 opacity-30" />
       {carouselImages.length > 0 && (
-        <Carousel autoPlay interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover showArrows className="z-5">
+        <Carousel autoPlay interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover showArrows className="z-20 relative">
           {carouselImages.map((img, i) => (
             <img key={i} src={img} alt={`Slide ${i+1}`} className="object-cover h-[70vh] md:h-[60vh]" loading="lazy" />
           ))}
         </Carousel>
       )}
-      <div className="relative z-20 p-8 md:p-12 text-white max-w-4xl mx-auto flex flex-col items-center text-center hero-content">
-        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="uppercase tracking-widest text-lg mb-4 kinetic">
+      <div className="relative z-30 p-8 md:p-12 text-white max-w-4xl mx-auto flex flex-col items-center text-center hero-content">
+        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="uppercase tracking-widest text-lg mb-4">
           {kicker}
         </motion.span>
-        <motion.h1 id="hero-title" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-4xl md:text-6xl font-bold mb-4 leading-tight kinetic">
+        <motion.h1 id="hero-title" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
           {title}
         </motion.h1>
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-lg md:text-2xl mb-8 max-w-2xl">

@@ -25,92 +25,177 @@ const HotjarInit = () => {
 // Mixpanel Tracking Code
 const MixpanelInit = () => {
   useEffect(() => {
-    (function(c, a) {
+    // Standard Mixpanel browser snippet
+    (function(e, a) {
       if (!a.__SV) {
-        var t = window; t.Mixpanel = a; a._i = []; a.init = function(e, o) {
-          a._i.push([e, o]);
+        var b = e;
+        try {
+          var c,
+            l,
+            i,
+            j = b.location,
+            g = j.hash;
+          c = function(a, b) {
+            return (l = a.match(RegExp(b + "=([^&]*)"))) ? l[1] : null;
+          };
+          g &&
+            c(g, "state") &&
+            ((i = JSON.parse(decodeURIComponent(c(g, "state")))),
+            "mpeditor" === i.action &&
+              (b.sessionStorage.setItem("_mpcehash", g),
+              history.replaceState(i.desiredHash || "", e.title, j.pathname + j.search)));
+        } catch (m) {}
+        var k, h;
+        window.mixpanel = a;
+        a._i = [];
+        a.init = function(b, c, f) {
+          function e(b, a) {
+            var c = a.split(".");
+            2 == c.length && ((b = b[c[0]]), (a = c[1]));
+            b[a] = function() {
+              b.push([a].concat(Array.prototype.slice.call(arguments, 0)));
+            };
+          }
+          var d = a;
+          "undefined" !== typeof f ? (d = a[f] = []) : (f = "mixpanel");
+          d.people = d.people || [];
+          d.toString = function(a) {
+            var b = "mixpanel";
+            "mixpanel" !== f && (b += "." + f);
+            a || (b += " (stub)");
+            return b;
+          };
+          d.people.toString = function() {
+            return d.toString(1) + ".people (stub)";
+          };
+          k =
+            "disable time_event track track_pageview track_links track_forms track_with_groups add_group set_group remove_group register register_once alias unregister identify name_tag set_config reset opt_in_tracking opt_out_tracking has_opted_in_tracking has_opted_out_tracking clear_opt_in_out_tracking start_batch_senders people.set people.set_once people.unset people.increment people.append people.union people.track_charge people.clear_charges people.delete_user people.remove".split(
+              " "
+            );
+          for (h = 0; h < k.length; h++) e(d, k[h]);
+          var j = "set set_once union unset remove delete".split(" ");
+          d.get_group = function() {
+            function a(c) {
+              b[c] = function() {
+                call2_args = arguments;
+                call2 = [c].concat(Array.prototype.slice.call(call2_args, 0));
+                d.push([e, call2]);
+              };
+            }
+            for (
+              var b = {},
+                e = ["get_group"].concat(Array.prototype.slice.call(arguments, 0)),
+                c = 0;
+              c < j.length;
+              c++
+            )
+              a(j[c]);
+            return b;
+          };
+          a._i.push([b, c, f]);
         };
-        // Consolidated init with autocapture
-        a.init('d28b5a9469e93b88c4b0c2fdfec1a7b5', { autocapture: true });
-        var u = c.createElement('script');
-        u.type = 'text/javascript'; u.async = true;
-        u.src = 'https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js';
-        var s = c.getElementsByTagName('script')[0];
-        s.parentNode.insertBefore(u, s);
+        a.__SV = 1.2;
+        b = e.createElement("script");
+        b.type = "text/javascript";
+        b.async = !0;
+        b.src =
+          "undefined" !== typeof MIXPANEL_CUSTOM_LIB_URL
+            ? MIXPANEL_CUSTOM_LIB_URL
+            : "file:" === e.location.protocol &&
+              "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)
+            ? "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"
+            : "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+        c = e.getElementsByTagName("script")[0];
+        c.parentNode.insertBefore(b, c);
       }
     })(document, window.mixpanel || []);
+    mixpanel.init("d28b5a9469e93b88c4b0c2fdfec1a7b5", { autotrack: true }); // Your key; autotrack for automatic events
 
-    // Sign Up (rest of the code remains the same)
+    // Your event tracking code remains the same (forms, page views, videos, etc.)
     const forms = document.querySelectorAll('form[action*="convertkit"]');
     forms.forEach(form => {
       form.addEventListener('submit', () => {
-        mixpanel.track('Sign Up', {
-          country: navigator.language.split('-')[1] || 'Unknown',
-          os: navigator.platform,
-          source: document.referrer || window.location.pathname,
-          form: 'Subscription',
-          page: window.location.pathname,
-          timestamp: new Date().toISOString()
-        });
+        if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+          mixpanel.track('Sign Up', {
+            country: navigator.language.split('-')[1] || 'Unknown',
+            os: navigator.platform,
+            source: document.referrer || window.location.pathname,
+            form: 'Subscription',
+            page: window.location.pathname,
+            timestamp: new Date().toISOString()
+          });
+        }
       });
     });
 
-    // Page View (rest remains the same)
-    mixpanel.track('Page View', {
-      page_name: window.location.pathname,
-      referrer_url_path: document.referrer || 'Direct',
-      page: window.location.pathname,
-      referrer: document.referrer || 'Direct',
-      duration: 0 // Update on page unload
-    });
+    // Page View
+    if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+      mixpanel.track('Page View', {
+        page_name: window.location.pathname,
+        referrer_url_path: document.referrer || 'Direct',
+        page: window.location.pathname,
+        referrer: document.referrer || 'Direct',
+        duration: 0 // Update on page unload
+      });
+    }
     window.addEventListener('unload', () => {
       const duration = (Date.now() - performance.timing.navigationStart) / 1000;
-      mixpanel.track('Page View', { duration });
+      if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+        mixpanel.track('Page View', { duration });
+      }
     });
 
-    // Video Play (rest remains the same)
+    // Video Play
     const videos = document.querySelectorAll('video, iframe[src*="youtube"]');
     videos.forEach(video => {
       video.addEventListener('play', () => {
-        mixpanel.track('Video Play', {
-          video: video.src || video.getAttribute('src'),
-          page: window.location.pathname,
-          duration: 0, // Update with video API if available
-          type: video.dataset.type || 'Narration'
-        });
+        if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+          mixpanel.track('Video Play', {
+            video: video.src || video.getAttribute('src'),
+            page: window.location.pathname,
+            duration: 0, // Update with video API if available
+            type: video.dataset.type || 'Narration'
+          });
+        }
       });
     });
 
-    // App Download (rest remains the same)
+    // App Download
     const downloadLinks = document.querySelectorAll('a[href*="daito"]');
     downloadLinks.forEach(link => {
       link.addEventListener('click', () => {
-        mixpanel.track('App Download', {
-          platform: link.href.includes('itunes') ? 'iOS' : 'Android',
-          source: document.referrer || window.location.pathname,
-          version: '1.0.0' // Update with actual version
-        });
+        if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+          mixpanel.track('App Download', {
+            platform: link.href.includes('itunes') ? 'iOS' : 'Android',
+            source: document.referrer || window.location.pathname,
+            version: '1.0.0' // Update with actual version
+          });
+        }
       });
     });
 
-    // Product Purchase (rest remains the same)
+    // Product Purchase
     window.addEventListener('purchase', (e) => {
-      mixpanel.track('Product Purchase', {
-        item: e.detail.item,
-        price: e.detail.price,
-        quantity: e.detail.quantity || 1,
-        category: e.detail.category || 'Clothing'
-      });
+      if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+        mixpanel.track('Product Purchase', {
+          item: e.detail.item,
+          price: e.detail.price,
+          quantity: e.detail.quantity || 1,
+          category: e.detail.category || 'Clothing'
+        });
+      }
     });
 
-    // Subscription Start (rest remains the same)
+    // Subscription Start
     window.addEventListener('subscription', (e) => {
-      mixpanel.track('Subscription Start', {
-        plan: e.detail.plan,
-        amount: e.detail.amount,
-        payment_method: e.detail.payment_method || 'Stripe',
-        duration: e.detail.duration || 'monthly'
-      });
+      if (typeof mixpanel !== 'undefined' && mixpanel.track) {
+        mixpanel.track('Subscription Start', {
+          plan: e.detail.plan,
+          amount: e.detail.amount,
+          payment_method: e.detail.payment_method || 'Stripe',
+          duration: e.detail.duration || 'monthly'
+        });
+      }
     });
   }, []);
 };

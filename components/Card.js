@@ -15,9 +15,11 @@ const Card = ({ children, className = '', title, description, image, link, categ
   };
 
   useEffect(() => {
-    gsap.to(ref.current, { scale: 1.05, duration: 0.3, paused: true });
-    ref.current.addEventListener('mouseenter', () => gsap.to(ref.current, { scale: 1.05, duration: 0.3 }));
-    ref.current.addEventListener('mouseleave', () => gsap.to(ref.current, { scale: 1, duration: 0.3 }));
+    if (ref.current) {
+      gsap.to(ref.current, { scale: 1.05, duration: 0.3, paused: true });
+      ref.current.addEventListener('mouseenter', () => gsap.to(ref.current, { scale: 1.05, duration: 0.3 }));
+      ref.current.addEventListener('mouseleave', () => gsap.to(ref.current, { scale: 1, duration: 0.3 }));
+    }
   }, []);
 
   return (

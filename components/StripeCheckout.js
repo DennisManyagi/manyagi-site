@@ -4,7 +4,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ product, amount }) => {
+const CheckoutForm = ({ product, amount, items }) => {  // Add items prop
   const stripe = useStripe();
   const elements = useElements();
 
@@ -18,7 +18,7 @@ const CheckoutForm = ({ product, amount }) => {
       const response = await fetch('/api/stripe/charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethodId: paymentMethod.id, amount, description: product }),
+        body: JSON.stringify({ paymentMethodId: paymentMethod.id, amount, description: product, items }),  // Add items to body
       });
       const data = await response.json();
       if (data.success) {
@@ -41,9 +41,9 @@ const CheckoutForm = ({ product, amount }) => {
   );
 };
 
-const StripeCheckout = ({ product, amount }) => (
+const StripeCheckout = ({ product, amount, items }) => (  // Add items prop
   <Elements stripe={stripePromise}>
-    <CheckoutForm product={product} amount={amount} />
+    <CheckoutForm product={product} amount={amount} items={items} />  // Pass items
   </Elements>
 );
 

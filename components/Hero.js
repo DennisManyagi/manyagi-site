@@ -1,4 +1,6 @@
 // components/Hero.js
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import { useRef, useEffect } from 'react';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
@@ -9,22 +11,26 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [] }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      import('gsap').then(({ gsap }) => {
-        import('gsap/ScrollTrigger').then(({ ScrollTrigger }) => {
-          gsap.registerPlugin(ScrollTrigger);
-          gsap.fromTo(
-            '.hero-content',
-            { opacity: 0, y: 50 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 1,
-              ease: 'power3.out',
-              scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
-            }
-          );
-        });
-      });
+      // GSAP: Register plugin and animate (synchronous)
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Null-check for the target element
+      const heroContent = document.querySelector('.hero-content');
+      if (heroContent) {
+        gsap.fromTo(
+          heroContent,
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: { trigger: sectionRef.current, start: 'top 80%' },
+          }
+        );
+      } else {
+        console.warn('Hero content element not found for GSAP animation.');
+      }
       import('particles.js').then(({ default: particlesJS }) => {
         particlesJS('particles-js', {
           particles: {

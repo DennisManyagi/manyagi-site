@@ -1,3 +1,4 @@
+// pages/_app.js
 import '../styles/globals.css';
 import { Provider } from 'react-redux';
 import { store } from '../lib/store';
@@ -29,7 +30,8 @@ const MixpanelInit = () => {
         var t = window; t.Mixpanel = a; a._i = []; a.init = function(e, o) {
           a._i.push([e, o]);
         };
-        a.init('d28b5a9469e93b88c4b0c2fdfec1a7b5'); // Your Mixpanel token
+        // Consolidated init with autocapture
+        a.init('d28b5a9469e93b88c4b0c2fdfec1a7b5', { autocapture: true });
         var u = c.createElement('script');
         u.type = 'text/javascript'; u.async = true;
         u.src = 'https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js';
@@ -38,10 +40,7 @@ const MixpanelInit = () => {
       }
     })(document, window.mixpanel || []);
 
-    // Enable Autocapture for common interactions
-    mixpanel.init('d28b5a9469e93b88c4b0c2fdfec1a7b5', { autocapture: true });
-
-    // Sign Up
+    // Sign Up (rest of the code remains the same)
     const forms = document.querySelectorAll('form[action*="convertkit"]');
     forms.forEach(form => {
       form.addEventListener('submit', () => {
@@ -56,7 +55,7 @@ const MixpanelInit = () => {
       });
     });
 
-    // Page View
+    // Page View (rest remains the same)
     mixpanel.track('Page View', {
       page_name: window.location.pathname,
       referrer_url_path: document.referrer || 'Direct',
@@ -69,7 +68,7 @@ const MixpanelInit = () => {
       mixpanel.track('Page View', { duration });
     });
 
-    // Video Play
+    // Video Play (rest remains the same)
     const videos = document.querySelectorAll('video, iframe[src*="youtube"]');
     videos.forEach(video => {
       video.addEventListener('play', () => {
@@ -82,7 +81,7 @@ const MixpanelInit = () => {
       });
     });
 
-    // App Download
+    // App Download (rest remains the same)
     const downloadLinks = document.querySelectorAll('a[href*="daito"]');
     downloadLinks.forEach(link => {
       link.addEventListener('click', () => {
@@ -94,7 +93,7 @@ const MixpanelInit = () => {
       });
     });
 
-    // Product Purchase
+    // Product Purchase (rest remains the same)
     window.addEventListener('purchase', (e) => {
       mixpanel.track('Product Purchase', {
         item: e.detail.item,
@@ -104,7 +103,7 @@ const MixpanelInit = () => {
       });
     });
 
-    // Subscription Start
+    // Subscription Start (rest remains the same)
     window.addEventListener('subscription', (e) => {
       mixpanel.track('Subscription Start', {
         plan: e.detail.plan,

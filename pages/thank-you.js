@@ -10,6 +10,11 @@ export default function ThankYou() {
   const router = useRouter();
   const { session_id } = router.query;
   const [orderDetails, setOrderDetails] = useState(null);
+  const carouselImages = [
+    '/images/og-designs.webp',
+    '/images/merch-carousel-1.webp',
+    '/images/merch-carousel-2.webp',
+  ];
 
   useEffect(() => {
     if (session_id) {
@@ -30,13 +35,14 @@ export default function ThankYou() {
         kicker="Thank You"
         title="Order Confirmed"
         lead={orderDetails ? `Your ${orderDetails.plan} is complete. Check your email for details.` : "Your purchase is complete. Check your email for details."}
-        height="h-[500px]"
+        carouselImages={carouselImages}
+        height="h-[600px]"
       >
         <Link href="/designs" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
           Continue Shopping
         </Link>
       </Hero>
-      <section className="container mx-auto px-4 py-10">
+      <section className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Share Your Purchase</h2>
         <div className="flex gap-4 text-lg">
           <a href="https://x.com/share?url=https://manyagi.com" className="text-blue-600 hover:text-blue-500">

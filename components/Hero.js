@@ -6,14 +6,14 @@ import { Carousel } from 'react-responsive-carousel';
 const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, height = 'h-[600px]' }) => {
   return (
     <motion.section
-      className={`relative ${height} flex items-center justify-center overflow-hidden bg-white`}
+      className={`relative ${height} flex items-center justify-center overflow-hidden bg-white z-0`}
       aria-labelledby="hero-title"
     >
       {videoSrc && (
         <video autoPlay loop muted className="absolute inset-0 w-full h-full object-cover z-0" src={videoSrc} aria-hidden="true" />
       )}
       {carouselImages.length > 0 && (
-        <Carousel autoPlay interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover showArrows className="z-20 relative w-full h-full">
+        <Carousel autoPlay interval={5000} showThumbs={false} showStatus={false} infiniteLoop stopOnHover showArrows className="z-0 relative w-full h-full">
           {carouselImages.map((img, i) => (
             <img key={i} src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
           ))}

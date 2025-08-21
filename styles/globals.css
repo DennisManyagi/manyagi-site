@@ -18,7 +18,7 @@ h1, h2, h3 {
 }
 
 .card {
-  @apply bg-gray-100 border border-gray-300 rounded-xl shadow-md p-4 mb-6 hover:shadow-xl transition;
+  @apply bg-white border border-gray-300 rounded-xl shadow-md p-4 mb-6 hover:shadow-xl transition;
 }
 
 .btn {
@@ -27,48 +27,6 @@ h1, h2, h3 {
 
 .section {
   @apply py-12;
-}
-
-/* Division-specific colors */
-.division-publishing {
-  background: linear-gradient(135deg, #800080, #DDA0DD);
-}
-
-.division-designs {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-}
-
-.division-capital {
-  background: linear-gradient(135deg, #FFD700, #32CD32);
-}
-
-.division-media {
-  background: linear-gradient(135deg, #FF4500, #FFD700);
-}
-
-.division-tech {
-  background: linear-gradient(135deg, #4B0082, #6A5ACD);
-}
-
-/* Division-specific buttons */
-.btn-publishing {
-  @apply bg-purple-800 text-white hover:bg-purple-700;
-}
-
-.btn-designs {
-  @apply bg-yellow-500 text-black hover:bg-yellow-400;
-}
-
-.btn-capital {
-  @apply bg-lime-500 text-black hover:bg-lime-400;
-}
-
-.btn-media {
-  @apply bg-orange-600 text-white hover:bg-orange-500;
-}
-
-.btn-tech {
-  @apply bg-indigo-700 text-white hover:bg-indigo-600;
 }
 
 /* Hover effects */

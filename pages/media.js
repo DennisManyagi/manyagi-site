@@ -4,6 +4,7 @@ import Link from 'next/link';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
+import Card from '../components/Card';
 
 export default function Media() {
   const videos = [
@@ -23,51 +24,60 @@ export default function Media() {
         title="Stories in Motion"
         lead="Explore videos and audio inspired by our narratives."
         videoSrc="/videos/hero-bg.mp4"
-        height="h-[500px]"
+        height="h-[600px]"
       >
         <Link href="#videos" className="btn bg-red-600 text-white py-2 px-4 rounded hover:scale-105 transition">
           Watch Now
         </Link>
       </Hero>
-      <section id="videos" className="container mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-5">
+      <section id="videos" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
         {videos.map((video) => (
-          <div key={video.id} className="card bg-gray-100 rounded p-4 text-center">
-            <div className="relative">
-              <img src={video.thumbnail} alt={video.title} className="w-full h-[300px] object-cover mb-4" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg className="w-12 h-12 text-white opacity-75" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-40px font-bold">{video.title}</h3>
+          <Card
+            key={video.id}
+            title={video.title}
+            description="Watch or listen to our latest media content."
+            image={video.thumbnail}
+            link={video.youtubeId ? `https://youtube.com/watch?v=${video.youtubeId}` : `https://open.spotify.com/episode/${video.spotifyId}`}
+            category="media"
+            className="text-center"
+          >
             <Link
               href={video.youtubeId ? `https://youtube.com/watch?v=${video.youtubeId}` : `https://open.spotify.com/episode/${video.spotifyId}`}
-              className="btn bg-red-600 text-white py-2 px-4 rounded mt-4 hover:scale-105 transition"
+              className="btn bg-red-600 text-white py-2 px-4 rounded hover:scale-105 transition"
               target="_blank"
               rel="noopener noreferrer"
             >
               Watch
             </Link>
-          </div>
+          </Card>
         ))}
       </section>
-      <section id="playlists" className="container mx-auto px-4 py-10">
+      <section id="playlists" className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Playlists</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="bg-gray-100 rounded p-4">
-            <h3 className="text-2xl font-bold">YouTube Playlist</h3>
-            <p className="text-base">Curated videos from Manyagi Media.</p>
+          <Card
+            title="YouTube Playlist"
+            description="Curated videos from Manyagi Media."
+            image="/images/video-carousel-1.webp"
+            link="https://youtube.com/playlist?list=YOUTUBE_PLAYLIST_ID"
+            category="media"
+            className="text-center"
+          >
             <Link href="https://youtube.com/playlist?list=YOUTUBE_PLAYLIST_ID" className="text-red-600 hover:underline">Watch Now</Link>
-          </div>
-          <div className="bg-gray-100 rounded p-4">
-            <h3 className="text-2xl font-bold">Spotify Playlist</h3>
-            <p className="text-base">Audio stories and podcasts.</p>
+          </Card>
+          <Card
+            title="Spotify Playlist"
+            description="Audio stories and podcasts."
+            image="/images/video-carousel-2.webp"
+            link="https://open.spotify.com/playlist/SPOTIFY_PLAYLIST_ID"
+            category="media"
+            className="text-center"
+          >
             <Link href="https://open.spotify.com/playlist/SPOTIFY_PLAYLIST_ID" className="text-red-600 hover:underline">Listen Now</Link>
-          </div>
+          </Card>
         </div>
       </section>
-      <section id="subscribe" className="container mx-auto px-4 py-10">
+      <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8432518"
           uid="c735e4a3a7"

@@ -16,14 +16,14 @@ const Card = ({ children, className = '', title, description, image, link, categ
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className={`card bg-gray-100 rounded-xl shadow-lg overflow-hidden transition-shadow hover:shadow-xl ${className}`}
+      className={`card bg-white rounded-xl shadow-lg overflow-hidden transition-shadow hover:shadow-xl ${className}`}
       role="article"
       onClick={handleClick}
     >
       {image && <img src={image} alt={title || 'Card Image'} className="w-full h-[300px] object-cover" loading="lazy" />}
       <div className="p-6">
-        {title && <h3 className="text-2xl font-bold mb-2">{title}</h3>}
-        {description && <p className="text-gray-700 text-base mb-4">{description}</p>}
+        {title && <h3 className="text-2xl font-bold mb-4">{title}</h3>}
+        {description && <p className="text-gray-700 text-base mb-6">{description}</p>}
         {link && (
           <a
             href={link}

@@ -9,6 +9,7 @@ import Recommender from '../components/Recommender';
 import { loadStripe } from '@stripe/stripe-js';
 import { motion } from 'framer-motion';
 import Hero from '../components/Hero';
+import Card from '../components/Card';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
@@ -54,19 +55,16 @@ export default function Designs() {
           Shop Now
         </Link>
       </Hero>
-      <section id="products" className="container mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-4 gap-5">
+      <section id="products" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-4 gap-5">
         {products.map((product) => (
-          <motion.div
+          <Card
             key={product.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="card bg-gray-100 rounded p-4 text-center"
+            title={product.name}
+            description={product.description}
+            image={product.image}
+            category="designs"
+            className="text-center"
           >
-            <img src={product.image} alt={product.name} className="w-full h-[400px] object-cover mb-4 hover:scale-105 transition" />
-            <h3 className="text-40px font-bold"> {product.name}</h3>
-            <p className="text-16px">{product.description}</p>
             <p className="text-16px font-bold mb-4">${product.price.toFixed(2)}</p>
             <button
               onClick={() => handleAddToCart(product)}
@@ -74,10 +72,10 @@ export default function Designs() {
             >
               Add to Cart
             </button>
-          </motion.div>
+          </Card>
         ))}
       </section>
-      <section id="subscribe" className="container mx-auto px-4 py-10">
+      <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8432506"
           uid="a194031db7"

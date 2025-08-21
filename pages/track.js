@@ -1,6 +1,7 @@
 // pages/track.js
 import Head from 'next/head';
 import Link from 'next/link';
+import Hero from '../components/Hero';
 import { useState } from 'react';
 
 export default function Track() {
@@ -25,8 +26,14 @@ export default function Track() {
         <title>Manyagi — Track Your Order</title>
         <meta name="description" content="Track your Manyagi order status." />
       </Head>
-      <section className="container mx-auto px-4 py-10">
-        <h1 className="text-5xl font-bold text-center mb-6">Track Your Order</h1>
+      <Hero
+        kicker="Track"
+        title="Track Your Order"
+        lead="Enter your order ID to check the status."
+        carouselImages={['/images/og-designs.webp']}
+        height="h-[600px]"
+      />
+      <section className="container mx-auto px-4 py-16">
         <form onSubmit={handleTrack} className="max-w-md mx-auto space-y-4">
           <input
             type="text"
@@ -41,7 +48,7 @@ export default function Track() {
           </button>
         </form>
         {orderDetails && (
-          <div className="mt-6 bg-gray-100 rounded p-4 max-w-md mx-auto">
+          <div className="mt-6 bg-white rounded p-4 max-w-md mx-auto">
             <h2 className="text-2xl font-bold mb-4">Order Details</h2>
             <p className="text-base">Status: {orderDetails.status}</p>
             <p className="text-base">Estimated Delivery: {orderDetails.estimatedDelivery}</p>

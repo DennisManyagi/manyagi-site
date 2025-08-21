@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const response = await fetch('https://api.printful.com/v2/orders', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_PRINTFUL_TOKEN}`,
+        'Authorization': `Bearer ${process.env.PRINTFUL_TOKEN}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

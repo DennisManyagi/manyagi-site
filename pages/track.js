@@ -1,142 +1,56 @@
 // pages/track.js
 import Head from 'next/head';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Recommender from '../components/Recommender';
+import { useState } from 'react';
 
 export default function Track() {
-  const router = useRouter();
-  const { order_id } = router.query;
   const [orderId, setOrderId] = useState('');
   const [orderDetails, setOrderDetails] = useState(null);
-  const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    if (order_id) {
-      setOrderId(order_id);
-      handleTrackOrder({ preventDefault: () => {} });
-    }
-  }, [order_id]);
-
-  const handleTrackOrder = async (e) => {
+  const handleTrack = async (e) => {
     e.preventDefault();
-    setError(null);
-    setOrderDetails(null);
-
     try {
-      if (!orderId) {
-        throw new Error('Please enter an order ID');
-      }
-
       const response = await fetch(`/api/printful/track?order_id=${orderId}`);
       const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
       setOrderDetails(data);
-      setShowModal(true);
-    } catch (err) {
-      setError(err.message);
-      setShowModal(true);
+    } catch (error) {
+      console.error('Tracking error:', error);
+      alert('Failed to track order');
     }
   };
 
   return (
     <>
       <Head>
-        <title>Track Your Order — Manyagi Designs</title>
-        <meta name="description" content="Track your Manyagi Designs order status." />
-        <meta property="og:title" content="Track Your Order — Manyagi Designs" />
-        <meta property="og:description" content="Track your Manyagi Designs order status." />
-        <meta property="og:image" content="https://manyagi.net/images/og-designs.jpg" />
-        <meta property="og:url" content="https://manyagi.net/track" />
-        <meta name="twitter:card" content="summary_large_image" />
+        <title>Manyagi — Track Your Order</title>
+        <meta name="description" content="Track your Manyagi order status." />
       </Head>
-      <section className="container mx-auto px-4 py-10 glass">
-        <h1 className="text-4xl font-bold mb-6 kinetic">Track Your Order</h1>
-        <p className="mb-6 text-center">Enter your order ID (from your confirmation email) to check the status of your purchase.</p>
-        <form className="max-w-md mx-auto space-y-4" onSubmit={handleTrackOrder}>
-          <div>
-            <label htmlFor="orderId" className="block text-sm mb-1">
-              Order ID *
-            </label>
-            <input
-              type="text"
-              id="orderId"
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
-              className="border p-2 w-full rounded"
-              placeholder="e.g., 12345678"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="btn w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 hover:scale-105 transition"
-          >
+      <section className="container mx-auto px-4 py-10">
+        <h1 className="text-5xl font-bold text-center mb-6">Track Your Order</h1>
+        <form onSubmit={handleTrack} className="max-w-md mx-auto space-y-4">
+          <input
+            type="text"
+            value={orderId}
+            onChange={(e) => setOrderId(e.target.value)}
+            placeholder="Enter Order ID"
+            className="w-full p-3 border rounded bg-white text-black"
+            required
+          />
+          <button type="submit" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
             Track Order
           </button>
         </form>
-      </section>
-      {showModal && (
-        <div className="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center glass">
-          <div className="modal-content bg-white p-6 rounded shadow-lg max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4 kinetic">{error ? 'Error' : 'Order Status'}</h2>
-            {error ? (
-              <p className="mb-4">{error}</p>
-            ) : (
-              <div className="mb-4">
-                <p>
-                  <strong>Status:</strong> {orderDetails?.status || 'Unknown'}
-                </p>
-                {orderDetails?.items && (
-                  <div className="mt-2">
-                    <strong>Items:</strong>
-                    <ul className="list-disc pl-5">
-                      {orderDetails.items.map((item, index) => (
-                        <li key={index}>
-                          {item.name} (x{item.quantity})
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {orderDetails?.shipment && (
-                  <div className="mt-2">
-                    <strong>Shipping:</strong>
-                    <p>Carrier: {orderDetails.shipment.carrier}</p>
-                    <p>Tracking Number: {orderDetails.shipment.tracking_number}</p>
-                    <p>
-                      <a
-                        href={orderDetails.shipment.tracking_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline hover:scale-105 transition"
-                      >
-                        Track Shipment
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => setShowModal(false)}
-              className="btn ghost mt-2 text-gray-600 border border-gray-300 py-2 px-4 rounded hover:bg-gray-100 hover:scale-105 transition"
-            >
-              Close
-            </button>
+        {orderDetails && (
+          <div className="mt-6 bg-gray-100 rounded p-4 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Order Details</h2>
+            <p className="text-base">Status: {orderDetails.status}</p>
+            <p className="text-base">Estimated Delivery: {orderDetails.estimatedDelivery}</p>
           </div>
-        </div>
-      )}
-      <p className="mt-6 text-center">
-        <Link href="/designs" className="text-blue-600 hover:underline hover:scale-105 transition">
-          Continue Shopping
-        </Link>
-      </p>
-      <Recommender />
+        )}
+        <p className="text-center text-base mt-4">
+          <Link href="/designs" className="text-blue-600 hover:underline">Continue Shopping</Link>
+        </p>
+      </section>
     </>
   );
 };

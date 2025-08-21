@@ -19,7 +19,7 @@ const Recommender = () => {
 
   return (
     <div className="p-6 text-center glass mt-4">
-      <p className="text-lg kinetic">{recommendation}</p>
+      <p className="text-lg">{recommendation}</p>
     </div>
   );
 };

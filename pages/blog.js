@@ -1,55 +1,52 @@
 // pages/blog.js
 import Head from 'next/head';
+import Link from 'next/link';
+import SubscriptionForm from '../components/SubscriptionForm';
+import Hero from '../components/Hero';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { MDXRemote } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
-import Hero from '../components/Hero';
-import Card from '../components/Card';
-import SubscriptionForm from '../components/SubscriptionForm';
-import Link from 'next/link';
-import Recommender from '../components/Recommender';
-
-const components = { h2: (props) => <h2 className="text-2xl mt-6 mb-2 kinetic" {...props} />, p: (props) => <p className="text-muted mb-4" {...props} /> };
 
 export default function Blog({ posts }) {
   return (
     <>
       <Head>
-        <title>Manyagi Blog — Build Logs & Drops</title>
-        <meta name="description" content="Empire build logs: publishing progress, merch drops, signals reports, and app updates." />
-        <meta property="og:title" content="Manyagi Blog — Build Logs & Drops" />
-        <meta property="og:description" content="Empire build logs: publishing progress, merch drops, signals reports, and app updates." />
-        <meta property="og:image" content="https://manyagi.net/images/og-blog.jpg" />
-        <meta property="og:url" content="https://manyagi.net/blog" />
-        <meta name="twitter:card" content="summary_large_image" />
+        <title>Manyagi — Blog</title>
+        <meta name="description" content="Read the latest from Manyagi." />
       </Head>
       <Hero
-        kicker="News & Notes"
-        title="Manyagi Blog"
-        lead="Transparent progress. Lessons learned. Drop calendars. Weekly signal recaps."
+        kicker="Blog"
+        title="Our Stories"
+        lead="Dive into our latest posts and updates."
+        height="h-[500px]"
       >
-        <Link href="#subscribe" className="btn mt-4 block text-center">Subscribe to Blog</Link>
+        <Link href="#posts" className="btn bg-red-600 text-white py-2 px-4 rounded hover:scale-105 transition">
+          Read Now
+        </Link>
       </Hero>
-      <section className="bento-grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+      <section id="posts" className="container mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-2 gap-5">
         {posts.map((post) => (
-          <Card key={post.slug}>
-            <h3 className="text-2xl mb-2 kinetic">{post.frontMatter.title}</h3>
-            <p className="text-muted text-sm mb-4">{post.frontMatter.date}</p>
-            <MDXRemote {...post.source} components={components} />
-          </Card>
+          <div key={post.slug} className="card bg-gray-100 rounded p-4">
+            <h3 className="text-5xl font-bold mb-2">{post.frontMatter.title}</h3>
+            <p className="text-base mb-4">{post.frontMatter.excerpt}</p>
+            <MDXRemote {...post.source} />
+            <Link href={`/blog/${post.slug}`} className="text-red-600 hover:underline">Read More</Link>
+          </div>
         ))}
       </section>
-      <section id="subscribe" className="my-10">
-        <Card>
-          <SubscriptionForm formId="8432549" uid="877716573d" title="Get new posts via email" description="Stay updated with our latest blog entries." />
-        </Card>
+      <section id="subscribe" className="container mx-auto px-4 py-10">
+        <SubscriptionForm
+          formId="8427635"
+          uid="db12290300"
+          title="Subscribe to Our Blog"
+          description="Get the latest posts delivered to your inbox."
+        />
       </section>
-      <Recommender />
     </>
   );
-}
+};
 
 export async function getStaticProps() {
   const files = fs.readdirSync(path.join('posts'));

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(`https://api.printful.com/v2/orders/${order_id}`, {
       headers: {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_PRINTFUL_TOKEN}`,
+        Authorization: `Bearer ${process.env.PRINTFUL_TOKEN}`,
       },
     });
     const data = await response.json();

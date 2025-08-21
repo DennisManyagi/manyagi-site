@@ -31,9 +31,13 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     const session = await getSession({ req });
-    const { items, telegramId, priceId } = req.body;
+    const { items, telegramId, priceId, email } = req.body;
 
     try {
+      if (!items && !priceId) {
+        return res.status(400).json({ error: 'Missing items or priceId' });
+      }
+
       const lineItems = items
         ? items.map(item => ({
             price_data: {
@@ -54,9 +58,9 @@ export default async function handler(req, res) {
         payment_method_types: ['card'],
         line_items: lineItems,
         mode: items ? 'payment' : 'subscription',
-        success_url: 'https://manyagi.net/thank-you?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: 'https://manyagi.net/cart',
-        customer_email: session?.user?.email || req.body.email,
+        success_url: `${process.env.NEXTAUTH_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/cart`,
+        customer_email: session?.user?.email || email,
         metadata: {
           userId: session?.user?.id || 'guest',
           telegramId: telegramId || '',
@@ -66,7 +70,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ sessionId: checkoutSession.id, url: checkoutSession.url });
     } catch (error) {
       console.error('Stripe error:', error);
-      return res.status(500).json({ error: 'Failed to process payment' });
+      return res.status(500).json({ error: error.message || 'Failed to process payment' });
     }
   } else if (req.method === 'PUT') {
     const buf = await buffer(req);
@@ -78,44 +82,42 @@ export default async function handler(req, res) {
       event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
     } catch (error) {
       console.error('Webhook error:', error);
-      return res.status(400).json({ error: 'Webhook error' });
+      return res.status(400).json({ error: 'Webhook verification failed' });
     }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const telegramId = session.metadata.telegramId || '';
 
-      await setDoc(doc(db, 'orders', session.id), {
-        userId: session.metadata.userId,
-        email: session.customer_email,
-        telegramId: telegramId,
-        created: new Date(),
-        plan: session.mode === 'subscription' ? 'Basic Signals' : 'Merch Purchase',
-        amount: session.amount_total ? session.amount_total / 100 : null,
-        items: session.mode === 'payment' ? session.line_items?.data.map(item => ({
-          name: item.description,
-          quantity: item.quantity,
-          amount: item.amount_total / 100,
-        })) : null,
-      });
+      try {
+        await setDoc(doc(db, 'orders', session.id), {
+          userId: session.metadata.userId,
+          email: session.customer_email,
+          telegramId: telegramId,
+          created: new Date(),
+          plan: session.mode === 'subscription' ? 'Basic Signals' : 'Merch Purchase',
+          amount: session.amount_total ? session.amount_total / 100 : null,
+          items: session.mode === 'payment' ? session.line_items?.data.map(item => ({
+            name: item.description,
+            quantity: item.quantity,
+            amount: item.amount_total / 100,
+          })) : null,
+        });
 
-      if (telegramId && session.mode === 'subscription') {
-        const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
-        const telegramInviteLink = 'https://t.me/+HGRgldHTRlxjMThh';
-        const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${telegramInviteLink}`;
+        if (telegramId && session.mode === 'subscription') {
+          const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+          const telegramInviteLink = 'https://t.me/+HGRgldHTRlxjMThh';
+          const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${telegramInviteLink}`;
 
-        try {
           await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             chat_id: telegramId,
             text: message,
           });
-          console.log('Telegram invite sent to:', telegramId);
-        } catch (error) {
-          console.error('Telegram error:', error);
         }
+      } catch (error) {
+        console.error('Error processing webhook:', error);
+        return res.status(500).json({ error: 'Failed to process webhook' });
       }
-
-      console.log('Order saved to Firestore:', session);
     }
 
     return res.status(200).json({ received: true });

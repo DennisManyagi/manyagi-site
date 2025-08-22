@@ -65,13 +65,15 @@ export default function Designs() {
             category="designs"
             className="text-center"
           >
-            <p className="text-16px font-bold mb-4">${product.price.toFixed(2)}</p>
-            <button
-              onClick={() => handleAddToCart(product)}
-              className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition"
-            >
-              Add to Cart
-            </button>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-16px font-bold">${product.price.toFixed(2)}</p>
+              <button
+                onClick={() => handleAddToCart(product)}
+                className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition"
+              >
+                Add to Cart
+              </button>
+            </div>
           </Card>
         ))}
       </section>

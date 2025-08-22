@@ -9,7 +9,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
 
   return (
     <motion.section
-      className={`relative ${height} flex flex-col items-center overflow-hidden bg-white z-0 sm:justify-center`}
+      className={`relative min-h-[600px] sm:${height} flex flex-col items-center overflow-hidden bg-white z-0`}
       aria-labelledby="hero-title"
     >
       {showVideo && videoSrc && (
@@ -34,7 +34,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
           className="z-0 relative w-full h-auto sm:absolute sm:inset-0 sm:h-full sm:w-full"
         >
           {carouselImages.map((img, i) => (
-            <img key={i} src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
+            <img key={i} src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-auto sm:h-full" loading="lazy" />
           ))}
         </Carousel>
       )}
@@ -42,7 +42,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
         <div className="absolute inset-0 bg-black/50 z-10 hidden sm:block" />
       )}
       <div
-        className={`relative z-30 p-10 max-w-4xl mx-auto flex flex-col items-center text-center text-black ${hasMedia ? 'sm:text-white' : ''}`}
+        className={`relative z-30 p-10 max-w-4xl mx-auto flex flex-col items-center text-center text-black ${hasMedia ? 'sm:text-white' : ''} mt-auto sm:mt-0`}
       >
         <motion.span
           initial={{ opacity: 0 }}

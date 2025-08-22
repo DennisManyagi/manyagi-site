@@ -23,7 +23,6 @@ export default function About() {
         title="Our Story"
         lead="Unifying creativity and commerce across publishing, designs, capital, tech, and media."
         carouselImages={carouselImages}
-        videoSrc="/videos/hero-bg.mp4"
         height="h-[600px]"
       >
         <Link href="#mission" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">

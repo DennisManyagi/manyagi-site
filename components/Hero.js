@@ -42,9 +42,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
         <div className="absolute inset-0 bg-black/50 z-10 hidden sm:block" />
       )}
       <div
-        className={`relative z-30 p-6 sm:p-10 max-w-4xl mx-auto flex flex-col items-center text-center max-h-[50%] sm:max-h-full overflow-auto ${
-          hasMedia ? 'text-white sm:text-white' : 'text-black'
-        }`}
+        className={`relative z-30 p-10 max-w-4xl mx-auto flex flex-col items-center text-center text-black ${hasMedia ? 'sm:text-white' : ''}`}
       >
         <motion.span
           initial={{ opacity: 0 }}

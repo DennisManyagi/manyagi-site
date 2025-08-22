@@ -6,7 +6,7 @@ import { Carousel } from 'react-responsive-carousel';
 const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, height = 'h-[600px]' }) => {
   return (
     <motion.section
-      className={`relative ${height} flex flex-col sm:flex-row items-center justify-center overflow-hidden bg-white z-0`}
+      className={`relative ${height} flex flex-col items-center overflow-hidden bg-white z-0 sm:justify-center`}
       aria-labelledby="hero-title"
     >
       {videoSrc && (
@@ -14,7 +14,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
           autoPlay={typeof window !== 'undefined' && window.innerWidth >= 640 ? true : false}
           loop
           muted
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="relative w-full h-auto object-cover z-0 sm:absolute sm:inset-0 sm:h-full sm:w-full"
           src={videoSrc}
           aria-hidden="true"
         />
@@ -28,47 +28,25 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
           infiniteLoop
           stopOnHover
           showArrows
-          className="z-0 relative w-full sm:w-1/2 h-auto sm:h-full mt-0" // Added mt-0 for mobile top alignment
+          className="z-0 relative w-full h-auto sm:absolute sm:inset-0 sm:h-full sm:w-full"
         >
           {carouselImages.map((img, i) => (
-            <div key={i} className="w-full h-full"> {/* Wrapper div to ensure full height */}
-              <img src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
-            </div>
+            <img key={i} src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
           ))}
         </Carousel>
       )}
-      <div className="relative z-30 p-10 text-black max-w-4xl mx-auto flex flex-col items-center text-center py-4">
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="uppercase tracking-widest text-lg mb-4"
-        >
+      <div className="absolute inset-0 bg-black/50 z-10 hidden sm:block" />
+      <div className="relative z-30 p-10 text-black sm:text-white max-w-4xl mx-auto flex flex-col items-center text-center">
+        <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="uppercase tracking-widest text-lg mb-4">
           {kicker}
         </motion.span>
-        <motion.h1
-          id="hero-title"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-5xl font-bold mb-4 leading-tight"
-        >
+        <motion.h1 id="hero-title" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-5xl font-bold mb-4 leading-tight">
           {title}
         </motion.h1>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-base mb-8 max-w-2xl"
-        >
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-base mb-8 max-w-2xl">
           {lead}
         </motion.p>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="flex flex-col md:flex-row gap-4"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="flex flex-col md:flex-row gap-4">
           {children}
         </motion.div>
       </div>

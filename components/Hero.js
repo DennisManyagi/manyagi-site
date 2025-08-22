@@ -11,7 +11,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
     >
       {videoSrc && (
         <video
-          autoPlay={typeof window !== 'undefined' && window.innerWidth >= 640 ? true : false} // Disable autoplay on mobile (<640px)
+          autoPlay={typeof window !== 'undefined' && window.innerWidth >= 640 ? true : false}
           loop
           muted
           className="absolute inset-0 w-full h-full object-cover z-0"
@@ -28,10 +28,12 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
           infiniteLoop
           stopOnHover
           showArrows
-          className="z-0 relative w-full sm:w-1/2 h-auto sm:h-full"
+          className="z-0 relative w-full sm:w-1/2 h-auto sm:h-full mt-0" // Added mt-0 for mobile top alignment
         >
           {carouselImages.map((img, i) => (
-            <img key={i} src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
+            <div key={i} className="w-full h-full"> {/* Wrapper div to ensure full height */}
+              <img src={img} alt={`Slide ${i + 1}`} className="object-cover w-full h-full" loading="lazy" />
+            </div>
           ))}
         </Carousel>
       )}

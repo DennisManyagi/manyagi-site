@@ -23,7 +23,7 @@ export default function Contact() {
         title="Get in Touch"
         lead="We’re here to help with your questions."
         carouselImages={carouselImages}
-        height="h-[300px]"
+        height="h-[600px]" // Changed to match designs.js
       >
         <Link href="#form" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
           Contact Us
@@ -77,10 +77,12 @@ export default function Contact() {
           <p className="text-base mb-4">Phone: +1 (555) 123-4567</p>
           <p className="text-base mb-4">Address: 123 Manyagi St, Story City, SC 12345</p>
           <h3 className="text-2xl font-bold mb-4">FAQ</h3>
-          <p className="text-base mb-2">Q: How do I track my order?</p>
-          <p className="text-base mb-4">A: Visit our <Link href="/track" className="text-blue-600 hover:underline">Track</Link> page.</p>
-          <p className="text-base mb-2">Q: How do I join the trading signals?</p>
-          <p className="text-base mb-4">A: Subscribe on the <Link href="/capital" className="text-blue-600 hover:underline">Capital</Link> page.</p>
+          <div className="space-y-2">
+            <p className="text-base font-semibold">Q: How do I track my order?</p>
+            <p className="text-base mb-4">A: Visit our <Link href="/track" className="text-blue-600 hover:underline">Track</Link> page.</p>
+            <p className="text-base font-semibold">Q: How do I join the trading signals?</p>
+            <p className="text-base mb-4">A: Subscribe on the <Link href="/capital" className="text-blue-600 hover:underline">Capital</Link> page.</p>
+          </div>
         </Card>
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">

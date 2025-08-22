@@ -23,7 +23,7 @@ export default function Contact() {
         title="Get in Touch"
         lead="We’re here to help with your questions."
         carouselImages={carouselImages}
-        height="h-[300px]"
+        height="h-[600px]"
       >
         <Link href="#form" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
           Contact Us
@@ -73,14 +73,18 @@ export default function Contact() {
           image="/images/community-photo.webp"
           className="text-center"
         >
-          <p className="text-base mb-4">Email: support@manyagi.com</p>
-          <p className="text-base mb-4">Phone: +1 (555) 123-4567</p>
-          <p className="text-base mb-4">Address: 123 Manyagi St, Story City, SC 12345</p>
-          <h3 className="text-2xl font-bold mb-4">FAQ</h3>
-          <p className="text-base mb-2">Q: How do I track my order?</p>
-          <p className="text-base mb-4">A: Visit our <Link href="/track" className="text-blue-600 hover:underline">Track</Link> page.</p>
-          <p className="text-base mb-2">Q: How do I join the trading signals?</p>
-          <p className="text-base mb-4">A: Subscribe on the <Link href="/capital" className="text-blue-600 hover:underline">Capital</Link> page.</p>
+          <div className="flex flex-col items-center">
+            <p className="text-base mb-4">Email: support@manyagi.com</p>
+            <p className="text-base mb-4">Phone: +1 (555) 123-4567</p>
+            <p className="text-base mb-4">Address: 123 Manyagi St, Story City, SC 12345</p>
+            <h3 className="text-2xl font-bold mb-4">FAQ</h3>
+            <div className="flex flex-col items-center w-full">
+              <p className="text-base mb-2">Q: How do I track my order?</p>
+              <p className="text-base mb-4">A: Visit our <Link href="/track" className="text-blue-600 hover:underline">Track</Link> page.</p>
+              <p className="text-base mb-2">Q: How do I join the trading signals?</p>
+              <p className="text-base mb-4">A: Subscribe on the <Link href="/capital" className="text-blue-600 hover:underline">Capital</Link> page.</p>
+            </div>
+          </div>
         </Card>
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">

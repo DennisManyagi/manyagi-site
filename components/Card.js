@@ -21,20 +21,22 @@ const Card = ({ children, className = '', title, description, image, link, categ
       onClick={handleClick}
     >
       {image && <img src={image} alt={title || 'Card Image'} className="w-full h-[300px] object-cover" loading="lazy" />}
-      <div className="p-6">
-        {title && <h3 className="text-2xl font-bold mb-4">{title}</h3>}
-        {description && <p className="text-gray-700 text-base mb-6">{description}</p>}
+      <div className="p-6 text-center"> {/* Added text-center for global centering */}
+        {title && <h3 className="text-2xl font-bold mb-4">{title}</h3>} {/* Consistent mb-4 for equal spacing */}
+        {description && <p className="text-gray-700 text-base mb-4">{description}</p>} {/* mb-4 instead of mb-6 for equality */}
         {link && (
           <a
             href={link}
-            className={`btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition ${className.includes('capital') ? 'hover:bg-purple-500' : ''}`}
+            className={`btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition block mx-auto w-fit mb-4 ${className.includes('capital') ? 'hover:bg-purple-500' : ''}`} {/* Added block mx-auto w-fit mb-4 for centering and spacing */}
             target="_blank"
             rel="noopener noreferrer"
           >
             Learn More
           </a>
         )}
-        <div className="flex space-x-4">{children}</div>
+        <div className="flex flex-wrap justify-center gap-4 items-center"> {/* Changed to flex-wrap justify-center gap-4 for responsive inline/stacking, centered group */}
+          {children}
+        </div>
       </div>
     </motion.article>
   );

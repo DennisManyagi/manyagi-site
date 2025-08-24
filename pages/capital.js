@@ -33,7 +33,7 @@ export default function Capital() {
         carouselImages={carouselImages}
         height="h-[600px]"
       >
-        <Link href="#signals" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition">
+        <Link href="#subscribe" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition">
           Subscribe
         </Link>
       </Hero>
@@ -88,7 +88,7 @@ export default function Capital() {
         />
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SignalsSubscriptionForm priceId="price_1Rwfe5IFtQrr5DjcidsMeAOM" />
+        <SignalsSubscriptionForm priceId="price_1RzaWkIFtQrr5DjcRBPLRd37" />
       </section>
       <Recommender />
     </>

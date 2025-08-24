@@ -10,6 +10,7 @@ export default function ThankYou() {
   const router = useRouter();
   const { session_id } = router.query;
   const [orderDetails, setOrderDetails] = useState(null);
+  const [error, setError] = useState('');
   const carouselImages = [
     '/images/og-designs.webp',
     '/images/merch-carousel-1.webp',
@@ -20,8 +21,17 @@ export default function ThankYou() {
     if (session_id) {
       fetch(`/api/order-details?session_id=${session_id}`)
         .then(res => res.json())
-        .then(data => setOrderDetails(data))
-        .catch(err => console.error(err));
+        .then(data => {
+          if (data.error) {
+            setError(data.error);
+          } else {
+            setOrderDetails(data);
+          }
+        })
+        .catch(err => {
+          console.error('Fetch order details error:', err);
+          setError('Failed to fetch order details');
+        });
     }
   }, [session_id]);
 
@@ -34,7 +44,13 @@ export default function ThankYou() {
       <Hero
         kicker="Thank You"
         title="Order Confirmed"
-        lead={orderDetails ? `Your ${orderDetails.plan} is complete. Check your email for details.` : "Your purchase is complete. Check your email for details."}
+        lead={
+          error
+            ? 'Your purchase is complete, but we couldn’t fetch order details. Check your email for confirmation.'
+            : orderDetails
+            ? `Your ${orderDetails.plan || 'subscription'} is complete. Check your email for details.`
+            : 'Your purchase is complete. Check your email for details.'
+        }
         carouselImages={carouselImages}
         height="h-[600px]"
       >
@@ -44,6 +60,7 @@ export default function ThankYou() {
       </Hero>
       <section className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Share Your Purchase</h2>
+        {error && <p className="text-red-500 text-base mb-4">{error}</p>}
         <div className="flex gap-4 text-lg">
           <a href="https://x.com/share?url=https://manyagi.com" className="text-blue-600 hover:text-blue-500">
             <FaTwitter size={24} />
@@ -58,4 +75,4 @@ export default function ThankYou() {
       </section>
     </>
   );
-};
+}

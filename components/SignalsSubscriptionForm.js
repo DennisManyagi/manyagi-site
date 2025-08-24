@@ -23,11 +23,20 @@ const SignalsSubscriptionForm = ({ priceId }) => {
       });
 
       const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        throw new Error(
+          data.error.includes('Telegram ID')
+            ? 'Please enter a valid Telegram ID'
+            : data.error.includes('price')
+            ? 'Invalid subscription plan. Please try again later.'
+            : data.error
+        );
+      }
 
       // Redirect to Stripe Checkout
       window.location.href = data.url;
     } catch (err) {
+      console.error('Subscription error:', err.message);
       setError(err.message || 'Failed to start subscription');
     } finally {
       setLoading(false);

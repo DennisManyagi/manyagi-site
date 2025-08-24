@@ -1,7 +1,7 @@
 // pages/capital.js
 import Head from 'next/head';
 import Link from 'next/link';
-import SubscriptionForm from '../components/SubscriptionForm';
+import SignalsSubscriptionForm from '../components/SignalsSubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
@@ -88,13 +88,7 @@ export default function Capital() {
         />
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SubscriptionForm
-          formId="8432549"
-          uid="877716573d"
-          title="Join Our Trading Community"
-          description="Get signals and bot updates via Telegram."
-          includeTelegramId
-        />
+        <SignalsSubscriptionForm priceId="price_1Rwfe5IFtQrr5DjcidsMeAOM" />
       </section>
       <Recommender />
     </>

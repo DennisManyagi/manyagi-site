@@ -44,11 +44,11 @@ export default function Capital() {
             title="Weekly Performance"
             description="See our latest trading results."
             image="/images/performance-chart.png"
-            link="https://myfxbook.com/manyagi"
+            link="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957"
             category="capital"
             className="text-center"
           >
-            <Link href="https://myfxbook.com/manyagi" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition" target="_blank" rel="noopener noreferrer">
+            <Link href="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition" target="_blank" rel="noopener noreferrer">
               View Myfxbook
             </Link>
           </Card>

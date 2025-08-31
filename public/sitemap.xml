@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://manyagi.net/</loc><lastmod>2025-08-15</lastmod><priority>1.0</priority></url>
-  <url><loc>https://manyagi.net/publishing</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/designs</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/media</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/capital</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/tech</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/blog</loc><lastmod>2025-08-15</lastmod><priority>0.8</priority></url>
-  <url><loc>https://manyagi.net/blog/example-post</loc><lastmod>2025-08-15</lastmod><priority>0.7</priority></url>
-  <url><loc>https://manyagi.net/about</loc><lastmod>2025-08-15</lastmod><priority>0.7</priority></url>
-  <url><loc>https://manyagi.net/contact</loc><lastmod>2025-08-15</lastmod><priority>0.7</priority></url>
-  <url><loc>https://manyagi.net/privacy</loc><lastmod>2025-08-15</lastmod><priority>0.6</priority></url>
-  <url><loc>https://manyagi.net/terms</loc><lastmod>2025-08-15</lastmod><priority>0.6</priority></url>
-  <url><loc>https://manyagi.net/thank-you</loc><lastmod>2025-08-15</lastmod><priority>0.5</priority></url>
-  <url><loc>https://manyagi.net/coming-soon</loc><lastmod>2025-08-15</lastmod><priority>0.5</priority></url>
+  <url><loc>https://manyagi.net/</loc><lastmod>2025-08-30</lastmod><priority>1.0</priority></url>
+  <url><loc>https://manyagi.net/publishing</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/designs</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/media</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/capital</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/tech</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/realty</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/blog</loc><lastmod>2025-08-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://manyagi.net/blog/example-post</loc><lastmod>2025-08-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://manyagi.net/about</loc><lastmod>2025-08-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://manyagi.net/contact</loc><lastmod>2025-08-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://manyagi.net/privacy</loc><lastmod>2025-08-30</lastmod><priority>0.6</priority></url>
+  <url><loc>https://manyagi.net/terms</loc><lastmod>2025-08-30</lastmod><priority>0.6</priority></url>
+  <url><loc>https://manyagi.net/thank-you</loc><lastmod>2025-08-30</lastmod><priority>0.5</priority></url>
+  <url><loc>https://manyagi.net/coming-soon</loc><lastmod>2025-08-30</lastmod><priority>0.5</priority></url>
 </urlset>

@@ -5,32 +5,45 @@ import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import Recommender from './Recommender';
 import { supabase } from '../lib/supabase';
+import { useState } from 'react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 const Cart = () => {
   const items = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState({ address1: '', city: '', state: '', country: 'US', zip: '' });
+  const [error, setError] = useState('');
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const handleCheckout = async () => {
+    if (!email) {
+      setError('Email required');
+      return;
+    }
+    if (items.some(i => i.productType === 'merch' || i.productType === 'rental') && (!address.address1 || !address.city)) {
+      setError('Address required for shipping/rental');
+      return;
+    }
+    setError('');
+
     const stripe = await stripePromise;
     try {
       const response = await fetch('/api/stripe/charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, email, address }),
       });
       const data = await response.json();
       if (data.url) {
-        // Save to Supabase pre-checkout
         const { error } = await supabase.from('orders').insert({
           stripe_session_id: data.sessionId,
           total_amount: total,
           status: 'pending',
           items: items,
-          user_id: null, // Guest
+          user_id: null,
           created_at: new Date().toISOString(),
           type: items[0]?.productType || 'general',
         });
@@ -78,6 +91,24 @@ const Cart = () => {
             ))}
           </ul>
           <p className="text-right font-bold text-base mb-4">Total: ${total.toFixed(2)}</p>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full p-3 border rounded bg-white text-black mb-2"
+            required
+          />
+          {items.some(i => i.productType === 'merch' || i.productType === 'rental') && (
+            <>
+              <input type="text" value={address.address1} onChange={(e) => setAddress({ ...address, address1: e.target.value })} placeholder="Address" className="w-full p-3 border rounded bg-white text-black mb-2" />
+              <input type="text" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="City" className="w-full p-3 border rounded bg-white text-black mb-2" />
+              <input type="text" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} placeholder="State" className="w-full p-3 border rounded bg-white text-black mb-2" />
+              <input type="text" value={address.country} onChange={(e) => setAddress({ ...address, country: e.target.value })} placeholder="Country (e.g., US)" className="w-full p-3 border rounded bg-white text-black mb-2" />
+              <input type="text" value={address.zip} onChange={(e) => setAddress({ ...address, zip: e.target.value })} placeholder="Zip" className="w-full p-3 border rounded bg-white text-black mb-2" />
+            </>
+          )}
+          {error && <p className="text-red-500">{error}</p>}
           <button
             onClick={handleCheckout}
             className="btn bg-black text-white py-4 px-6 rounded w-full hover:scale-105 transition"

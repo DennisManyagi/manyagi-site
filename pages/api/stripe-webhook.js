@@ -1,7 +1,7 @@
 // pages/api/stripe-webhook.js
 import { buffer } from 'micro';
 import Stripe from 'stripe';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase'; // Updated to absolute import
 import axios from 'axios';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       case 'checkout.session.completed':
         const session = event.data.object;
         await supabaseAdmin.from('orders').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('stripe_session_id', session.id);
-        if (session.mode === 'payment' && session.line_items.data[0].price_data.metadata.type === 'merch') {
+        if (session.mode === 'payment' && session.line_items?.data[0]?.price_data?.metadata?.type === 'merch') {
           // Trigger Printful if not already
         }
         break;
@@ -41,7 +41,8 @@ export default async function handler(req, res) {
         if (!telegramId || isNaN(telegramId)) return res.status(400).json({ error: 'Invalid Telegram ID' });
 
         await axios.post(`https://api.telegram.org/bot${telegramBotToken}/unbanChatMember`, {
-          chat_id: telegramGroupChatId, user_id: telegramId,
+          chat_id: telegramGroupChatId,
+          user_id: telegramId,
         });
 
         await supabaseAdmin.from('subscriptions').upsert({
@@ -56,7 +57,10 @@ export default async function handler(req, res) {
         });
 
         const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${process.env.TELEGRAM_INVITE_LINK}`;
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, { chat_id: telegramId, text: message });
+        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          chat_id: telegramId,
+          text: message,
+        });
         break;
       case 'customer.subscription.deleted':
       case 'invoice.payment_failed':
@@ -66,7 +70,8 @@ export default async function handler(req, res) {
         if (deletedTelegramId) {
           await supabaseAdmin.from('subscriptions').delete().eq('telegram_id', deletedTelegramId.toString());
           await axios.post(`https://api.telegram.org/bot${telegramBotToken}/banChatMember`, {
-            chat_id: telegramGroupChatId, user_id: deletedTelegramId,
+            chat_id: telegramGroupChatId,
+            user_id: deletedTelegramId,
           });
         }
         break;

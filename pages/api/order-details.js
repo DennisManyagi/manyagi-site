@@ -1,5 +1,5 @@
 // pages/api/order-details.js
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase'; // Updated to absolute import
 
 export default async function handler(req, res) {
   const { session_id } = req.query;

@@ -1,13 +1,21 @@
 // components/Card.js
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../lib/cartSlice';
 
-const Card = ({ children, className = '', title, description, image, link, category }) => {
+const Card = ({ children, className = '', title, description, image, link, category, buyButton = null }) => {
+  const dispatch = useDispatch();
+
   const handleClick = () => {
     if (category) {
       const clicks = JSON.parse(localStorage.getItem('clicks') || '{}');
       clicks[category] = (clicks[category] || 0) + 1;
       localStorage.setItem('clicks', JSON.stringify(clicks));
     }
+  };
+
+  const handleBuy = (product) => {
+    dispatch(addToCart(product));
   };
 
   return (
@@ -33,6 +41,14 @@ const Card = ({ children, className = '', title, description, image, link, categ
           >
             Learn More
           </a>
+        )}
+        {buyButton && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleBuy(buyButton); }}
+            className="btn bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition block mx-auto w-fit"
+          >
+            Buy Now - ${buyButton.price.toFixed(2)}
+          </button>
         )}
         <div className="flex flex-wrap justify-center gap-4 items-center">{children}</div>
       </div>

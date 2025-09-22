@@ -1,6 +1,8 @@
 // pages/capital.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../lib/cartSlice';
 import SignalsSubscriptionForm from '../components/SignalsSubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
@@ -8,6 +10,7 @@ import Card from '../components/Card';
 import { useState } from 'react';
 
 export default function Capital() {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('basics');
   const carouselImages = [
     '/images/chart-hero.webp',
@@ -19,6 +22,8 @@ export default function Capital() {
     { id: 'strategies', title: 'Strategies', content: 'Explore advanced trading strategies for consistent returns.', image: '/images/chart-hero.webp' },
     { id: 'tools', title: 'Tools', content: 'Discover our trading bots and charting tools.', image: '/images/performance-chart.png' },
   ];
+
+  const botLicense = { id: 'bot1', name: 'Trading Bot License', price: 99.99, productType: 'download', image: '/images/bot-license.webp' };
 
   return (
     <>
@@ -85,6 +90,16 @@ export default function Capital() {
           image={tabs.find((tab) => tab.id === activeTab).image}
           category="capital"
           className="text-center"
+        />
+      </section>
+      <section id="bots" className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold mb-6">Trading Bots</h2>
+        <Card
+          title="Bot License"
+          description="Lifetime access to our trading bot."
+          image="/images/bot-license.webp"
+          category="capital"
+          buyButton={botLicense}
         />
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">

@@ -14,6 +14,10 @@ export default function Publishing() {
     '/images/book-carousel-4.webp',
   ];
 
+  const legacyBook = { id: 'legacy', name: 'Legacy of the Hidden Clans eBook', price: 9.99, productType: 'book' };
+  const poetryBook = { id: 'poetry', name: 'Poetry Collection eBook', price: 4.99, productType: 'book' };
+  const novelTwo = { id: 'novel2', name: 'Novel Two eBook', price: 12.99, productType: 'book' };
+
   return (
     <>
       <Head>
@@ -37,13 +41,13 @@ export default function Publishing() {
           description="Embark on an epic journey with D.N. Manyagi’s novel."
           image="/images/legacy-chapter-1.webp"
           category="publishing"
-          className="text-center"
+          buyButton={legacyBook}
         >
           <div className="flex gap-4 mt-4">
             <Link href="https://amazon.com/legacy-hidden-clans" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
               Buy on Amazon
             </Link>
-            <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 1)_by D.N. Manyagi.pdf" className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
+            <Link href="/assets/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf" className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
               Read Chapter 1
             </Link>
             <Link href="https://amazon.com/legacy-hidden-clans-audiobook" className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
@@ -56,7 +60,7 @@ export default function Publishing() {
           description="Explore heartfelt verses by D.N. Manyagi."
           image="/images/book-carousel-1.webp"
           category="publishing"
-          className="text-center"
+          buyButton={poetryBook}
         >
           <div className="flex gap-4 mt-4">
             <Link href="https://amazon.com/manyagi-poetry" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
@@ -72,10 +76,10 @@ export default function Publishing() {
           description="A thrilling sequel to Legacy of the Hidden Clans."
           image="/images/book-carousel-2.webp"
           category="publishing"
-          className="text-center"
+          buyButton={novelTwo}
         >
           <div className="flex gap-4 mt-4">
-            <Link href="/assets/Legacy_of_the_Hidden_Clans (Chapter 2)_by D.N. Manyagi.pdf" className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
+            <Link href="/assets/Legacy_of_the_Hidden_Clans_(Chapter_2)_by_D.N._Manyagi.pdf" className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
               Read Chapter 2
             </Link>
             <Link href="https://amazon.com/legacy-hidden-clans-2" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">

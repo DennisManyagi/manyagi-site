@@ -1,28 +1,37 @@
 // pages/designs.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
-import { useState } from 'react';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
-import { loadStripe } from '@stripe/stripe-js';
-import { motion } from 'framer-motion';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-
 export default function Designs() {
-  const dispatch = useDispatch();
+  const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const dispatch = useDispatch();
 
-  const products = [
-    { id: '1', name: 'Story T-shirt', price: 29.99, stripePriceId: 'price_1', image: '/images/mock-tee-1.webp', description: 'Soft cotton tee inspired by Legacy of the Hidden Clans.' },
-    { id: '2', name: 'Story Mug', price: 19.99, stripePriceId: 'price_2', image: '/images/mock-mug-1.webp', description: 'Ceramic mug with story-inspired design.' },
-    { id: '3', name: 'Story Print', price: 39.99, stripePriceId: 'price_3', image: '/images/mock-print-1.webp', description: 'High-quality art print for your space.' },
-    { id: '4', name: 'Story Hoodie', price: 49.99, stripePriceId: 'price_4', image: '/images/merch-carousel-1.webp', description: 'Cozy hoodie with bold story graphics.' },
-  ];
+  useEffect(() => {
+    fetch('/api/printful/products')
+      .then(res => res.json())
+      .then(setProducts)
+      .catch(() => {
+        setProducts([
+          { id: '1', name: 'Story T-shirt', price: 29.99, image: '/images/mock-tee-1.webp', variantId: '1' },
+          { id: '2', name: 'Story Mug', price: 19.99, image: '/images/mock-mug-1.webp', variantId: '2' },
+          // Add more as needed for fallback
+        ]);
+      });
+  }, []);
+
+  const handleAddToCart = (product) => {
+    dispatch(addToCart({ ...product, productType: 'merch' }));
+    setShowModal(true);
+    setTimeout(() => setShowModal(false), 2000);
+  };
 
   const carouselImages = [
     '/images/merch-carousel-1.webp',
@@ -31,12 +40,6 @@ export default function Designs() {
     '/images/merch-carousel-4.webp',
     '/images/merch-carousel-5.webp',
   ];
-
-  const handleAddToCart = async (product) => {
-    dispatch(addToCart(product));
-    setShowModal(true);
-    setTimeout(() => setShowModal(false), 2000);
-  };
 
   return (
     <>
@@ -60,21 +63,11 @@ export default function Designs() {
           <Card
             key={product.id}
             title={product.name}
-            description={product.description}
+            description="Print-on-demand merch."
             image={product.image}
             category="designs"
-            className="text-center"
-          >
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-16px font-bold">${product.price.toFixed(2)}</p>
-              <button
-                onClick={() => handleAddToCart(product)}
-                className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition"
-              >
-                Add to Cart
-              </button>
-            </div>
-          </Card>
+            buyButton={{ ...product, productType: 'merch' }}
+          />
         ))}
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">

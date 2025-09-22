@@ -1,17 +1,22 @@
 // pages/tech.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../lib/cartSlice';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 
 export default function Tech() {
+  const dispatch = useDispatch();
   const carouselImages = [
     '/images/app-carousel-1.webp',
     '/images/app-carousel-2.webp',
     '/images/app-carousel-3.webp',
   ];
+
+  const techDownload = { id: 'tech1', name: 'Premium Bot Download', price: 49.99, productType: 'download', image: '/images/bot-license.webp' };
 
   return (
     <>
@@ -69,6 +74,16 @@ export default function Tech() {
         >
           <Link href="https://community.manyagi.com" className="text-blue-600 hover:underline">Join Now</Link>
         </Card>
+      </section>
+      <section id="downloads" className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold mb-6">Premium Downloads</h2>
+        <Card
+          title="Bot Download"
+          description="Advanced trading bot software."
+          image="/images/bot-license.webp"
+          buyButton={techDownload}
+          category="tech"
+        />
       </section>
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm

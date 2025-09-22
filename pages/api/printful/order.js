@@ -6,7 +6,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { items, customer } = req.body;
+  const { items, customer } = req.body; // customer from Stripe metadata
+
+  if (!customer.address1 || !customer.city) {
+    return res.status(400).json({ error: 'Missing customer address' });
+  }
 
   try {
     const response = await fetch('https://api.printful.com/v2/orders', {
@@ -16,15 +20,8 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        recipient: {
-          name: customer.name,
-          address1: customer.address,
-          city: customer.city,
-          state_code: customer.state,
-          country_code: customer.country,
-          zip: customer.zip,
-        },
-        items: items.map(item => ({
+        recipient: customer,
+        items: items.filter(i => i.productType === 'merch').map(item => ({
           variant_id: item.variantId,
           quantity: item.quantity,
           name: item.name,

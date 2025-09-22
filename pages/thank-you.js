@@ -61,6 +61,14 @@ export default function ThankYou() {
       <section className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Share Your Purchase</h2>
         {error && <p className="text-red-500 text-base mb-4">{error}</p>}
+        {orderDetails && (
+          <div>
+            <p>Type: {orderDetails.type}</p>
+            {orderDetails.type === 'merch' && <p>Track at /track</p>}
+            {orderDetails.type === 'download' && <a href="/assets/bot-license.pdf">Download</a>}
+            {orderDetails.type === 'book' && <a href="/assets/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf">Download eBook</a>}
+          </div>
+        )}
         <div className="flex gap-4 text-lg">
           <a href="https://x.com/share?url=https://manyagi.com" className="text-blue-600 hover:text-blue-500">
             <FaTwitter size={24} />

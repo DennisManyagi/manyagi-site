@@ -1,15 +1,15 @@
 // pages/realty.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '../lib/cartSlice';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 export default function Realty() {
+  const dispatch = useDispatch();
   const carouselImages = [
     '/images/home-carousel-1.webp',
     '/images/home-carousel-2.webp',
@@ -21,21 +21,21 @@ export default function Realty() {
       id: '1',
       title: 'Big Bear Cabin',
       description: 'Cozy cabin rented on Airbnb and Booking.com',
-      image: '/images/book-carousel-1.webp',
+      image: '/images/rental-bigbear.webp',
       price: 200,
     },
     {
       id: '2',
       title: 'Mombasa Property 1',
       description: 'Beautiful property in Mombasa',
-      image: '/images/book-carousel-2.webp',
+      image: '/images/rental-mombasa1.webp',
       price: 150,
     },
     {
       id: '3',
       title: 'Mombasa Property 2',
       description: 'Another great property in Mombasa',
-      image: '/images/book-carousel-3.webp',
+      image: '/images/rental-mombasa2.webp',
       price: 150,
     },
     {
@@ -54,24 +54,8 @@ export default function Realty() {
     },
   ];
 
-  const handleRent = async (rental) => {
-    const stripe = await stripePromise;
-    try {
-      const response = await fetch('/api/stripe/charge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: [{ name: rental.title, price: rental.price }] }),
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert('Failed to initiate rental checkout');
-      }
-    } catch (error) {
-      console.error('Rental error:', error);
-      alert('An error occurred during checkout');
-    }
+  const handleRent = (rental) => {
+    dispatch(addToCart({ ...rental, productType: 'rental' }));
   };
 
   return (
@@ -99,7 +83,7 @@ export default function Realty() {
         <p className="text-base mb-4">
           Serving Santa Clarita and Los Angeles areas. Experienced in Henderson, NV. In real estate since September 2022.
         </p>
-        <p className="text-base mb-4">California DRE# 01932176</p>
+        <p className="text-base mb-4">California DRE# [INSERT LICENSE NUMBER HERE]</p>
       </section>
       <section id="services" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
         <Card
@@ -130,15 +114,8 @@ export default function Realty() {
             description={rental.description}
             image={rental.image}
             className="text-center"
-          >
-            <p className="text-base font-bold">${rental.price}/night</p>
-            <button
-              onClick={() => handleRent(rental)}
-              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:scale-105 transition"
-            >
-              Rent Now
-            </button>
-          </Card>
+            buyButton={{ ...rental, productType: 'rental' }}
+          />
         ))}
       </section>
       <section id="resources" className="container mx-auto px-4 py-16">

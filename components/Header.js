@@ -2,9 +2,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { useSelector } from 'react-redux';
 
 const Header = () => {
   const router = useRouter();
+  const items = useSelector((state) => state.cart.items);
+  const cartCount = items.length;
 
   return (
     <header className={`sticky top-0 bg-white z-50 border-b border-gray-300 text-black`}>
@@ -24,7 +27,7 @@ const Header = () => {
           <Link href="/about" className="hover:text-yellow-500 transition">About</Link>
           <Link href="/contact" className="hover:text-yellow-500 transition">Contact</Link>
           <Link href="/links" className="hover:text-yellow-500 transition">Links</Link>
-          <Link href="/cart" className="hover:text-yellow-500 transition">Cart</Link>
+          <Link href="/cart" className="hover:text-yellow-500 transition">Cart ({cartCount})</Link>
         </nav>
       </div>
     </header>

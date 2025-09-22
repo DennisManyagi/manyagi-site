@@ -4,6 +4,7 @@ import { removeFromCart, updateQuantity } from '../lib/cartSlice';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import Recommender from './Recommender';
+import { supabase } from '../lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
@@ -23,6 +24,17 @@ const Cart = () => {
       });
       const data = await response.json();
       if (data.url) {
+        // Save to Supabase pre-checkout
+        const { error } = await supabase.from('orders').insert({
+          stripe_session_id: data.sessionId,
+          total_amount: total,
+          status: 'pending',
+          items: items,
+          user_id: null, // Guest
+          created_at: new Date().toISOString(),
+          type: items[0]?.productType || 'general',
+        });
+        if (error) console.error('Supabase save error:', error);
         window.location.href = data.url;
       } else {
         alert('Failed to initiate checkout');

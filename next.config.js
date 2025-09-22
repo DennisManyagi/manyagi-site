@@ -85,7 +85,12 @@ const nextConfig = withTM({
     ];
   },
   env: {
-    SITE_URL: process.env.NEXTAUTH_URL || 'https://manyagi.net',
+    // Only include client-side variables
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
 });
 

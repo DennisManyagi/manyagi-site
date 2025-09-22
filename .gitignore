@@ -44,3 +44,26 @@ coverage/
 
 # Miscellaneous
 package\ copy.json
+
+# Virtual env
+venv/
+
+# Scan reports and tools
+scan_reports/
+repo_scanner.py
+requirements.txt
+
+# Shadcn or extra UI
+src/
+tsconfig.json
+components.json
+
+# Python extras
+*.pyc
+__pycache__
+*.pyo
+*.pyd
+.Python
+*.egg-info
+pip-log.txt
+pip-delete-this-directory.txt

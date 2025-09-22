@@ -64,7 +64,7 @@ const nextConfig = withTM({
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://static.hotjar.com https://script.hotjar.com https://cdn.mxpnl.com https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://syndication.twitter.com https://printful.com https://dlbbjeohndiwtofitwec.supabase.co; connect-src 'self' https://api.stripe.com https://api.printful.com https://api.telegram.org https://api.mixpanel.com https://api-js.mixpanel.com https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; font-src 'self' https://fonts.gstatic.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://syndication.twitter.com https://printful.com https://dlbbjeohndiwtofitwec.supabase.co; connect-src 'self' https://api.stripe.com https://api.printful.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; font-src 'self' https://fonts.gstatic.com;",
           },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
@@ -73,7 +73,7 @@ const nextConfig = withTM({
   },
   experimental: {
     esmExternals: 'loose',
-    optimizePackageImports: ['@tsparticles/engine', 'gsap', 'framer-motion'],
+    optimizePackageImports: ['@tsparticles/engine', '@@tsparticles/engine', 'gsap', 'framer-motion'],
   },
   compress: true,
   async rewrites() {
@@ -85,12 +85,7 @@ const nextConfig = withTM({
     ];
   },
   env: {
-    // Only include client-side variables
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    SITE_URL: process.env.NEXTAUTH_URL || 'https://manyagi.net',
   },
 });
 

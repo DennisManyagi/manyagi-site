@@ -73,7 +73,7 @@ const nextConfig = withTM({
   },
   experimental: {
     esmExternals: 'loose',
-    optimizePackageImports: ['@tsparticles/engine', '@@tsparticles/engine', 'gsap', 'framer-motion'],
+    optimizePackageImports: ['@tsparticles/engine', 'gsap', 'framer-motion'],
   },
   compress: true,
   async rewrites() {

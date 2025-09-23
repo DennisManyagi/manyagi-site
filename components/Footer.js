@@ -79,7 +79,7 @@ const Footer = () => {
         </div>
         <div className="flex gap-4 text-lg relative">
           {currentLinks.map((link) => (
-            <div key={link.platform}>
+            <div key={link.platform} className="relative">
               <button onClick={() => toggleDropdown(link.platform)} aria-label={link.platform}>
                 {link.platform === 'instagram' && <FaInstagram className="hover:text-yellow-500 transition" />}
                 {link.platform === 'tiktok' && <FaTiktok className="hover:text-yellow-500 transition" />}
@@ -89,7 +89,7 @@ const Footer = () => {
                 {link.platform === 'pinterest' && <FaPinterest className="hover:text-yellow-500 transition" />}
               </button>
               {isOpen[link.platform] && (
-                <div className="absolute bottom-full mb-2 bg-white text-black p-2 rounded shadow-lg left-0">
+                <div className="absolute bottom-full mb-2 bg-white text-black p-2 rounded shadow-lg z-10">
                   <a href={link.handle} target="_blank" rel="noopener noreferrer">{link.label}</a>
                 </div>
               )}

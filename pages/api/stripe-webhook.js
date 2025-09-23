@@ -1,6 +1,6 @@
 import { buffer } from 'micro';
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase'; // Remove .js extension
+import { supabaseAdmin } from '@/lib/supabase';
 import axios from 'axios';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -27,9 +27,11 @@ export default async function handler(req, res) {
     switch (event.type) {
       case 'checkout.session.completed':
         const session = event.data.object;
+        const { data: order } = await supabaseAdmin.from('orders').select('printful_order_id').eq('stripe_session_id', session.id).single();
         await supabaseAdmin.from('orders').update({ status: 'paid', updated_at: new Date().toISOString() }).eq('stripe_session_id', session.id);
-        if (session.mode === 'payment' && session.line_items?.data[0]?.price_data?.metadata?.type === 'merch') {
-          // Trigger Printful if not already
+        if (session.mode === 'payment' && session.line_items?.data[0]?.price_data?.metadata?.type === 'merch' && order?.printful_order_id) {
+          // Trigger Printful confirmation
+          await axios.post('/api/printful/confirm', { order_id: order.printful_order_id });
         }
         break;
       case 'customer.subscription.created':

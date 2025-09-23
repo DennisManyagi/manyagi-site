@@ -10,9 +10,8 @@ export default async function handler(req, res) {
 
   try {
     const { data, error } = await supabaseAdmin.from('orders').select('*').eq('stripe_session_id', session_id).single();
-    if (error || !data) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Order not found' });
     res.status(200).json({ ...data, type: data.type || 'general' });
   } catch (error) {
     console.error('Supabase error:', error);

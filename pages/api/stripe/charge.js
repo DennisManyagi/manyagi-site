@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase'; // Remove .js extension
+import { supabaseAdmin } from '@/lib/supabase';
 import fetch from 'node-fetch';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -47,8 +47,8 @@ export default async function handler(req, res) {
     });
 
     // Save to Supabase
-    const totalAmount = lineItems.reduce((acc, li) => acc + (li.quantity * li.price_data.unit_amount / 100), 0);
-    const { error: saveError } = await supabaseAdmin.from('orders').insert({
+    const totalAmount = lineItems.reduce((acc, li) => acc + (li.quantity * (li.price_data?.unit_amount || (await stripe.prices.retrieve(li.price)).unit_amount) / 100), 0);
+    const { data: insertedOrder, error: saveError } = await supabaseAdmin.from('orders').insert({
       stripe_session_id: checkoutSession.id,
       total_amount: totalAmount,
       status: 'pending',
@@ -57,16 +57,21 @@ export default async function handler(req, res) {
       user_id: null,
       created_at: new Date().toISOString(),
       type: mode === 'subscription' ? 'signals' : items[0]?.productType || 'general',
-    });
+    }).select().single();
     if (saveError) console.error('Supabase save error:', saveError);
 
     // For merch, pre-create Printful order if address provided
+    let printfulOrderId = null;
     if (items?.some(i => i.productType === 'merch') && address) {
-      await fetch('/api/printful/order', {
+      const response = await fetch('/api/printful/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, customer: { ...address, name: email.split('@')[0] } }),
+        body: JSON.stringify({ items, customer: { ...address, name: email.split('@')[0] || 'Customer' } }), // Improved name fallback
       });
+      const data = await response.json();
+      printfulOrderId = data.orderId;
+      // Update Supabase with Printful ID
+      await supabaseAdmin.from('orders').update({ printful_order_id: printfulOrderId }).eq('id', insertedOrder.id);
     }
 
     return res.status(200).json({ sessionId: checkoutSession.id, url: checkoutSession.url });

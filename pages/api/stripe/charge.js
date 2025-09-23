@@ -46,8 +46,20 @@ export default async function handler(req, res) {
       ...customerData,
     });
 
+    // Fetch prices for subscription items (if any)
+    const pricePromises = lineItems.map(async (li) => {
+      if (li.price_data?.unit_amount) {
+        return li.price_data.unit_amount / 100; // Already have unit_amount
+      } else if (li.price) {
+        const price = await stripe.prices.retrieve(li.price);
+        return price.unit_amount / 100;
+      }
+      return 0; // Fallback
+    });
+    const prices = await Promise.all(pricePromises);
+    const totalAmount = lineItems.reduce((acc, li, index) => acc + (li.quantity * prices[index]), 0);
+
     // Save to Supabase
-    const totalAmount = lineItems.reduce((acc, li) => acc + (li.quantity * (li.price_data?.unit_amount || (await stripe.prices.retrieve(li.price)).unit_amount) / 100), 0);
     const { data: insertedOrder, error: saveError } = await supabaseAdmin.from('orders').insert({
       stripe_session_id: checkoutSession.id,
       total_amount: totalAmount,
@@ -66,7 +78,7 @@ export default async function handler(req, res) {
       const response = await fetch('/api/printful/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, customer: { ...address, name: email.split('@')[0] || 'Customer' } }), // Improved name fallback
+        body: JSON.stringify({ items, customer: { ...address, name: email.split('@')[0] || 'Customer' } }),
       });
       const data = await response.json();
       printfulOrderId = data.orderId;

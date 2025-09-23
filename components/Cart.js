@@ -1,10 +1,10 @@
 // components/Cart.js
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, updateQuantity } from '../lib/cartSlice';
+import { removeFromCart, updateQuantity } from '@/lib/cartSlice'; // Updated to absolute import
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import Recommender from './Recommender';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase'; // Updated to absolute import
 import { useState } from 'react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);

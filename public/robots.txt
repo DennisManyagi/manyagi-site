@@ -1,3 +1,9 @@
+# *
 User-agent: *
 Allow: /
+
+# Host
+Host: https://manyagi.net
+
+# Sitemaps
 Sitemap: https://manyagi.net/sitemap.xml

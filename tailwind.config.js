@@ -80,10 +80,9 @@ module.exports = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
-
-
-
+    plugins: [
+    require('tailwindcss-animate'), // This caused the error if not installed
+  ],
 
 
   

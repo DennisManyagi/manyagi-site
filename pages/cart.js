@@ -1,4 +1,3 @@
-// pages/cart.js
 import Head from 'next/head';
 import Cart from '../components/Cart';
 

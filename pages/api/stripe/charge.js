@@ -1,6 +1,5 @@
-// pages/api/stripe/charge.js
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase.js'; // Added .js extension
 import fetch from 'node-fetch';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -11,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { items, telegramId, priceId, email, address } = req.body; // Added address for Printful
+  const { items, telegramId, priceId, email, address } = req.body;
 
   try {
     if (!items && !priceId) {

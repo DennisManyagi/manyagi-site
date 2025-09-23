@@ -67,3 +67,8 @@ __pycache__
 *.egg-info
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Remove or comment out this line
+# tsconfig.json
+# Or add an exception
+!tsconfig.json

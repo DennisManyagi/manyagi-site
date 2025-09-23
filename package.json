@@ -12,6 +12,7 @@
     "@formspree/react": "^3.0.0",
     "@mdx-js/loader": "^3.0.1",
     "@mdx-js/react": "^3.0.1",
+    "@netlify/plugin-nextjs": "^5.13.3",
     "@next/mdx": "^14.2.5",
     "@reduxjs/toolkit": "^2.2.8",
     "@stripe/react-stripe-js": "^2.7.3",

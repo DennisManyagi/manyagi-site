@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase.js'; // Added .js extension
+import { supabaseAdmin } from '@/lib/supabase'; // Remove .js extension
 import fetch from 'node-fetch';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });

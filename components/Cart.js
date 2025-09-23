@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, updateQuantity } from '@/lib/cartSlice.js'; // Added .js extension
+import { removeFromCart, updateQuantity } from '@/lib/cartSlice'; // Remove .js extension
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import Recommender from './Recommender';

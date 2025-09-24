@@ -142,8 +142,216 @@ export default function Admin() {
   return (
     <>
       <Head><title>Manyagi Admin Dashboard</title></Head>
-      <div className="container mx-auto px-4 py-8">
-        {/* Keep your existing JSX UI below — only the data/auth layer above changed */}
+      <div className="container mx-auto px-4 py-8 space-y-12">
+        {/* PRODUCTS */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Products</h2>
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6">
+            <input className="p-2 border rounded" placeholder="Name" value={newProduct.name} onChange={(e)=>setNewProduct(p=>({...p, name:e.target.value}))}/>
+            <input className="p-2 border rounded" placeholder="Price" type="number" step="0.01" value={newProduct.price} onChange={(e)=>setNewProduct(p=>({...p, price:e.target.value}))}/>
+            <select className="p-2 border rounded" value={newProduct.division} onChange={(e)=>setNewProduct(p=>({...p, division:e.target.value}))}>
+              <option value="designs">designs</option>
+              <option value="publishing">publishing</option>
+              <option value="media">media</option>
+              <option value="capital">capital</option>
+              <option value="tech">tech</option>
+              <option value="realty">realty</option>
+            </select>
+            <input className="p-2 border rounded col-span-1 md:col-span-3" placeholder="Image URL" value={newProduct.image_url} onChange={(e)=>setNewProduct(p=>({...p, image_url:e.target.value}))}/>
+            <textarea className="p-2 border rounded col-span-1 md:col-span-3" placeholder="Description" value={newProduct.description} onChange={(e)=>setNewProduct(p=>({...p, description:e.target.value}))}/>
+            <select className="p-2 border rounded" value={newProduct.status} onChange={(e)=>setNewProduct(p=>({...p, status:e.target.value}))}>
+              <option value="active">active</option>
+              <option value="draft">draft</option>
+            </select>
+            <input className="p-2 border rounded col-span-1 md:col-span-2" placeholder='Metadata JSON (e.g. {"amazon_url":"..."})' value={newProduct.metadata} onChange={(e)=>setNewProduct(p=>({...p, metadata:e.target.value}))}/>
+            <button className="p-2 bg-black text-white rounded">Add Product</button>
+          </form>
+
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Name</th>
+                  <th>Division</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Image</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(p=>(
+                  <tr key={p.id} className="border-b">
+                    <td className="py-2">{p.name}</td>
+                    <td>{p.division}</td>
+                    <td>${Number(p.price).toFixed(2)}</td>
+                    <td>{p.status}</td>
+                    <td className="truncate max-w-[240px]">{p.image_url}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ASSETS */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Assets</h2>
+          <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-4 rounded border mb-6">
+            <input type="file" onChange={(e)=>setNewAsset(a=>({...a, file:e.target.files?.[0]||null}))} className="p-2 border rounded col-span-1 md:col-span-2" />
+            <select className="p-2 border rounded" value={newAsset.file_type} onChange={(e)=>setNewAsset(a=>({...a, file_type:e.target.value}))}>
+              <option value="image">image</option>
+              <option value="video">video</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <select className="p-2 border rounded" value={newAsset.division} onChange={(e)=>setNewAsset(a=>({...a, division:e.target.value}))}>
+              <option value="site">site</option>
+              <option value="publishing">publishing</option>
+              <option value="designs">designs</option>
+              <option value="capital">capital</option>
+              <option value="tech">tech</option>
+              <option value="media">media</option>
+              <option value="realty">realty</option>
+            </select>
+            <select className="p-2 border rounded" value={newAsset.purpose} onChange={(e)=>setNewAsset(a=>({...a, purpose:e.target.value}))}>
+              <option value="general">general</option>
+              <option value="hero">hero</option>
+              <option value="logo">logo</option>
+              <option value="favicon">favicon</option>
+              <option value="carousel">carousel</option>
+            </select>
+            <input className="p-2 border rounded col-span-1 md:col-span-4" placeholder='Metadata JSON' value={newAsset.metadata} onChange={(e)=>setNewAsset(a=>({...a, metadata:e.target.value}))}/>
+            <button className="p-2 bg-black text-white rounded">Upload</button>
+          </form>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {assets.map(a=>(
+              <div key={a.id} className="border rounded p-3">
+                <div className="text-sm mb-2"><strong>{a.file_type}</strong> • {a.division} • {a.purpose}</div>
+                <a className="text-blue-600 break-all" href={a.file_url} target="_blank" rel="noopener noreferrer">{a.file_url}</a>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* POSTS */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Posts</h2>
+          <form onSubmit={savePost} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-4 rounded border mb-6">
+            <input className="p-2 border rounded" placeholder="Title" value={postForm.title} onChange={(e)=>setPostForm(f=>({...f, title:e.target.value}))}/>
+            <input className="p-2 border rounded" placeholder="Slug" value={postForm.slug} onChange={(e)=>setPostForm(f=>({...f, slug:e.target.value}))}/>
+            <input className="p-2 border rounded md:col-span-2" placeholder="Featured Image URL" value={postForm.featured_image} onChange={(e)=>setPostForm(f=>({...f, featured_image:e.target.value}))}/>
+            <textarea className="p-2 border rounded md:col-span-2" rows={3} placeholder="Excerpt" value={postForm.excerpt} onChange={(e)=>setPostForm(f=>({...f, excerpt:e.target.value}))}/>
+            <textarea className="p-2 border rounded md:col-span-2" rows={8} placeholder="MDX Content" value={postForm.content} onChange={(e)=>setPostForm(f=>({...f, content:e.target.value}))}/>
+            <div className="flex items-center gap-2">
+              <select className="p-2 border rounded" value={postForm.status} onChange={(e)=>setPostForm(f=>({...f, status:e.target.value}))}>
+                <option value="draft">draft</option>
+                <option value="published">published</option>
+              </select>
+              <button type="button" onClick={doPreview} className="p-2 border rounded">Preview</button>
+            </div>
+            <div className="flex gap-2">
+              <button className="p-2 bg-black text-white rounded">{postForm.id ? 'Update' : 'Create'} Post</button>
+              {postForm.id && <button type="button" onClick={clearPostForm} className="p-2 border rounded">Clear</button>}
+            </div>
+          </form>
+
+          {showPreview && mdx && (
+            <div className="border rounded p-4 mb-6">
+              <h3 className="font-semibold mb-2">Preview</h3>
+              <MDXRemote {...mdx} />
+            </div>
+          )}
+
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Title</th>
+                  <th>Slug</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map(p=>(
+                  <tr key={p.id} className="border-b">
+                    <td className="py-2">{p.title}</td>
+                    <td>{p.slug}</td>
+                    <td>{p.status}</td>
+                    <td className="space-x-2">
+                      <button onClick={()=>loadPostToForm(p)} className="text-blue-600">Edit</button>
+                      <button onClick={()=>publishToggle(p.id, p.status === 'published' ? 'draft' : 'published')} className="text-yellow-600">
+                        {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button onClick={()=>deletePost(p.id)} className="text-red-600">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ORDERS & SUBSCRIPTIONS (read-only quick view) */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Orders (latest)</h2>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">ID</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Type</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.slice(0,20).map(o=>(
+                  <tr key={o.id} className="border-b">
+                    <td className="py-2">{o.id}</td>
+                    <td>{o.status}</td>
+                    <td>${Number(o.total_amount).toFixed(2)}</td>
+                    <td>{o.type}</td>
+                    <td>{new Date(o.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Subscriptions (latest)</h2>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left border-b">
+                  <th className="py-2">Stripe Sub ID</th>
+                  <th>Telegram</th>
+                  <th>Status</th>
+                  <th>Period End</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscriptions.slice(0,20).map(s=>(
+                  <tr key={s.id} className="border-b">
+                    <td className="py-2">{s.stripe_subscription_id || '—'}</td>
+                    <td>{s.telegram_id || '—'}</td>
+                    <td>{s.status}</td>
+                    <td>{s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* SITE CONFIG quick glance */}
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Site Config</h2>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto text-xs">{JSON.stringify(siteConfig, null, 2)}</pre>
+        </section>
       </div>
     </>
   );

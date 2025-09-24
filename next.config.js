@@ -14,10 +14,10 @@ const nextConfig = withTM({
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
       { protocol: 'https', hostname: 'myfxbook.com', pathname: '/**' },
       { protocol: 'https', hostname: 'youtube.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'i.ytimg.com', pathname: '/**' },    // added
-      { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' }, // added
+      { protocol: 'https', hostname: 'i.ytimg.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
       { protocol: 'https', hostname: 'dlbbjeohndiwtofitwec.supabase.co', pathname: '/**' },
-      { protocol: 'https', hostname: 'js.stripe.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'js.stripe.com', pathname: '/**' }, // fine to keep for scripts
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
@@ -33,7 +33,8 @@ const nextConfig = withTM({
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://i.ytimg.com https://img.youtube.com https://syndication.twitter.com https://dlbbjeohndiwtofitwec.supabase.co https://js.stripe.com; connect-src 'self' https://api.stripe.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com https://js.stripe.com; font-src 'self' https://fonts.gstatic.com;",
+              // removed js.stripe.com from img-src; added youtube-nocookie.com to frame-src
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://i.ytimg.com https://img.youtube.com https://syndication.twitter.com https://dlbbjeohndiwtofitwec.supabase.co; connect-src 'self' https://api.stripe.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com https://dlbbjeohndiwtofitwec.supabase.co wss://dlbbjeohndiwtofitwec.supabase.co; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://platform.twitter.com https://syndication.twitter.com https://js.stripe.com; font-src 'self' https://fonts.gstatic.com;",
           },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
@@ -49,6 +50,8 @@ const nextConfig = withTM({
     return [{ source: '/sitemap.xml', destination: '/sitemap.xml' }];
   },
   env: {
+    // 👇 unify on NEXTAUTH_URL if present; expose both public and server values
+    NEXT_PUBLIC_SITE_URL: process.env.NEXTAUTH_URL || 'https://manyagi.net',
     SITE_URL: process.env.NEXTAUTH_URL || 'https://manyagi.net',
   },
 });

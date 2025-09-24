@@ -28,7 +28,11 @@ export default function Publishing() {
             image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp', 
             division: 'publishing', 
             description: 'Epic novel by D.N. Manyagi', 
-            productType: 'book' 
+            productType: 'book',
+            metadata: {
+              amazon_url: 'https://www.amazon.com/', // placeholder external
+              pdf_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/pdfs/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf'
+            }
           },
           { 
             id: 'poetry', 
@@ -37,7 +41,8 @@ export default function Publishing() {
             image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp', 
             division: 'publishing', 
             description: 'Heartfelt verses', 
-            productType: 'book' 
+            productType: 'book',
+            metadata: { amazon_url: 'https://www.amazon.com/' }
           },
         ]);
       } finally {
@@ -91,12 +96,26 @@ export default function Publishing() {
             onBuy={() => handleAddToCart(product)}
           >
             <div className="flex gap-4 mt-4">
-              <Link href={`/publishing/${product.id}`} className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-                Buy on Amazon
-              </Link>
-              <Link href={product.metadata?.pdf_url || '#'} className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition">
-                Read Chapter 1
-              </Link>
+              {product?.metadata?.amazon_url && (
+                <a
+                  href={product.metadata.amazon_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                >
+                  Buy on Amazon
+                </a>
+              )}
+              {product?.metadata?.pdf_url && (
+                <a
+                    href={product.metadata.pdf_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700 transition"
+                >
+                  Read Chapter 1
+                </a>
+              )}
             </div>
           </Card>
         ))}
@@ -107,13 +126,14 @@ export default function Publishing() {
           image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp"
           category="publishing"
         >
-          <Link 
+          <a 
             href="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/pdfs/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf" 
             className="btn bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
             target="_blank"
+            rel="noopener noreferrer"
           >
             Download PDF
-          </Link>
+          </a>
         </Card>
       </section>
       

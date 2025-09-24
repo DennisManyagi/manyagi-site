@@ -76,7 +76,8 @@ export default function Capital() {
       </section>
 
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SignalsSubscriptionForm priceId="price_1S4H6jEexzgsonTz12345678" />
+        {/* Rely on env NEXT_PUBLIC_STRIPE_PRICE_ID; form handles missing env gracefully */}
+        <SignalsSubscriptionForm />
       </section>
 
       <Recommender />

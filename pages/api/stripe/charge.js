@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 
@@ -48,7 +48,18 @@ export default async function handler(req, res) {
       success_url: `${process.env.SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.SITE_URL}/`,
       customer_email: email,
-      metadata: sessionMetadata, // <-- keep metadata on the session too
+      // 👇 ensure a Customer object exists (so metadata can live on it)
+      customer_creation: 'always',
+      // 👇 only for subscriptions: attach telegramId on the Subscription itself
+      ...(mode === 'subscription'
+        ? {
+            subscription_data: {
+              metadata: { telegramId: String(telegramId || '') },
+            },
+          }
+        : {}),
+      // Keep session-level metadata as well (belt & suspenders)
+      metadata: sessionMetadata,
     });
 
     // Calculate total amount

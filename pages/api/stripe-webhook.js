@@ -1,6 +1,6 @@
 import { buffer } from 'micro';
 import Stripe from 'stripe';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import axios from 'axios';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -20,7 +20,6 @@ export default async function handler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
   } catch (err) {
-    // Signature problems should be a 400 so Stripe retries with correct secret
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
@@ -35,19 +34,49 @@ export default async function handler(req, res) {
         break;
       }
 
-      case 'customer.subscription.created':
-      case 'invoice.paid': {
+      case 'customer.subscription.created': {
+        // Optional early unban for new subs (metadata often present here)
         const subscription = event.data.object;
         const customer = await stripe.customers.retrieve(subscription.customer);
-        const telegramId = subscription.metadata?.telegramId || customer?.metadata?.telegramId;
+        const telegramId =
+          subscription?.metadata?.telegramId ||
+          customer?.metadata?.telegramId;
+
+        if (telegramId && !isNaN(telegramId)) {
+          try {
+            await axios.post(`https://api.telegram.org/bot${telegramBotToken}/unbanChatMember`, {
+              chat_id: telegramGroupChatId,
+              user_id: telegramId,
+            });
+          } catch (tgErr) {
+            console.warn('Telegram unban (created) error:', tgErr?.response?.data || tgErr.message);
+          }
+        }
+        break;
+      }
+
+      case 'invoice.paid': {
+        // 🔑 This is an Invoice, not a Subscription object
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        const subId = invoice.subscription;
+
+        const [subscription, customer] = await Promise.all([
+          subId ? stripe.subscriptions.retrieve(subId) : null,
+          customerId ? stripe.customers.retrieve(customerId) : null,
+        ]);
+
+        const telegramId =
+          subscription?.metadata?.telegramId ||
+          customer?.metadata?.telegramId ||
+          invoice?.metadata?.telegramId;
 
         if (!telegramId || isNaN(telegramId)) {
-          console.warn(`[stripe-webhook] Missing/invalid Telegram ID, event=${event.type}, sub=${subscription.id}`);
-          // Continue as success so Stripe marks event delivered
+          console.warn(`[stripe-webhook] Missing/invalid Telegram ID, event=${event.type}, invoice=${invoice.id}`);
           break;
         }
 
-        // Unban user in Telegram
+        // Unban in Telegram (best-effort)
         try {
           await axios.post(`https://api.telegram.org/bot${telegramBotToken}/unbanChatMember`, {
             chat_id: telegramGroupChatId,
@@ -57,20 +86,27 @@ export default async function handler(req, res) {
           console.warn('Telegram unban error:', tgErr?.response?.data || tgErr.message);
         }
 
-        // Save subscription
+        // Upsert subscription record in DB
+        const periodStart = subscription?.current_period_start
+          ? new Date(subscription.current_period_start * 1000).toISOString()
+          : new Date().toISOString();
+        const periodEnd = subscription?.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
+
         await supabaseAdmin.from('subscriptions').upsert({
-          stripe_subscription_id: subscription.id,
+          stripe_subscription_id: subId || null,
           user_id: null,
           status: 'active',
           plan_type: 'Basic Signals',
           division: 'capital',
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          current_period_start: periodStart,
+          current_period_end: periodEnd,
           telegram_id: String(telegramId),
           created_at: new Date().toISOString(),
         });
 
-        // Welcome message (best-effort)
+        // Welcome DM (best-effort)
         try {
           const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${process.env.TELEGRAM_INVITE_LINK}`;
           await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -85,16 +121,16 @@ export default async function handler(req, res) {
 
       case 'customer.subscription.deleted':
       case 'invoice.payment_failed': {
-        const deletedSubscription = event.data.object;
-        const deletedCustomer = await stripe.customers.retrieve(deletedSubscription.customer);
-        const deletedTelegramId = deletedSubscription.metadata?.telegramId || deletedCustomer?.metadata?.telegramId;
+        const obj = event.data.object;
+        const customer = await stripe.customers.retrieve(obj.customer);
+        const telegramId = obj.metadata?.telegramId || customer?.metadata?.telegramId;
 
-        if (deletedTelegramId) {
-          await supabaseAdmin.from('subscriptions').delete().eq('telegram_id', String(deletedTelegramId));
+        if (telegramId) {
+          await supabaseAdmin.from('subscriptions').delete().eq('telegram_id', String(telegramId));
           try {
             await axios.post(`https://api.telegram.org/bot${telegramBotToken}/banChatMember`, {
               chat_id: telegramGroupChatId,
-              user_id: deletedTelegramId,
+              user_id: telegramId,
             });
           } catch (tgBanErr) {
             console.warn('Telegram ban error:', tgBanErr?.response?.data || tgBanErr.message);

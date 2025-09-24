@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { promises as fs } from 'fs';
 import path from 'path';
 

@@ -3,7 +3,17 @@ import { motion } from 'framer-motion';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
 
-const Card = ({ children, className = '', title, description, image, link, category, buyButton = null }) => {
+const Card = ({
+  children,
+  className = '',
+  title,
+  description,
+  image,
+  link,
+  category,
+  buyButton = null,
+  onBuy, // <-- allow parent pages to hook into buy click
+}) => {
   const dispatch = useDispatch();
 
   const handleClick = () => {
@@ -28,14 +38,23 @@ const Card = ({ children, className = '', title, description, image, link, categ
       role="article"
       onClick={handleClick}
     >
-      {image && <img src={image} alt={title || 'Card Image'} className="w-full h-[300px] object-cover" loading="lazy" />}
+      {image && (
+        <img
+          src={image}
+          alt={title || 'Card Image'}
+          className="w-full h-[300px] object-cover"
+          loading="lazy"
+        />
+      )}
       <div className="p-6 text-center">
         {title && <h3 className="text-2xl font-bold mb-4">{title}</h3>}
         {description && <p className="text-gray-700 text-base mb-4">{description}</p>}
         {link && (
           <a
             href={link}
-            className={`btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition block mx-auto w-fit mb-4 ${className.includes('capital') ? 'hover:bg-purple-500' : ''}`}
+            className={`btn bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition block mx-auto w-fit mb-4 ${
+              className.includes('capital') ? 'hover:bg-purple-500' : ''
+            }`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -44,10 +63,17 @@ const Card = ({ children, className = '', title, description, image, link, categ
         )}
         {buyButton && (
           <button
-            onClick={(e) => { e.stopPropagation(); handleBuy(buyButton); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof onBuy === 'function') {
+                onBuy(buyButton); // let pages show modal / override productType, etc.
+              } else {
+                handleBuy(buyButton); // fallback to built-in addToCart
+              }
+            }}
             className="btn bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition block mx-auto w-fit"
           >
-            Buy Now - ${buyButton.price.toFixed(2)}
+            Buy Now - ${Number(buyButton.price).toFixed(2)}
           </button>
         )}
         <div className="flex flex-wrap justify-center gap-4 items-center">{children}</div>

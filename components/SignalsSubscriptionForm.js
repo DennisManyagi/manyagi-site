@@ -1,8 +1,7 @@
-// components/SignalsSubscriptionForm.js
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, { automaticMode: 'auto' });
 
 const SignalsSubscriptionForm = ({ priceId }) => {
   const [email, setEmail] = useState('');
@@ -33,7 +32,7 @@ const SignalsSubscriptionForm = ({ priceId }) => {
         );
       }
 
-      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
       window.location.href = data.url;
     } catch (err) {
       console.error('Subscription error:', err.message);

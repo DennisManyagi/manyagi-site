@@ -1,4 +1,3 @@
-// components/Footer.js
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { FaInstagram, FaTiktok, FaYoutube, FaTwitter, FaLinkedin, FaPinterest } from 'react-icons/fa';
@@ -6,7 +5,9 @@ import { useState } from 'react';
 
 const Footer = () => {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState({ instagram: false, tiktok: false, youtube: false, twitter: false, linkedin: false, pinterest: false });
+  const [isOpen, setIsOpen] = useState({ 
+    instagram: false, tiktok: false, youtube: false, twitter: false, linkedin: false, pinterest: false 
+  });
 
   const socialLinks = {
     parent: [
@@ -62,7 +63,7 @@ const Footer = () => {
   };
 
   const division = getDivision();
-  const currentLinks = socialLinks[division];
+  const currentLinks = socialLinks[division] || socialLinks.parent;
 
   const toggleDropdown = (platform) => {
     setIsOpen(prev => ({ ...prev, [platform]: !prev[platform] }));
@@ -90,7 +91,9 @@ const Footer = () => {
               </button>
               {isOpen[link.platform] && (
                 <div className="absolute bottom-full mb-2 bg-white text-black p-2 rounded shadow-lg z-10">
-                  <a href={link.handle} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                  <a href={link.handle} target="_blank" rel="noopener noreferrer" className="text-sm">
+                    {link.label}
+                  </a>
                 </div>
               )}
             </div>

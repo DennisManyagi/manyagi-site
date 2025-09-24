@@ -1,100 +1,76 @@
-// pages/contact.js
 import Head from 'next/head';
-import Link from 'next/link';
+import { useForm, ValidationError } from '@formspree/react';
 import SubscriptionForm from '../components/SubscriptionForm';
+import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
-import Card from '../components/Card';
 
 export default function Contact() {
+  const [state, handleSubmit] = useForm('xwkdwgdp');
+
   const carouselImages = [
-    '/images/og-contact.webp',
-    '/images/team-photo.webp',
-    '/images/community-photo.webp',
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/og-contact.webp',
   ];
 
   return (
     <>
       <Head>
-        <title>Manyagi — Contact Us</title>
-        <meta name="description" content="Get in touch with Manyagi for support or inquiries." />
+        <title>Contact Manyagi — Get in Touch</title>
+        <meta name="description" content="Reach out to Manyagi for inquiries and support." />
       </Head>
       <Hero
         kicker="Contact"
         title="Get in Touch"
-        lead="We’re here to help with your questions."
+        lead="Have questions? We're here to help."
         carouselImages={carouselImages}
         height="h-[600px]"
-      >
-        <Link href="#form" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
-          Contact Us
-        </Link>
-      </Hero>
-      <section id="form" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-5">
-        <Card
-          title="Send Us a Message"
-          description="We’re here to answer your questions."
-          image="/images/team-photo.webp"
-          className="text-center"
-        >
-          <form action="https://formspree.io/f/mldlvqnj" method="POST" className="space-y-4">
+      />
+
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-3xl font-bold mb-6 text-center">Contact Form</h2>
+        <form onSubmit={handleSubmit} className="max-w-lg mx-auto space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">Email Address</label>
             <input
-              type="text"
-              name="name"
-              placeholder="Your Name"
-              className="w-full p-3 border rounded bg-white text-black"
-              required
-            />
-            <input
+              id="email"
               type="email"
               name="email"
-              placeholder="Your Email"
-              className="w-full p-3 border rounded bg-white text-black"
+              className="w-full p-2 border rounded"
               required
             />
+            <ValidationError prefix="Email" field="email" errors={state.errors} />
+          </div>
+          <div>
+            <label htmlFor="message" className="block text-sm font-medium">Message</label>
             <textarea
+              id="message"
               name="message"
-              placeholder="Your Message"
-              className="w-full p-3 border rounded bg-white text-black"
+              className="w-full p-2 border rounded"
               rows="5"
               required
-            ></textarea>
-            <label className="flex items-center gap-2 text-base">
-              <input type="checkbox" name="gdpr" required />
-              I agree to the <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
-            </label>
-            <button type="submit" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
-              Submit
-            </button>
-          </form>
-        </Card>
-        <Card
-          title="Contact Info"
-          description="Reach out via email, phone, or visit us."
-          image="/images/community-photo.webp"
-          className="text-center"
-        >
-          <div className="flex flex-col items-center">
-            <p className="text-base mb-4">Email: support@manyagi.com</p>
-            <p className="text-base mb-4">Phone: +1 (555) 123-4567</p>
-            <p className="text-base mb-4">Address: 123 Manyagi St, Story City, SC 12345</p>
-            <h3 className="text-2xl font-bold mb-4">FAQ</h3>
-            <div className="flex flex-col items-center w-full">
-              <p className="text-base mb-2">Q: How do I track my order?</p>
-              <p className="text-base mb-4">A: Visit our <Link href="/track" className="text-blue-600 hover:underline">Track</Link> page.</p>
-              <p className="text-base mb-2">Q: How do I join the trading signals?</p>
-              <p className="text-base mb-4">A: Subscribe on the <Link href="/capital" className="text-blue-600 hover:underline">Capital</Link> page.</p>
-            </div>
+            />
+            <ValidationError prefix="Message" field="message" errors={state.errors} />
           </div>
-        </Card>
+          <button
+            type="submit"
+            disabled={state.submitting}
+            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          >
+            Submit
+          </button>
+          {state.succeeded && <p className="text-green-600">Thanks for your message!</p>}
+        </form>
       </section>
+
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
-          formId="8427635"
-          uid="db12290300"
+          formId="8427853"
+          uid="637df68a06"
           title="Stay Connected"
-          description="Get updates on all things Manyagi."
+          description="Join our community for updates and insights."
         />
       </section>
+
+      <Recommender />
     </>
   );
-};
+}

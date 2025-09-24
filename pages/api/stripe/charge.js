@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase';
-import fetch from 'node-fetch';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 
@@ -21,7 +20,14 @@ export default async function handler(req, res) {
       ? items.map(item => ({
           price_data: {
             currency: 'usd',
-            product_data: { name: item.name, metadata: { type: item.productType } },
+            product_data: { 
+              name: item.name, 
+              metadata: { 
+                division: item.division || 'general',
+                type: item.productType || 'general',
+                product_id: item.id 
+              } 
+            },
             unit_amount: Math.round(item.price * 100),
           },
           quantity: item.quantity || 1,
@@ -40,24 +46,25 @@ export default async function handler(req, res) {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode,
-      success_url: `${process.env.NEXTAUTH_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/`,
+      success_url: `${process.env.SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.SITE_URL}/`,
       customer_email: email,
       ...customerData,
     });
 
-    // Fetch prices for subscription items (if any)
-    const pricePromises = lineItems.map(async (li) => {
-      if (li.price_data?.unit_amount) {
-        return li.price_data.unit_amount / 100; // Already have unit_amount
-      } else if (li.price) {
+    // Calculate total amount
+    let totalAmount = 0;
+    if (mode === 'subscription') {
+      const pricePromises = lineItems.map(async (li) => {
+        if (li.price_data?.unit_amount) return li.price_data.unit_amount / 100;
         const price = await stripe.prices.retrieve(li.price);
         return price.unit_amount / 100;
-      }
-      return 0; // Fallback
-    });
-    const prices = await Promise.all(pricePromises);
-    const totalAmount = lineItems.reduce((acc, li, index) => acc + (li.quantity * prices[index]), 0);
+      });
+      const prices = await Promise.all(pricePromises);
+      totalAmount = lineItems.reduce((acc, li, index) => acc + (li.quantity * prices[index]), 0);
+    } else {
+      totalAmount = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    }
 
     // Save to Supabase
     const { data: insertedOrder, error: saveError } = await supabaseAdmin.from('orders').insert({
@@ -67,23 +74,14 @@ export default async function handler(req, res) {
       items: items || [],
       shipping_address: address ? { ...address } : null,
       user_id: null,
+      division: items?.[0]?.division || 'general',
+      type: mode === 'subscription' ? 'signals' : items?.[0]?.productType || 'general',
       created_at: new Date().toISOString(),
-      type: mode === 'subscription' ? 'signals' : items[0]?.productType || 'general',
     }).select().single();
-    if (saveError) console.error('Supabase save error:', saveError);
-
-    // For merch, pre-create Printful order if address provided
-    let printfulOrderId = null;
-    if (items?.some(i => i.productType === 'merch') && address) {
-      const response = await fetch('/api/printful/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, customer: { ...address, name: email.split('@')[0] || 'Customer' } }),
-      });
-      const data = await response.json();
-      printfulOrderId = data.orderId;
-      // Update Supabase with Printful ID
-      await supabaseAdmin.from('orders').update({ printful_order_id: printfulOrderId }).eq('id', insertedOrder.id);
+    
+    if (saveError) {
+      console.error('Supabase save error:', saveError);
+      return res.status(500).json({ error: 'Failed to save order' });
     }
 
     return res.status(200).json({ sessionId: checkoutSession.id, url: checkoutSession.url });

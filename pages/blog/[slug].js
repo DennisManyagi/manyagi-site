@@ -1,23 +1,89 @@
-// pages/blog/[slug].js
-import { serialize } from 'next-mdx-remote/serialize';
-import matter from 'gray-matter';
-import fs from 'fs';
-import path from 'path';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import { supabaseAdmin } from '@/lib/supabase';
 import { MDXRemote } from 'next-mdx-remote';
+import { serialize } from 'next-mdx-remote/serialize';
+import SubscriptionForm from '../../components/SubscriptionForm';
+import Recommender from '../../components/Recommender';
 
-export default function Post({ post }) {
-  return <article><MDXRemote {...post.source} /></article>;
-}
+export default function BlogPost() {
+  const router = useRouter();
+  const { slug } = router.query;
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export async function getStaticPaths() {
-  const files = fs.readdirSync(path.join('posts'));
-  const paths = files.map(filename => ({ params: { slug: filename.split('.mdx')[0] } }));
-  return { paths, fallback: false };
-}
+  useEffect(() => {
+    if (slug) fetchPost();
+  }, [slug]);
 
-export async function getStaticProps({ params }) {
-  const markdownWithMeta = fs.readFileSync(path.join('posts', params.slug + '.mdx'), 'utf-8');
-  const { data: frontMatter, content } = matter(markdownWithMeta);
-  const source = await serialize(content);
-  return { props: { post: { frontMatter, source } } };
+  const fetchPost = async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('posts')
+        .select('id, title, slug, excerpt, created_at, featured_image, content')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single();
+      
+      if (error) throw error;
+      if (!data) throw new Error('Post not found');
+
+      const mdxContent = await serialize(data.content || '');
+      setPost({ ...data, mdxContent });
+    } catch (error) {
+      console.error('Blog post fetch error:', error);
+      setPost({
+        id: '1',
+        title: 'Welcome to Manyagi',
+        slug: 'welcome-to-manyagi',
+        excerpt: 'An introduction to our multi-division platform.',
+        created_at: '2025-09-01T00:00:00Z',
+        featured_image: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/og-home.webp',
+        mdxContent: await serialize('# Welcome to Manyagi\n\nThis is our first blog post introducing our platform.'),
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="container mx-auto px-4 py-16 text-center">Loading post...</div>;
+  }
+
+  if (!post) {
+    return <div className="container mx-auto px-4 py-16 text-center">Post not found</div>;
+  }
+
+  return (
+    <>
+      <Head>
+        <title>{post.title} — Manyagi Blog</title>
+        <meta name="description" content={post.excerpt} />
+      </Head>
+      <section className="container mx-auto px-4 py-16">
+        <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+        <p className="text-gray-600 mb-4">{new Date(post.created_at).toLocaleDateString()}</p>
+        <img
+          src={post.featured_image}
+          alt={post.title}
+          className="w-full h-64 object-cover rounded mb-6"
+        />
+        <div className="prose max-w-none">
+          <MDXRemote {...post.mdxContent} />
+        </div>
+      </section>
+
+      <section id="subscribe" className="container mx-auto px-4 py-16">
+        <SubscriptionForm
+          formId="8427852"
+          uid="637df68a05"
+          title="Subscribe to Blog Updates"
+          description="Stay informed with our latest posts and insights."
+        />
+      </section>
+
+      <Recommender />
+    </>
+  );
 }

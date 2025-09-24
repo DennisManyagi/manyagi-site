@@ -16,37 +16,31 @@ const nextConfig = withTM({
       {
         protocol: 'https',
         hostname: 'manyagi.net',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'myfxbook.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'youtube.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'dlbbjeohndiwtofitwec.supabase.co',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'printful.com',
-        port: '',
+        hostname: 'js.stripe.com',
         pathname: '/**',
       },
     ],
@@ -64,7 +58,7 @@ const nextConfig = withTM({
           {
             key: 'Content-Security-Policy',
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://syndication.twitter.com https://printful.com https://dlbbjeohndiwtofitwec.supabase.co; connect-src 'self' https://api.stripe.com https://api.printful.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com; font-src 'self' https://fonts.gstatic.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://syndication.twitter.com https://dlbbjeohndiwtofitwec.supabase.co https://js.stripe.com; connect-src 'self' https://api.stripe.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com; frame-src 'self' https://www.youtube.com https://platform.twitter.com https://syndication.twitter.com https://js.stripe.com; font-src 'self' https://fonts.gstatic.com;",
           },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],

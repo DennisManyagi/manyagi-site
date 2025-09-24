@@ -1,28 +1,28 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, updateQuantity } from '@/lib/cartSlice'; // Remove .js extension
+import { removeFromCart, updateQuantity } from '@/lib/cartSlice';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import Recommender from './Recommender';
 import { useState } from 'react';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, { automaticMode: 'auto' });
 
 const Cart = () => {
-  const items = useSelector((state) => state.cart.items);
+  const items = useSelector((state) => state.cart.items || []);
   const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState({ address1: '', city: '', state: '', country: 'US', zip: '' });
   const [error, setError] = useState('');
 
-  const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  const total = Array.isArray(items) ? items.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0) : 0;
 
   const handleCheckout = async () => {
     if (!email) {
       setError('Email required');
       return;
     }
-    if (items.some(i => i.productType === 'merch' || i.productType === 'rental') && (!address.address1 || !address.city)) {
-      setError('Address required for shipping/rental');
+    if (items.some(i => i.division === 'designs' || i.division === 'publishing' || i.division === 'realty') && (!address.address1 || !address.city)) {
+      setError('Address required for physical items or rentals');
       return;
     }
     setError('');
@@ -36,7 +36,7 @@ const Cart = () => {
       });
       const data = await response.json();
       if (data.url) {
-        window.location.href = data.url; // Removed client-side Supabase insert
+        window.location.href = data.url;
       } else {
         alert('Failed to initiate checkout');
       }
@@ -56,22 +56,22 @@ const Cart = () => {
       ) : (
         <>
           <ul className="space-y-4 mb-6">
-            {items.map((item) => (
+            {Array.isArray(items) && items.map((item) => (
               <li key={item.id} className="flex justify-between items-center pb-4 border-b border-gray-300">
                 <div className="flex items-center gap-4">
-                  <img src={item.image} alt={item.name} className="w-[100px] h-[100px] object-cover" />
+                  <img src={item.image_url} alt={item.name} className="w-[100px] h-[100px] object-cover" />
                   <div>
-                    <span className="text-base">{item.name}</span>
+                    <span className="text-base">{item.name} ({item.division})</span>
                     <input
                       type="number"
-                      value={item.quantity}
+                      value={item.quantity || 1}
                       onChange={(e) => dispatch(updateQuantity({ id: item.id, quantity: parseInt(e.target.value) || 1 }))}
                       className="w-16 p-1 border rounded mt-2"
                       min="1"
                     />
                   </div>
                 </div>
-                <span className="text-base">${(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-base">${(item.price * (item.quantity || 1)).toFixed(2)}</span>
                 <button onClick={() => dispatch(removeFromCart(item.id))} className="text-red-500 hover:text-red-600 text-base">
                   Remove
                 </button>
@@ -87,7 +87,7 @@ const Cart = () => {
             className="w-full p-3 border rounded bg-white text-black mb-2"
             required
           />
-          {items.some(i => i.productType === 'merch' || i.productType === 'rental') && (
+          {items.some(i => i.division === 'designs' || i.division === 'publishing' || i.division === 'realty') && (
             <>
               <input type="text" value={address.address1} onChange={(e) => setAddress({ ...address, address1: e.target.value })} placeholder="Address" className="w-full p-3 border rounded bg-white text-black mb-2" />
               <input type="text" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="City" className="w-full p-3 border rounded bg-white text-black mb-2" />

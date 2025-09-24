@@ -1,11 +1,15 @@
 // components/Hero.js
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { Carousel } from 'react-responsive-carousel';
 
 const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, height = 'h-[600px]' }) => {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
+
   const hasMedia = videoSrc || carouselImages.length > 0;
-  const showVideo = videoSrc && (typeof window === 'undefined' || window.innerWidth >= 640 || !carouselImages.length);
+  const showVideo = isClient && videoSrc && ((window.innerWidth >= 640) || !carouselImages.length);
 
   return (
     <motion.section
@@ -14,7 +18,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
     >
       {showVideo && videoSrc && (
         <video
-          autoPlay={typeof window !== 'undefined' && window.innerWidth >= 640 ? true : false}
+          autoPlay
           loop
           muted
           className="relative w-full h-auto object-cover z-0 sm:absolute sm:inset-0 sm:h-full sm:w-full"
@@ -38,9 +42,7 @@ const Hero = ({ kicker, title, lead, children, carouselImages = [], videoSrc, he
           ))}
         </Carousel>
       )}
-      {hasMedia && (
-        <div className="absolute inset-0 bg-black/50 z-10 hidden sm:block" />
-      )}
+      {hasMedia && <div className="absolute inset-0 bg-black/50 z-10 hidden sm:block" />}
       <div
         className={`relative z-30 p-10 max-w-4xl mx-auto flex flex-col items-center text-center text-black ${hasMedia ? 'sm:text-white' : ''} mt-auto sm:mt-0`}
       >

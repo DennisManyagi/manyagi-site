@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
 import { supabaseAdmin } from '@/lib/supabase';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -9,59 +9,74 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Auth check
-    const supabase = createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Auth check (pages/api helper)
+    const supabase = createServerSupabaseClient({ req, res });
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr) {
+      console.error('Supabase auth error:', authErr);
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    const { data: userData } = await supabaseAdmin.from('users').select('role').eq('id', user.id).single();
+
+    const { data: userData, error: roleErr } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (roleErr) {
+      console.error('Role check error:', roleErr);
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     if (userData?.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
     const { file, file_type, division, purpose, metadata } = req.body;
-
-    if (!file) {
+    if (!file || !file.data) {
       return res.status(400).json({ error: 'Missing file' });
     }
 
-    // For server-side upload, you'd handle file upload differently
-    // This is a placeholder - in practice, use multer or similar for file uploads
     const fileName = `${Date.now()}-${file.name || 'file'}`;
     const filePath = path.join(process.cwd(), 'public', 'temp', fileName);
-    
-    // Simulate file save (in production, save to temp dir then upload)
-    // await fs.writeFile(filePath, file.data);
+    // Example temp handling kept here if you later want to persist locally:
+    // await fs.writeFile(filePath, Buffer.from(file.data, 'base64'));
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    // Upload to Supabase Storage (server-side service role is OK here)
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('assets')
-      .upload(fileName, Buffer.from(file.data, 'base64')); // Assuming base64 data
-    
+      .upload(fileName, Buffer.from(file.data, 'base64')); // Assuming base64 payload
+
     if (uploadError) throw uploadError;
 
     const file_url = `https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/${fileName}`;
 
-    // Save to assets table
-    const { data: assetData, error: dbError } = await supabaseAdmin.from('assets').insert({
-      file_url,
-      file_type,
-      division,
-      purpose,
-      metadata: metadata ? JSON.parse(metadata) : {},
-    }).select().single();
-    
+    // Save to DB
+    const { data: assetData, error: dbError } = await supabaseAdmin.from('assets')
+      .insert({
+        file_url,
+        file_type,
+        division,
+        purpose,
+        metadata: metadata ? JSON.parse(metadata) : {},
+      })
+      .select()
+      .single();
     if (dbError) throw dbError;
 
-    // Update site_config for special purposes
+    // Update site_config for special keys
     if (['hero', 'logo', 'favicon'].includes(purpose)) {
       await supabaseAdmin.from('site_config').upsert({
         key: purpose,
         value: { asset_id: assetData.id, file_url },
       });
     } else if (purpose === 'carousel') {
-      const { data: existingConfig } = await supabaseAdmin.from('site_config').select('value').eq('key', 'carousel_images').single();
+      const { data: existingConfig } = await supabaseAdmin
+        .from('site_config')
+        .select('value')
+        .eq('key', 'carousel_images')
+        .single();
       const currentImages = existingConfig?.value || [];
       const updatedImages = [...currentImages, file_url].slice(-5);
       await supabaseAdmin.from('site_config').upsert({
@@ -70,12 +85,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // Clean up temp file
+    // Cleanup example:
     // await fs.unlink(filePath);
 
-    res.status(200).json({ file_url, asset_id: assetData.id });
+    return res.status(200).json({ file_url, asset_id: assetData.id });
   } catch (error) {
     console.error('Asset upload error:', error);
-    res.status(500).json({ error: 'Failed to upload asset' });
+    return res.status(500).json({ error: 'Failed to upload asset' });
   }
 }

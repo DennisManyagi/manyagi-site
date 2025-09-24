@@ -7,7 +7,6 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { supabaseAdmin } from '@/lib/supabase';
 
 export default function Tech() {
   const [products, setProducts] = useState([]);
@@ -15,36 +14,28 @@ export default function Tech() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    fetchProducts();
+    (async () => {
+      try {
+        const data = await fetch('/api/products?division=tech').then(r => r.json());
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Tech fetch error:', error);
+        setProducts([
+          {
+            id: 'daito',
+            name: 'Daito App License',
+            price: 49.99,
+            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/daito-screenshot.webp',
+            division: 'tech',
+            description: 'Access to Daito productivity app',
+            productType: 'download',
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('division', 'tech')
-        .eq('status', 'active');
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Tech fetch error:', error);
-      setProducts([
-        {
-          id: 'daito',
-          name: 'Daito App License',
-          price: 49.99,
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/daito-screenshot.webp',
-          division: 'tech',
-          description: 'Access to Daito productivity app',
-          productType: 'download',
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'download' }));

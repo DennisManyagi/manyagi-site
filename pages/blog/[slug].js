@@ -1,7 +1,6 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { supabaseAdmin } from '@/lib/supabase';
 import { MDXRemote } from 'next-mdx-remote';
 import { serialize } from 'next-mdx-remote/serialize';
 import SubscriptionForm from '../../components/SubscriptionForm';
@@ -13,27 +12,14 @@ export default function BlogPost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (slug) fetchPost();
-  }, [slug]);
-
-  const fetchPost = async () => {
+  useEffect(() => { if (!slug) return; (async () => {
     try {
-      const { data, error } = await supabaseAdmin
-        .from('posts')
-        .select('id, title, slug, excerpt, created_at, featured_image, content')
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .single();
-      
-      if (error) throw error;
-      if (!data) throw new Error('Post not found');
-
+      const data = await fetch(`/api/posts/${slug}`).then(r => r.json());
+      if (!data || data.error) throw new Error('Post not found');
       const mdxContent = await serialize(data.content || '');
       setPost({ ...data, mdxContent });
-    } catch (error) {
-      console.error('Blog post fetch error:', error);
-      setPost({
+    } catch (e) {
+      const fallback = {
         id: '1',
         title: 'Welcome to Manyagi',
         slug: 'welcome-to-manyagi',
@@ -41,19 +27,13 @@ export default function BlogPost() {
         created_at: '2025-09-01T00:00:00Z',
         featured_image: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/og-home.webp',
         mdxContent: await serialize('# Welcome to Manyagi\n\nThis is our first blog post introducing our platform.'),
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
+      setPost(fallback);
+    } finally { setLoading(false); }
+  })(); }, [slug]);
 
-  if (loading) {
-    return <div className="container mx-auto px-4 py-16 text-center">Loading post...</div>;
-  }
-
-  if (!post) {
-    return <div className="container mx-auto px-4 py-16 text-center">Post not found</div>;
-  }
+  if (loading) return <div className="container mx-auto px-4 py-16 text-center">Loading post...</div>;
+  if (!post) return <div className="container mx-auto px-4 py-16 text-center">Post not found</div>;
 
   return (
     <>
@@ -64,23 +44,14 @@ export default function BlogPost() {
       <section className="container mx-auto px-4 py-16">
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
         <p className="text-gray-600 mb-4">{new Date(post.created_at).toLocaleDateString()}</p>
-        <img
-          src={post.featured_image}
-          alt={post.title}
-          className="w-full h-64 object-cover rounded mb-6"
-        />
+        <img src={post.featured_image} alt={post.title} className="w-full h-64 object-cover rounded mb-6" />
         <div className="prose max-w-none">
           <MDXRemote {...post.mdxContent} />
         </div>
       </section>
 
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SubscriptionForm
-          formId="8427852"
-          uid="637df68a05"
-          title="Subscribe to Blog Updates"
-          description="Stay informed with our latest posts and insights."
-        />
+        <SubscriptionForm formId="8427852" uid="637df68a05" title="Subscribe to Blog Updates" description="Stay informed with our latest posts and insights." />
       </section>
 
       <Recommender />

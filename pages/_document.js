@@ -20,7 +20,7 @@ export default function Document() {
               "name": "Manyagi",
               "url": "https://manyagi.net",
               "logo": "https://manyagi.net/images/logo.png",
-              "description": "Multibillion-dollar conglomerate spanning Publishing, Designs, Capital, Tech, and Media.",
+              "description": "Manyagi unites Publishing, Designs, Capital, Tech, Media, and Realty under one HQ.",
               "sameAs": [
                 "https://instagram.com/manyagi.official",
                 "https://tiktok.com/@manyagi.official",
@@ -31,7 +31,7 @@ export default function Document() {
               ],
               "contactPoint": {
                 "@type": "ContactPoint",
-                "email": "support@manyagi.com",
+                "email": "support@manyagi.net",
                 "telephone": "+1-555-123-4567"
               }
             }

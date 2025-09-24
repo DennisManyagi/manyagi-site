@@ -13,22 +13,28 @@ function MyApp({ Component, pageProps }) {
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
-      localStorage.setItem('cart', JSON.stringify(store.getState().cart.items || []));
-    });
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
       try {
-        store.dispatch({ type: 'cart/setItems', payload: JSON.parse(savedCart) });
+        localStorage.setItem('cart', JSON.stringify(store.getState().cart.items || []));
       } catch (e) {
-        console.error('Cart load error:', e);
+        console.error('Cart persist error:', e);
       }
+    });
+    try {
+      const savedCart = localStorage.getItem('cart');
+      if (savedCart) {
+        store.dispatch({ type: 'cart/setItems', payload: JSON.parse(savedCart) });
+      }
+    } catch (e) {
+      console.error('Cart load error:', e);
     }
     return unsubscribe;
   }, []);
 
   useEffect(() => {
     const handleRouteChange = (url) => {
-      window.gtag('config', process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, { page_path: url });
+      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+        window.gtag('config', process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID, { page_path: url });
+      }
     };
     router.events.on('routeChangeComplete', handleRouteChange);
     return () => router.events.off('routeChangeComplete', handleRouteChange);
@@ -39,32 +45,36 @@ function MyApp({ Component, pageProps }) {
       <ErrorBoundary>
         <Script strategy="afterInteractive" src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}`} />
         <Script id="google-analytics" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');`}
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
+          `}
         </Script>
         <Script id="ga-events" strategy="afterInteractive">
           {`
+            function safeGtag() {
+              return (typeof window !== 'undefined' && typeof window.gtag === 'function') ? window.gtag : null;
+            }
             document.querySelectorAll('form').forEach(form => {
               form.addEventListener('submit', () => {
-                gtag('event', 'form_submission', { formId: form.id || 'unknown' });
+                const g = safeGtag(); if (g) g('event', 'form_submission', { formId: form.id || 'unknown' });
               });
             });
-            gtag('event', 'page_view', { page_path: window.location.pathname });
+            const g = safeGtag(); if (g) g('event', 'page_view', { page_path: window.location.pathname });
             document.querySelectorAll('video, iframe[src*="youtube"]').forEach(video => {
               video.addEventListener('play', () => {
-                gtag('event', 'video_play', { video: video.src });
+                const g = safeGtag(); if (g) g('event', 'video_play', { video: video.src || 'inline' });
               });
             });
             document.querySelectorAll('a[href*="app"]').forEach(link => {
               link.addEventListener('click', () => {
-                gtag('event', 'app_download', { link: link.href });
+                const g = safeGtag(); if (g) g('event', 'app_download', { link: link.href });
               });
             });
-            window.addEventListener('purchase', (e) => {
-              gtag('event', 'purchase', e.detail);
-            });
-            window.addEventListener('subscription', (e) => {
-              gtag('event', 'subscription', e.detail);
-            });
+            window.addEventListener('purchase', (e) => { const g = safeGtag(); if (g) g('event', 'purchase', e.detail); });
+            window.addEventListener('subscription', (e) => { const g = safeGtag(); if (g) g('event', 'subscription', e.detail); });
           `}
         </Script>
         <Header />

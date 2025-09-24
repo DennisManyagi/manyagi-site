@@ -32,15 +32,14 @@ export default async function handler(req, res) {
           },
           quantity: item.quantity || 1,
         }))
-      : [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ];
+      : [{ price: priceId, quantity: 1 }];
 
     const mode = items ? 'payment' : 'subscription';
-    const customerData = { email, metadata: { telegramId, address: JSON.stringify(address || {}) } };
+
+    const sessionMetadata = {
+      telegramId: telegramId ?? '',
+      address: JSON.stringify(address || {}),
+    };
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -49,7 +48,7 @@ export default async function handler(req, res) {
       success_url: `${process.env.SITE_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.SITE_URL}/`,
       customer_email: email,
-      ...customerData,
+      metadata: sessionMetadata, // <-- keep metadata on the session too
     });
 
     // Calculate total amount
@@ -63,11 +62,11 @@ export default async function handler(req, res) {
       const prices = await Promise.all(pricePromises);
       totalAmount = lineItems.reduce((acc, li, index) => acc + (li.quantity * prices[index]), 0);
     } else {
-      totalAmount = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      totalAmount = items.reduce((acc, item) => acc + (item.price * (item.quantity || 1)), 0);
     }
 
     // Save to Supabase
-    const { data: insertedOrder, error: saveError } = await supabaseAdmin.from('orders').insert({
+    const { error: saveError } = await supabaseAdmin.from('orders').insert({
       stripe_session_id: checkoutSession.id,
       total_amount: totalAmount,
       status: 'pending',

@@ -11,6 +11,8 @@ export default function ThankYou() {
   const { session_id } = router.query;
   const [orderDetails, setOrderDetails] = useState(null);
   const [error, setError] = useState('');
+  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://manyagi.net';
+
   const carouselImages = [
     '/images/og-designs.webp',
     '/images/merch-carousel-1.webp',
@@ -22,11 +24,8 @@ export default function ThankYou() {
       fetch(`/api/order-details?session_id=${session_id}`)
         .then(res => res.json())
         .then(data => {
-          if (data.error) {
-            setError(data.error);
-          } else {
-            setOrderDetails(data);
-          }
+          if (data.error) setError(data.error);
+          else setOrderDetails(data);
         })
         .catch(err => {
           console.error('Fetch order details error:', err);
@@ -70,13 +69,13 @@ export default function ThankYou() {
           </div>
         )}
         <div className="flex gap-4 text-lg">
-          <a href="https://x.com/share?url=https://manyagi.com" className="text-blue-600 hover:text-blue-500">
+          <a href={`https://x.com/share?url=${encodeURIComponent(site)}`} className="text-blue-600 hover:text-blue-500" aria-label="Share on X">
             <FaTwitter size={24} />
           </a>
-          <a href="https://facebook.com/sharer/sharer.php?u=https://manyagi.com" className="text-blue-600 hover:text-blue-500">
+          <a href={`https://facebook.com/sharer/sharer.php?u=${encodeURIComponent(site)}`} className="text-blue-600 hover:text-blue-500" aria-label="Share on Facebook">
             <FaFacebook size={24} />
           </a>
-          <a href="https://instagram.com/manyagi.official" className="text-blue-600 hover:text-blue-500">
+          <a href="https://instagram.com/manyagi.official" className="text-blue-600 hover:text-blue-500" aria-label="Instagram">
             <FaInstagram size={24} />
           </a>
         </div>

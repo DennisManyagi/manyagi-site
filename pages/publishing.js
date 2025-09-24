@@ -7,7 +7,6 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { supabaseAdmin } from '@/lib/supabase';
 
 export default function Publishing() {
   const [products, setProducts] = useState([]);
@@ -15,45 +14,37 @@ export default function Publishing() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    fetchProducts();
+    (async () => {
+      try {
+        const data = await fetch('/api/products?division=publishing').then(r => r.json());
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Publishing fetch error:', error);
+        setProducts([
+          { 
+            id: 'legacy', 
+            name: 'Legacy of the Hidden Clans eBook', 
+            price: 9.99, 
+            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp', 
+            division: 'publishing', 
+            description: 'Epic novel by D.N. Manyagi', 
+            productType: 'book' 
+          },
+          { 
+            id: 'poetry', 
+            name: 'Poetry Collection eBook', 
+            price: 4.99, 
+            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp', 
+            division: 'publishing', 
+            description: 'Heartfelt verses', 
+            productType: 'book' 
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('division', 'publishing')
-        .eq('status', 'active');
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Publishing fetch error:', error);
-      setProducts([
-        { 
-          id: 'legacy', 
-          name: 'Legacy of the Hidden Clans eBook', 
-          price: 9.99, 
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp', 
-          division: 'publishing', 
-          description: 'Epic novel by D.N. Manyagi', 
-          productType: 'book' 
-        },
-        { 
-          id: 'poetry', 
-          name: 'Poetry Collection eBook', 
-          price: 4.99, 
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp', 
-          division: 'publishing', 
-          description: 'Heartfelt verses', 
-          productType: 'book' 
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'book' }));
@@ -110,7 +101,6 @@ export default function Publishing() {
           </Card>
         ))}
         
-        {/* Free Chapter Links */}
         <Card
           title="Legacy - Chapter 1 (Free)"
           description="Read the first chapter for free."

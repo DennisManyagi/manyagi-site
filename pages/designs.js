@@ -7,7 +7,6 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { supabaseAdmin } from '@/lib/supabase';
 
 export default function Designs() {
   const [products, setProducts] = useState([]);
@@ -16,46 +15,19 @@ export default function Designs() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    fetchProducts();
+    (async () => {
+      try {
+        const prods = await fetch('/api/products?division=designs').then(r => r.json());
+        setProducts(prods || []);
+      } catch (e) {
+        console.error('Designs fetch error:', e);
+        setProducts([
+          { id: '1', name: 'Story T-shirt', price: 29.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp', division: 'designs', description: 'Cool T-shirt inspired by our stories', productType: 'merch' },
+          { id: '2', name: 'Story Mug', price: 19.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-mug-1.webp', division: 'designs', description: 'Perfect for your morning coffee', productType: 'merch' },
+        ]);
+      } finally { setLoading(false); }
+    })();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('division', 'designs')
-        .eq('status', 'active');
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Designs fetch error:', error);
-      // Fallback
-      setProducts([
-        { 
-          id: '1', 
-          name: 'Story T-shirt', 
-          price: 29.99, 
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp', 
-          division: 'designs', 
-          description: 'Cool T-shirt inspired by our stories', 
-          productType: 'merch' 
-        },
-        { 
-          id: '2', 
-          name: 'Story Mug', 
-          price: 19.99, 
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-mug-1.webp', 
-          division: 'designs', 
-          description: 'Perfect for your morning coffee', 
-          productType: 'merch' 
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'merch' }));
@@ -71,9 +43,7 @@ export default function Designs() {
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/merch-carousel-5.webp',
   ];
 
-  if (loading) {
-    return <div className="container mx-auto px-4 py-16 text-center">Loading designs...</div>;
-  }
+  if (loading) return <div className="container mx-auto px-4 py-16 text-center">Loading designs...</div>;
 
   return (
     <>
@@ -81,41 +51,20 @@ export default function Designs() {
         <title>Manyagi Designs — Wear Your Story</title>
         <meta name="description" content="Explore T-shirts, mugs, and more inspired by our stories." />
       </Head>
-      <Hero
-        kicker="Designs"
-        title="Wear Your Story"
-        lead="Shop T-shirts, mugs, and prints inspired by our narratives."
-        carouselImages={carouselImages}
-        height="h-[600px]"
-      >
-        <Link href="#products" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">
-          Shop Now
-        </Link>
+      <Hero kicker="Designs" title="Wear Your Story" lead="Shop T-shirts, mugs, and prints inspired by our narratives." carouselImages={carouselImages} height="h-[600px]">
+        <Link href="#products" className="btn bg-blue-600 text-white py-4 px-6 rounded hover:scale-105 transition">Shop Now</Link>
       </Hero>
-      
+
       <section id="products" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-4 gap-5">
         {products.map((product) => (
-          <Card
-            key={product.id}
-            title={product.name}
-            description={product.description}
-            image={product.image_url}
-            category="designs"
-            buyButton={product}
-            onBuy={() => handleAddToCart(product)}
-          />
+          <Card key={product.id} title={product.name} description={product.description} image={product.image_url} category="designs" buyButton={product} onBuy={() => handleAddToCart(product)} />
         ))}
       </section>
-      
+
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SubscriptionForm
-          formId="8432506"
-          uid="a194031db7"
-          title="Stay Updated on New Designs"
-          description="Get notified about new drops and exclusive offers."
-        />
+        <SubscriptionForm formId="8432506" uid="a194031db7" title="Stay Updated on New Designs" description="Get notified about new drops and exclusive offers." />
       </section>
-      
+
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center">
@@ -124,7 +73,7 @@ export default function Designs() {
           </div>
         </div>
       )}
-      
+
       <Recommender />
     </>
   );

@@ -7,7 +7,6 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { supabaseAdmin } from '@/lib/supabase';
 
 export default function Media() {
   const [products, setProducts] = useState([]);
@@ -15,36 +14,28 @@ export default function Media() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    fetchProducts();
+    (async () => {
+      try {
+        const prods = await fetch('/api/products?division=media').then(r => r.json());
+        setProducts(prods || []);
+      } catch (error) {
+        console.error('Media fetch error:', error);
+        setProducts([
+          {
+            id: 'audio1',
+            name: 'Audio Story Collection',
+            price: 14.99,
+            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/video-carousel-1.webp',
+            division: 'media',
+            description: 'Immersive audio stories',
+            productType: 'download',
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('division', 'media')
-        .eq('status', 'active');
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Media fetch error:', error);
-      setProducts([
-        {
-          id: 'audio1',
-          name: 'Audio Story Collection',
-          price: 14.99,
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/video-carousel-1.webp',
-          division: 'media',
-          description: 'Immersive audio stories',
-          productType: 'download',
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'download' }));

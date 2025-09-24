@@ -7,7 +7,6 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
-import { supabaseAdmin } from '@/lib/supabase';
 
 export default function Realty() {
   const [products, setProducts] = useState([]);
@@ -15,36 +14,28 @@ export default function Realty() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    fetchProducts();
+    (async () => {
+      try {
+        const data = await fetch('/api/products?division=realty').then(r => r.json());
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Realty fetch error:', error);
+        setProducts([
+          {
+            id: 'rental1',
+            name: 'Big Bear Luxury Rental',
+            price: 299.99,
+            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/rental-bigbear.webp',
+            division: 'realty',
+            description: 'Luxury cabin in Big Bear',
+            productType: 'rental',
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('products')
-        .select('*')
-        .eq('division', 'realty')
-        .eq('status', 'active');
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Realty fetch error:', error);
-      setProducts([
-        {
-          id: 'rental1',
-          name: 'Big Bear Luxury Rental',
-          price: 299.99,
-          image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/rental-bigbear.webp',
-          division: 'realty',
-          description: 'Luxury cabin in Big Bear',
-          productType: 'rental',
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'rental' }));

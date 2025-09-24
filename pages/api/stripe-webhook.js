@@ -20,34 +20,42 @@ export default async function handler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
   } catch (err) {
+    // Signature problems should be a 400 so Stripe retries with correct secret
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });
   }
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed':
+      case 'checkout.session.completed': {
         const session = event.data.object;
         await supabaseAdmin
           .from('orders')
           .update({ status: 'paid', updated_at: new Date().toISOString() })
           .eq('stripe_session_id', session.id);
         break;
+      }
 
       case 'customer.subscription.created':
-      case 'invoice.paid':
+      case 'invoice.paid': {
         const subscription = event.data.object;
         const customer = await stripe.customers.retrieve(subscription.customer);
-        const telegramId = subscription.metadata?.telegramId || customer.metadata?.telegramId;
-        
+        const telegramId = subscription.metadata?.telegramId || customer?.metadata?.telegramId;
+
         if (!telegramId || isNaN(telegramId)) {
-          return res.status(400).json({ error: 'Invalid Telegram ID' });
+          console.warn(`[stripe-webhook] Missing/invalid Telegram ID, event=${event.type}, sub=${subscription.id}`);
+          // Continue as success so Stripe marks event delivered
+          break;
         }
 
         // Unban user in Telegram
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/unbanChatMember`, {
-          chat_id: telegramGroupChatId,
-          user_id: telegramId,
-        });
+        try {
+          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/unbanChatMember`, {
+            chat_id: telegramGroupChatId,
+            user_id: telegramId,
+          });
+        } catch (tgErr) {
+          console.warn('Telegram unban error:', tgErr?.response?.data || tgErr.message);
+        }
 
         // Save subscription
         await supabaseAdmin.from('subscriptions').upsert({
@@ -58,38 +66,48 @@ export default async function handler(req, res) {
           division: 'capital',
           current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
           current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          telegram_id: telegramId.toString(),
+          telegram_id: String(telegramId),
           created_at: new Date().toISOString(),
         });
 
-        // Send welcome message
-        const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${process.env.TELEGRAM_INVITE_LINK}`;
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          chat_id: telegramId,
-          text: message,
-        });
-        break;
-
-      case 'customer.subscription.deleted':
-      case 'invoice.payment_failed':
-        const deletedSubscription = event.data.object;
-        const deletedCustomer = await stripe.customers.retrieve(deletedSubscription.customer);
-        const deletedTelegramId = deletedSubscription.metadata?.telegramId || deletedCustomer.metadata?.telegramId;
-        
-        if (deletedTelegramId) {
-          await supabaseAdmin.from('subscriptions').delete().eq('telegram_id', deletedTelegramId.toString());
-          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/banChatMember`, {
-            chat_id: telegramGroupChatId,
-            user_id: deletedTelegramId,
+        // Welcome message (best-effort)
+        try {
+          const message = `Welcome to Manyagi Capital Signals! Join our Telegram group for real-time updates: ${process.env.TELEGRAM_INVITE_LINK}`;
+          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            chat_id: telegramId,
+            text: message,
           });
+        } catch (tgMsgErr) {
+          console.warn('Telegram welcome message error:', tgMsgErr?.response?.data || tgMsgErr.message);
         }
         break;
+      }
+
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_failed': {
+        const deletedSubscription = event.data.object;
+        const deletedCustomer = await stripe.customers.retrieve(deletedSubscription.customer);
+        const deletedTelegramId = deletedSubscription.metadata?.telegramId || deletedCustomer?.metadata?.telegramId;
+
+        if (deletedTelegramId) {
+          await supabaseAdmin.from('subscriptions').delete().eq('telegram_id', String(deletedTelegramId));
+          try {
+            await axios.post(`https://api.telegram.org/bot${telegramBotToken}/banChatMember`, {
+              chat_id: telegramGroupChatId,
+              user_id: deletedTelegramId,
+            });
+          } catch (tgBanErr) {
+            console.warn('Telegram ban error:', tgBanErr?.response?.data || tgBanErr.message);
+          }
+        }
+        break;
+      }
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
-    
-    res.status(200).json({ received: true });
+
+    return res.status(200).json({ received: true });
   } catch (err) {
     console.error('Webhook processing error:', err.message);
     return res.status(500).json({ error: `Webhook processing failed: ${err.message}` });

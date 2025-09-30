@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [error, setError] = useState(null);
   const [orders, setOrders] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [affiliate, setAffiliate] = useState(null);
@@ -14,29 +14,70 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
-      setUser(user);
+      try {
+        // Fetch authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        console.log('User fetch result:', { user, authError });
+        if (authError || !user) {
+          console.log('No user or auth error, redirecting to /login');
+          router.push('/login');
+          return;
+        }
+        setUser(user);
 
-      const { data: userRow } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-      if (userRow?.role === 'admin') {
-        router.push('/admin');
-        return;
+        // Fetch user role
+        const { data: userRow, error: roleError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        console.log('User ID:', user.id);
+        console.log('Fetched role:', userRow?.role);
+        console.log('Role error:', roleError);
+        if (roleError) {
+          console.error('Role fetch failed:', roleError);
+          setError('Failed to load user role. Please try again.');
+          setLoading(false);
+          return;
+        }
+        if (!userRow) {
+          console.error('No user row found for ID:', user.id);
+          setError('User data not found. Contact support.');
+          setLoading(false);
+          return;
+        }
+        if (userRow.role === 'admin') {
+          console.log('Admin role detected, redirecting to /admin');
+          router.push('/admin');
+          return;
+        }
+
+        // Fetch orders, subscriptions, affiliates
+        const [o, s, a] = await Promise.all([
+          supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('affiliates').select('*').eq('user_id', user.id).maybeSingle(),
+        ]);
+        console.log('Fetched data:', { orders: o.data, subscriptions: s.data, affiliate: a.data, ordersError: o.error, subscriptionsError: s.error, affiliatesError: a.error });
+
+        if (o.error || s.error || a.error) {
+          console.error('Data fetch errors:', { ordersError: o.error, subscriptionsError: s.error, affiliatesError: a.error });
+          setError('Failed to load some dashboard data. Please try again.');
+        }
+
+        setOrders(o.data || []);
+        setSubscriptions(s.data || []);
+        setAffiliate(a.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        setError('An unexpected error occurred. Please try again.');
+        setLoading(false);
       }
-
-      const [o, s, a] = await Promise.all([
-        supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('affiliates').select('*').eq('user_id', user.id).maybeSingle(),
-      ]);
-
-      setOrders(o.data || []);
-      setSubscriptions(s.data || []);
-      setAffiliate(a.data);
-      setLoading(false);
     })();
   }, [router]);
 
+  if (error) return <p className="p-6 text-red-500">{error}</p>;
   if (loading) return <p className="p-6">Loading dashboard...</p>;
 
   return (

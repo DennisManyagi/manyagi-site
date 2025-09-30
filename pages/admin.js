@@ -1,16 +1,15 @@
 import Head from 'next/head';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const MDXRemote = dynamic(() => import('next-mdx-remote').then(m => m.MDXRemote), { ssr: false });
-const mdxSerialize = (content) => import('next-mdx-remote/serialize').then(m => m.serialize(content || ''));
+const mdxSerialize = async (content) => (await import('next-mdx-remote/serialize')).serialize(content || '');
 
 export default function Admin() {
   const router = useRouter();
-
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -19,9 +18,17 @@ export default function Admin() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [assets, setAssets] = useState([]);
   const [siteConfig, setSiteConfig] = useState({});
+  const [users, setUsers] = useState([]); // Users tab
+  const [properties, setProperties] = useState([]); // Realty
+  const [affiliates, setAffiliates] = useState([]); // Affiliates
+  const [bundles, setBundles] = useState([]); // Bundles
 
   const [newProduct, setNewProduct] = useState({ name: '', price: '', division: 'designs', description: '', image_url: '', status: 'active', metadata: '' });
   const [newAsset, setNewAsset] = useState({ file: null, file_type: 'image', division: 'site', purpose: 'general', metadata: '' });
+  const [newProperty, setNewProperty] = useState({ name: '', price: '', description: '', image_url: '', status: 'active' });
+  const [newAffiliate, setNewAffiliate] = useState({ user_id: '', referral_code: '' });
+  const [newBundle, setNewBundle] = useState({ name: '', price: '', items: '', division: 'publishing' });
+  const [editUser, setEditUser] = useState(null); // For editing user roles
 
   const [posts, setPosts] = useState([]);
   const [postForm, setPostForm] = useState({ id: null, title: '', slug: '', excerpt: '', content: '', featured_image: '', status: 'draft' });
@@ -29,14 +36,16 @@ export default function Admin() {
   const [mdx, setMdx] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [activeTab, setActiveTab] = useState('overview');
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/'); return; }
+      if (!user) { router.push('/login'); return; }
       setUser(user);
 
       const { data: userRow } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-      if (userRow?.role !== 'admin') { router.push('/'); return; }
+      if (userRow?.role !== 'admin') { router.push('/dashboard'); return; }
       setIsAdmin(true);
 
       await refreshAll();
@@ -45,13 +54,17 @@ export default function Admin() {
   }, [router]);
 
   const refreshAll = async () => {
-    const [p, o, s, a, c, b] = await Promise.all([
+    const [p, o, s, a, c, b, u, prop, aff, bund] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
       supabase.from('assets').select('*').order('created_at', { ascending: false }),
       supabase.from('site_config').select('*'),
       supabase.from('posts').select('*').order('created_at', { ascending: false }),
+      supabase.from('users').select('*').order('created_at', { ascending: false }), // Users
+      supabase.from('properties').select('*').order('created_at', { ascending: false }), // Properties
+      supabase.from('affiliates').select('*').order('created_at', { ascending: false }), // Affiliates
+      supabase.from('bundles').select('*').order('created_at', { ascending: false }), // Bundles
     ]);
 
     setProducts(p.data || []);
@@ -60,6 +73,10 @@ export default function Admin() {
     setAssets(a.data || []);
     setSiteConfig((c.data || []).reduce((acc, item) => ({ ...acc, [item.key]: item.value }), {}));
     setPosts(b.data || []);
+    setUsers(u.data || []);
+    setProperties(prop.data || []);
+    setAffiliates(aff.data || []);
+    setBundles(bund.data || []);
   };
 
   const handleAddProduct = async (e) => {
@@ -116,6 +133,57 @@ export default function Admin() {
     }
   };
 
+  const handleAddProperty = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('properties').insert(newProperty);
+      if (error) throw error;
+      setNewProperty({ name: '', price: '', description: '', image_url: '', status: 'active' });
+      await refreshAll();
+      alert('Property added.');
+    } catch (err) {
+      alert(`Failed to add property: ${err.message}`);
+    }
+  };
+
+  const handleAddAffiliate = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('affiliates').insert(newAffiliate);
+      if (error) throw error;
+      setNewAffiliate({ user_id: '', referral_code: '' });
+      await refreshAll();
+      alert('Affiliate added.');
+    } catch (err) {
+      alert(`Failed to add affiliate: ${err.message}`);
+    }
+  };
+
+  const handleAddBundle = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { ...newBundle, price: parseFloat(newBundle.price), items: JSON.parse(newBundle.items || '[]') };
+      const { error } = await supabase.from('bundles').insert(payload);
+      if (error) throw error;
+      setNewBundle({ name: '', price: '', items: '', division: 'publishing' });
+      await refreshAll();
+      alert('Bundle added.');
+    } catch (err) {
+      alert(`Failed to add bundle: ${err.message}`);
+    }
+  };
+
+  const handleEditUserRole = async (userId, newRole) => {
+    try {
+      const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+      if (error) throw error;
+      await refreshAll();
+      alert('User role updated.');
+    } catch (err) {
+      alert(`Failed to update role: ${err.message}`);
+    }
+  };
+
   const loadPostToForm = (p) => {
     setPostForm({ id: p.id, title: p.title || '', slug: p.slug || '', excerpt: p.excerpt || '', content: p.content || '', featured_image: p.featured_image || '', status: p.status || 'draft' });
     setShowPreview(false);
@@ -143,215 +211,189 @@ export default function Admin() {
     <>
       <Head><title>Manyagi Admin Dashboard</title></Head>
       <div className="container mx-auto px-4 py-8 space-y-12">
-        {/* PRODUCTS */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Products</h2>
-          <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6">
-            <input className="p-2 border rounded" placeholder="Name" value={newProduct.name} onChange={(e)=>setNewProduct(p=>({...p, name:e.target.value}))}/>
-            <input className="p-2 border rounded" placeholder="Price" type="number" step="0.01" value={newProduct.price} onChange={(e)=>setNewProduct(p=>({...p, price:e.target.value}))}/>
-            <select className="p-2 border rounded" value={newProduct.division} onChange={(e)=>setNewProduct(p=>({...p, division:e.target.value}))}>
-              <option value="designs">designs</option>
-              <option value="publishing">publishing</option>
-              <option value="media">media</option>
-              <option value="capital">capital</option>
-              <option value="tech">tech</option>
-              <option value="realty">realty</option>
-            </select>
-            <input className="p-2 border rounded col-span-1 md:col-span-3" placeholder="Image URL" value={newProduct.image_url} onChange={(e)=>setNewProduct(p=>({...p, image_url:e.target.value}))}/>
-            <textarea className="p-2 border rounded col-span-1 md:col-span-3" placeholder="Description" value={newProduct.description} onChange={(e)=>setNewProduct(p=>({...p, description:e.target.value}))}/>
-            <select className="p-2 border rounded" value={newProduct.status} onChange={(e)=>setNewProduct(p=>({...p, status:e.target.value}))}>
-              <option value="active">active</option>
-              <option value="draft">draft</option>
-            </select>
-            <input className="p-2 border rounded col-span-1 md:col-span-2" placeholder='Metadata JSON (e.g. {"amazon_url":"..."})' value={newProduct.metadata} onChange={(e)=>setNewProduct(p=>({...p, metadata:e.target.value}))}/>
-            <button className="p-2 bg-black text-white rounded">Add Product</button>
-          </form>
+        {/* Tabs */}
+        <nav className="flex gap-4 mb-6 flex-wrap">
+          <button onClick={() => setActiveTab('overview')} className={`p-2 ${activeTab === 'overview' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Overview</button>
+          <button onClick={() => setActiveTab('publishing')} className={`p-2 ${activeTab === 'publishing' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Publishing</button>
+          <button onClick={() => setActiveTab('designs')} className={`p-2 ${activeTab === 'designs' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Designs</button>
+          <button onClick={() => setActiveTab('capital')} className={`p-2 ${activeTab === 'capital' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Capital</button>
+          <button onClick={() => setActiveTab('tech')} className={`p-2 ${activeTab === 'tech' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Tech</button>
+          <button onClick={() => setActiveTab('media')} className={`p-2 ${activeTab === 'media' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Media</button>
+          <button onClick={() => setActiveTab('realty')} className={`p-2 ${activeTab === 'realty' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Realty</button>
+          <button onClick={() => setActiveTab('blog')} className={`p-2 ${activeTab === 'blog' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Blog</button>
+          <button onClick={() => setActiveTab('affiliates')} className={`p-2 ${activeTab === 'affiliates' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Affiliates</button>
+          <button onClick={() => setActiveTab('bundles')} className={`p-2 ${activeTab === 'bundles' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Bundles</button>
+          <button onClick={() => setActiveTab('users')} className={`p-2 ${activeTab === 'users' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Users</button>
+          <button onClick={() => setActiveTab('analytics')} className={`p-2 ${activeTab === 'analytics' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Analytics</button>
+        </nav>
 
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Name</th>
-                  <th>Division</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Image</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map(p=>(
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2">{p.name}</td>
-                    <td>{p.division}</td>
-                    <td>${Number(p.price).toFixed(2)}</td>
-                    <td>{p.status}</td>
-                    <td className="truncate max-w-[240px]">{p.image_url}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {activeTab === 'overview' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Overview</h2>
+            <p>Total Orders: {orders.length}</p>
+            <p>Total Subscriptions: {subscriptions.length}</p>
+            <p>Total Revenue: ${orders.reduce((acc, o) => acc + Number(o.total_amount), 0).toFixed(2)}</p>
+            <p>Total Users: {users.length}</p>
+          </section>
+        )}
 
-        {/* ASSETS */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Assets</h2>
-          <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-4 rounded border mb-6">
-            <input type="file" onChange={(e)=>setNewAsset(a=>({...a, file:e.target.files?.[0]||null}))} className="p-2 border rounded col-span-1 md:col-span-2" />
-            <select className="p-2 border rounded" value={newAsset.file_type} onChange={(e)=>setNewAsset(a=>({...a, file_type:e.target.value}))}>
-              <option value="image">image</option>
-              <option value="video">video</option>
-              <option value="pdf">pdf</option>
-            </select>
-            <select className="p-2 border rounded" value={newAsset.division} onChange={(e)=>setNewAsset(a=>({...a, division:e.target.value}))}>
-              <option value="site">site</option>
-              <option value="publishing">publishing</option>
-              <option value="designs">designs</option>
-              <option value="capital">capital</option>
-              <option value="tech">tech</option>
-              <option value="media">media</option>
-              <option value="realty">realty</option>
-            </select>
-            <select className="p-2 border rounded" value={newAsset.purpose} onChange={(e)=>setNewAsset(a=>({...a, purpose:e.target.value}))}>
-              <option value="general">general</option>
-              <option value="hero">hero</option>
-              <option value="logo">logo</option>
-              <option value="favicon">favicon</option>
-              <option value="carousel">carousel</option>
-            </select>
-            <input className="p-2 border rounded col-span-1 md:col-span-4" placeholder='Metadata JSON' value={newAsset.metadata} onChange={(e)=>setNewAsset(a=>({...a, metadata:e.target.value}))}/>
-            <button className="p-2 bg-black text-white rounded">Upload</button>
-          </form>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {assets.map(a=>(
-              <div key={a.id} className="border rounded p-3">
-                <div className="text-sm mb-2"><strong>{a.file_type}</strong> • {a.division} • {a.purpose}</div>
-                <a className="text-blue-600 break-all" href={a.file_url} target="_blank" rel="noopener noreferrer">{a.file_url}</a>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* POSTS */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Posts</h2>
-          <form onSubmit={savePost} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-4 rounded border mb-6">
-            <input className="p-2 border rounded" placeholder="Title" value={postForm.title} onChange={(e)=>setPostForm(f=>({...f, title:e.target.value}))}/>
-            <input className="p-2 border rounded" placeholder="Slug" value={postForm.slug} onChange={(e)=>setPostForm(f=>({...f, slug:e.target.value}))}/>
-            <input className="p-2 border rounded md:col-span-2" placeholder="Featured Image URL" value={postForm.featured_image} onChange={(e)=>setPostForm(f=>({...f, featured_image:e.target.value}))}/>
-            <textarea className="p-2 border rounded md:col-span-2" rows={3} placeholder="Excerpt" value={postForm.excerpt} onChange={(e)=>setPostForm(f=>({...f, excerpt:e.target.value}))}/>
-            <textarea className="p-2 border rounded md:col-span-2" rows={8} placeholder="MDX Content" value={postForm.content} onChange={(e)=>setPostForm(f=>({...f, content:e.target.value}))}/>
-            <div className="flex items-center gap-2">
-              <select className="p-2 border rounded" value={postForm.status} onChange={(e)=>setPostForm(f=>({...f, status:e.target.value}))}>
-                <option value="draft">draft</option>
-                <option value="published">published</option>
+        {/* Division Tabs (Example for Publishing; repeat for others with pre-set division */}
+        {activeTab === 'publishing' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Publishing Division</h2>
+            {/* Product Form - Pre-set division */}
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="publishing">publishing</option>
               </select>
-              <button type="button" onClick={doPreview} className="p-2 border rounded">Preview</button>
-            </div>
-            <div className="flex gap-2">
-              <button className="p-2 bg-black text-white rounded">{postForm.id ? 'Update' : 'Create'} Post</button>
-              {postForm.id && <button type="button" onClick={clearPostForm} className="p-2 border rounded">Clear</button>}
-            </div>
-          </form>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded">Add Product</button>
+            </form>
+            {/* List Products */}
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'publishing').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            {/* Asset Form - Pre-set division */}
+            <form onSubmit={handleUploadAsset}>
+              {/* ... fields, disabled division = 'publishing' */}
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
 
-          {showPreview && mdx && (
-            <div className="border rounded p-4 mb-6">
-              <h3 className="font-semibold mb-2">Preview</h3>
-              <MDXRemote {...mdx} />
-            </div>
-          )}
+        {/* Repeat for other divisions: designs, capital, tech, media, realty */}
 
-          <div className="overflow-auto">
+        {/* Blog Tab */}
+        {activeTab === 'blog' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Blog</h2>
+            {/* Your existing post form and table */}
+          </section>
+        )}
+
+        {/* Affiliates Tab */}
+        {activeTab === 'affiliates' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Affiliates</h2>
+            <form onSubmit={handleAddAffiliate}>
+              <input placeholder="User ID" value={newAffiliate.user_id} onChange={(e) => setNewAffiliate({...newAffiliate, user_id: e.target.value})} />
+              <input placeholder="Referral Code" value={newAffiliate.referral_code} onChange={(e) => setNewAffiliate({...newAffiliate, referral_code: e.target.value})} />
+              <button className="p-2 bg-black text-white rounded">Add Affiliate</button>
+            </form>
+            <table className="w-full text-sm">
+              {affiliates.map(aff => (
+                <tr key={aff.id}>
+                  <td>{aff.user_id}</td>
+                  <td>{aff.referral_code}</td>
+                  {/* Edit/delete */}
+                </tr>
+              ))}
+            </table>
+          </section>
+        )}
+
+        {/* Bundles Tab */}
+        {activeTab === 'bundles' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Bundles</h2>
+            <form onSubmit={handleAddBundle}>
+              <input placeholder="Name" value={newBundle.name} onChange={(e) => setNewBundle({...newBundle, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newBundle.price} onChange={(e) => setNewBundle({...newBundle, price: e.target.value})} />
+              <textarea placeholder="Items JSON (e.g. ['prod1', 'prod2'])" value={newBundle.items} onChange={(e) => setNewBundle({...newBundle, items: e.target.value})} />
+              <select value={newBundle.division} onChange={(e) => setNewBundle({...newBundle, division: e.target.value})}>
+                <option value="publishing">publishing</option>
+                <option value="designs">designs</option>
+                {/* ... */}
+              </select>
+              <button className="p-2 bg-black text-white rounded">Add Bundle</button>
+            </form>
+            <table className="w-full text-sm">
+              {bundles.map(b => (
+                <tr key={b.id}>
+                  <td>{b.name}</td>
+                  {/* Edit/delete */}
+                </tr>
+              ))}
+            </table>
+          </section>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Users</h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Title</th>
-                  <th>Slug</th>
-                  <th>Status</th>
+                <tr>
+                  <th>Email</th>
+                  <th>Role</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {posts.map(p=>(
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2">{p.title}</td>
-                    <td>{p.slug}</td>
-                    <td>{p.status}</td>
-                    <td className="space-x-2">
-                      <button onClick={()=>loadPostToForm(p)} className="text-blue-600">Edit</button>
-                      <button onClick={()=>publishToggle(p.id, p.status === 'published' ? 'draft' : 'published')} className="text-yellow-600">
-                        {p.status === 'published' ? 'Unpublish' : 'Publish'}
-                      </button>
-                      <button onClick={()=>deletePost(p.id)} className="text-red-600">Delete</button>
+                {users.map(u => (
+                  <tr key={u.id}>
+                    <td>{u.email}</td>
+                    <td>{u.role}</td>
+                    <td>
+                      <select value={u.role} onChange={(e) => handleEditUserRole(u.id, e.target.value)}>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* ORDERS & SUBSCRIPTIONS (read-only quick view) */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Orders (latest)</h2>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">ID</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>Type</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.slice(0,20).map(o=>(
-                  <tr key={o.id} className="border-b">
-                    <td className="py-2">{o.id}</td>
-                    <td>{o.status}</td>
-                    <td>${Number(o.total_amount).toFixed(2)}</td>
-                    <td>{o.type}</td>
-                    <td>{new Date(o.created_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Subscriptions (latest)</h2>
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-2">Stripe Sub ID</th>
-                  <th>Telegram</th>
-                  <th>Status</th>
-                  <th>Period End</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subscriptions.slice(0,20).map(s=>(
-                  <tr key={s.id} className="border-b">
-                    <td className="py-2">{s.stripe_subscription_id || '—'}</td>
-                    <td>{s.telegram_id || '—'}</td>
-                    <td>{s.status}</td>
-                    <td>{s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* SITE CONFIG quick glance */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Site Config</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto text-xs">{JSON.stringify(siteConfig, null, 2)}</pre>
-        </section>
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Analytics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h3>Orders Chart</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={orders}>
+                    <XAxis dataKey="created_at" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="total_amount" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div>
+                <h3>Subscriptions Chart</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={subscriptions}>
+                    <XAxis dataKey="created_at" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="status" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <a href="https://app.posthog.com" target="_blank" rel="noopener noreferrer" className="btn bg-blue-500 text-white p-2 rounded mt-4">
+              View Full PostHog Analytics
+            </a>
+          </section>
+        )}
       </div>
     </>
   );

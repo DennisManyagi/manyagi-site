@@ -7,6 +7,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
+import Head from 'next/head';  // Add this for viewport
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
@@ -43,6 +44,9 @@ function MyApp({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <ErrorBoundary>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />  {/* Viewport here */}
+        </Head>
         <Script strategy="afterInteractive" src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}`} />
         <Script id="google-analytics" strategy="afterInteractive">
           {`

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import EventCalendar from '@/components/Calendar'; // Added for calendar
+import SEO from '@/components/SEO'; // Added for SEO (example in blog tab)
 
 const MDXRemote = dynamic(() => import('next-mdx-remote').then(m => m.MDXRemote), { ssr: false });
 const mdxSerialize = async (content) => (await import('next-mdx-remote/serialize')).serialize(content || '');
@@ -22,6 +24,8 @@ export default function Admin() {
   const [properties, setProperties] = useState([]); // Realty
   const [affiliates, setAffiliates] = useState([]); // Affiliates
   const [bundles, setBundles] = useState([]); // Bundles
+  const [events, setEvents] = useState([]); // Added for events
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', division: 'publishing', description: '' }); // Added for event form
 
   const [newProduct, setNewProduct] = useState({ name: '', price: '', division: 'designs', description: '', image_url: '', status: 'active', metadata: '' });
   const [newAsset, setNewAsset] = useState({ file: null, file_type: 'image', division: 'site', purpose: 'general', metadata: '' });
@@ -54,7 +58,7 @@ export default function Admin() {
   }, [router]);
 
   const refreshAll = async () => {
-    const [p, o, s, a, c, b, u, prop, aff, bund] = await Promise.all([
+    const [p, o, s, a, c, b, u, prop, aff, bund, ev] = await Promise.all([ // Added ev for events
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
@@ -65,6 +69,7 @@ export default function Admin() {
       supabase.from('properties').select('*').order('created_at', { ascending: false }), // Properties
       supabase.from('affiliates').select('*').order('created_at', { ascending: false }), // Affiliates
       supabase.from('bundles').select('*').order('created_at', { ascending: false }), // Bundles
+      supabase.from('events').select('*').order('created_at', { ascending: false }), // Added: Fetch events
     ]);
 
     setProducts(p.data || []);
@@ -77,6 +82,7 @@ export default function Admin() {
     setProperties(prop.data || []);
     setAffiliates(aff.data || []);
     setBundles(bund.data || []);
+    setEvents(ev.data || []); // Added: Set events
   };
 
   const handleAddProduct = async (e) => {
@@ -184,6 +190,49 @@ export default function Admin() {
     }
   };
 
+  // Added: Event CRUD handlers
+  const handleAddEvent = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('events').insert({
+        ...newEvent,
+        date: new Date(newEvent.date).toISOString(),
+      });
+      if (error) throw error;
+      setNewEvent({ title: '', date: '', division: 'publishing', description: '' });
+      await refreshAll();
+      alert('Event added.');
+    } catch (err) {
+      alert(`Failed to add event: ${err.message}`);
+    }
+  };
+
+  const handleUpdateEvent = async (id, updated) => {
+    try {
+      const { error } = await supabase.from('events').update({
+        ...updated,
+        date: new Date(updated.date).toISOString(),
+      }).eq('id', id);
+      if (error) throw error;
+      await refreshAll();
+      alert('Event updated.');
+    } catch (err) {
+      alert(`Failed to update: ${err.message}`);
+    }
+  };
+
+  const handleDeleteEvent = async (id) => {
+    if (!confirm('Delete event?')) return;
+    try {
+      const { error } = await supabase.from('events').delete().eq('id', id);
+      if (error) throw error;
+      await refreshAll();
+      alert('Event deleted.');
+    } catch (err) {
+      alert(`Failed to delete: ${err.message}`);
+    }
+  };
+
   const loadPostToForm = (p) => {
     setPostForm({ id: p.id, title: p.title || '', slug: p.slug || '', excerpt: p.excerpt || '', content: p.content || '', featured_image: p.featured_image || '', status: p.status || 'draft' });
     setShowPreview(false);
@@ -210,25 +259,26 @@ export default function Admin() {
   return (
     <>
       <Head><title>Manyagi Admin Dashboard</title></Head>
-      <div className="container mx-auto px-4 py-8 space-y-12">
+      <div className="container mx-auto px-4 py-8 space-y-12 gradient-bg dark:bg-gray-900"> {/* Added dark mode class */}
         {/* Tabs */}
         <nav className="flex gap-4 mb-6 flex-wrap">
-          <button onClick={() => setActiveTab('overview')} className={`p-2 ${activeTab === 'overview' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Overview</button>
-          <button onClick={() => setActiveTab('publishing')} className={`p-2 ${activeTab === 'publishing' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Publishing</button>
-          <button onClick={() => setActiveTab('designs')} className={`p-2 ${activeTab === 'designs' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Designs</button>
-          <button onClick={() => setActiveTab('capital')} className={`p-2 ${activeTab === 'capital' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Capital</button>
-          <button onClick={() => setActiveTab('tech')} className={`p-2 ${activeTab === 'tech' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Tech</button>
-          <button onClick={() => setActiveTab('media')} className={`p-2 ${activeTab === 'media' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Media</button>
-          <button onClick={() => setActiveTab('realty')} className={`p-2 ${activeTab === 'realty' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Realty</button>
-          <button onClick={() => setActiveTab('blog')} className={`p-2 ${activeTab === 'blog' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Blog</button>
-          <button onClick={() => setActiveTab('affiliates')} className={`p-2 ${activeTab === 'affiliates' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Affiliates</button>
-          <button onClick={() => setActiveTab('bundles')} className={`p-2 ${activeTab === 'bundles' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Bundles</button>
-          <button onClick={() => setActiveTab('users')} className={`p-2 ${activeTab === 'users' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Users</button>
-          <button onClick={() => setActiveTab('analytics')} className={`p-2 ${activeTab === 'analytics' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Analytics</button>
+          <button onClick={() => setActiveTab('overview')} className={`p-2 ${activeTab === 'overview' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Overview</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('publishing')} className={`p-2 ${activeTab === 'publishing' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Publishing</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('designs')} className={`p-2 ${activeTab === 'designs' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Designs</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('capital')} className={`p-2 ${activeTab === 'capital' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Capital</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('tech')} className={`p-2 ${activeTab === 'tech' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Tech</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('media')} className={`p-2 ${activeTab === 'media' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Media</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('realty')} className={`p-2 ${activeTab === 'realty' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Realty</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('blog')} className={`p-2 ${activeTab === 'blog' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Blog</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('affiliates')} className={`p-2 ${activeTab === 'affiliates' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Affiliates</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('bundles')} className={`p-2 ${activeTab === 'bundles' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Bundles</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('users')} className={`p-2 ${activeTab === 'users' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Users</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('analytics')} className={`p-2 ${activeTab === 'analytics' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Analytics</button> {/* Added dark mode */}
+          <button onClick={() => setActiveTab('events')} className={`p-2 ${activeTab === 'events' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}>Events</button> {/* Added Events tab */}
         </nav>
 
         {activeTab === 'overview' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Overview</h2>
             <p>Total Orders: {orders.length}</p>
             <p>Total Subscriptions: {subscriptions.length}</p>
@@ -239,10 +289,10 @@ export default function Admin() {
 
         {/* Division Tabs (Example for Publishing; repeat for others with pre-set division */}
         {activeTab === 'publishing' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Publishing Division</h2>
             {/* Product Form - Pre-set division */}
-            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6">
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800"> {/* Added dark mode */}
               <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
               <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
               <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
@@ -255,7 +305,7 @@ export default function Admin() {
                 <option value="draft">draft</option>
               </select>
               <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
-              <button className="p-2 bg-black text-white rounded">Add Product</button>
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button> {/* Added dark mode */}
             </form>
             {/* List Products */}
             <table className="w-full text-sm">
@@ -267,8 +317,23 @@ export default function Admin() {
               ))}
             </table>
             {/* Asset Form - Pre-set division */}
-            <form onSubmit={handleUploadAsset}>
-              {/* ... fields, disabled division = 'publishing' */}
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800"> {/* Added dark mode */}
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="publishing">publishing</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button> {/* Added dark mode */}
             </form>
             {/* List Assets */}
           </section>
@@ -278,7 +343,8 @@ export default function Admin() {
 
         {/* Blog Tab */}
         {activeTab === 'blog' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
+            <SEO title="Manyagi Admin - Blog Management" description="Manage blog posts for Manyagi divisions." /> {/* Added SEO example */}
             <h2 className="text-2xl font-bold mb-4">Blog</h2>
             {/* Your existing post form and table */}
           </section>
@@ -286,12 +352,12 @@ export default function Admin() {
 
         {/* Affiliates Tab */}
         {activeTab === 'affiliates' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Affiliates</h2>
             <form onSubmit={handleAddAffiliate}>
               <input placeholder="User ID" value={newAffiliate.user_id} onChange={(e) => setNewAffiliate({...newAffiliate, user_id: e.target.value})} />
               <input placeholder="Referral Code" value={newAffiliate.referral_code} onChange={(e) => setNewAffiliate({...newAffiliate, referral_code: e.target.value})} />
-              <button className="p-2 bg-black text-white rounded">Add Affiliate</button>
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Affiliate</button> {/* Added dark mode */}
             </form>
             <table className="w-full text-sm">
               {affiliates.map(aff => (
@@ -307,7 +373,7 @@ export default function Admin() {
 
         {/* Bundles Tab */}
         {activeTab === 'bundles' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Bundles</h2>
             <form onSubmit={handleAddBundle}>
               <input placeholder="Name" value={newBundle.name} onChange={(e) => setNewBundle({...newBundle, name: e.target.value})} />
@@ -318,7 +384,7 @@ export default function Admin() {
                 <option value="designs">designs</option>
                 {/* ... */}
               </select>
-              <button className="p-2 bg-black text-white rounded">Add Bundle</button>
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Bundle</button> {/* Added dark mode */}
             </form>
             <table className="w-full text-sm">
               {bundles.map(b => (
@@ -333,7 +399,7 @@ export default function Admin() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Users</h2>
             <table className="w-full text-sm">
               <thead>
@@ -349,7 +415,7 @@ export default function Admin() {
                     <td>{u.email}</td>
                     <td>{u.role}</td>
                     <td>
-                      <select value={u.role} onChange={(e) => handleEditUserRole(u.id, e.target.value)}>
+                      <select value={u.role} onChange={(e) => handleEditUserRole(u.id, e.target.value)} className="dark:bg-gray-800"> {/* Added dark mode */}
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
                       </select>
@@ -363,7 +429,7 @@ export default function Admin() {
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
-          <section>
+          <section className="glass p-6 rounded"> {/* Original */}
             <h2 className="text-2xl font-bold mb-4">Analytics</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -392,6 +458,74 @@ export default function Admin() {
             <a href="https://app.posthog.com" target="_blank" rel="noopener noreferrer" className="btn bg-blue-500 text-white p-2 rounded mt-4">
               View Full PostHog Analytics
             </a>
+          </section>
+        )}
+
+        {activeTab === 'events' && ( // Added Events section
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Events</h2>
+            {/* Event Form */}
+            <form onSubmit={handleAddEvent} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800"> {/* Added dark mode */}
+              <input
+                placeholder="Event Title"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+              />
+              <input
+                type="datetime-local"
+                value={newEvent.date}
+                onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+              />
+              <select
+                value={newEvent.division}
+                onChange={(e) => setNewEvent({...newEvent, division: e.target.value})}
+              >
+                <option value="publishing">Publishing</option>
+                <option value="designs">Designs</option>
+                <option value="capital">Capital</option>
+                <option value="tech">Tech</option>
+                <option value="media">Media</option>
+                <option value="realty">Realty</option>
+              </select>
+              <textarea
+                placeholder="Description"
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                className="col-span-3"
+              />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Event</button> {/* Added dark mode */}
+            </form>
+            {/* Event List with CRUD */}
+            <table className="w-full text-sm border-collapse mb-6">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Date</th>
+                  <th>Division</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map(e => (
+                  <tr key={e.id}>
+                    <td>{e.title}</td>
+                    <td>{new Date(e.date).toLocaleString()}</td>
+                    <td>{e.division}</td>
+                    <td>
+                      <button
+                        onClick={() => setNewEvent({ ...e, date: new Date(e.date).toISOString().slice(0, 16) })}
+                        className="text-blue-500"
+                      >
+                        Edit
+                      </button>
+                      <button onClick={() => handleDeleteEvent(e.id)} className="text-red-500 ml-2">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {/* Calendar View */}
+            <EventCalendar events={events} />
           </section>
         )}
       </div>

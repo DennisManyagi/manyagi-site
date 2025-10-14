@@ -19,7 +19,7 @@
     "@stripe/stripe-js": "^4.10.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.45.4",
-    "axios": "^1.7.7",
+    "axios": "^1.12.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.9",

@@ -1,6 +1,7 @@
 // components/Calendar.js
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
+import enUS from 'date-fns/locale/en-US'; // Added import
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const localizer = dateFnsLocalizer({
@@ -8,6 +9,7 @@ const localizer = dateFnsLocalizer({
   parse,
   startOfWeek,
   getDay,
+  locales: { 'en-US': enUS } // Added locales
 });
 
 export default function EventCalendar({ events }) {

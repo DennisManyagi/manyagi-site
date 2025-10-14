@@ -8,21 +8,58 @@ export default async function handler(req, res) {
   const { division } = req.query;
 
   try {
-    let query = supabaseAdmin.from('products').select('*').eq('status', 'active');
-    if (division) query = query.eq('division', division);
+    let query = supabaseAdmin
+      .from('products')
+      .select(`
+        id, name, description, price, division, status,
+        image_url, thumbnail_url, printful_product_id,
+        metadata,
+        created_at
+      `)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (division) {
+      query = query.eq('division', division);
+    }
 
     const { data: products, error } = await query;
+
     if (error) throw error;
 
-    res.status(200).json(products || []);
+    const transformed = (products || []).map(product => ({
+      ...product,
+      display_image: product.thumbnail_url || product.image_url,
+      price: Number(product.price),
+      prompt: product.metadata?.prompt,
+      book: product.metadata?.book,
+      scene: product.metadata?.scene,
+      productType: product.productType || 
+        (product.division === 'designs' ? 'merch' : 
+         product.division === 'publishing' ? 'book' : 
+         product.division === 'capital' ? 'download' : 'general'),
+    }));
+
+    res.status(200).json(transformed);
   } catch (error) {
     console.error('Supabase products error:', error);
-    // Fallback data
-    const fallback = [
-      { id: '1', name: 'Story T-shirt', price: 29.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp', division: 'designs', description: 'Cool T-shirt', productType: 'merch' },
-      { id: '2', name: 'Trading License', price: 99.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp', division: 'capital', description: '1-year license', productType: 'download' },
-      { id: '3', name: 'Legacy eBook', price: 9.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp', division: 'publishing', description: 'Chapter 1', productType: 'book' },
-    ];
+    
+    const fallback = division === 'designs' ? [
+      { 
+        id: 'fallback-tee', 
+        name: 'Sample T-Shirt', 
+        price: 29.99, 
+        display_image: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp',
+        thumbnail_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp',
+        image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp',
+        division: 'designs', 
+        description: 'Fallback design merchandise',
+        printful_product_id: 'fallback-tee-id',
+        productType: 'merch',
+        metadata: { prompt: 0, book: 'Sample' }
+      },
+    ] : [];
+
     res.status(200).json(fallback);
   }
 }

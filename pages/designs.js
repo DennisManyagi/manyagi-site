@@ -30,7 +30,12 @@ export default function Designs() {
   }, []);
 
   const handleAddToCart = (product) => {
-    dispatch(addToCart({ ...product, productType: 'merch' }));
+    dispatch(addToCart({ 
+      ...product, 
+      productType: 'merch',
+      printful_product_id: product.printful_product_id,  
+      metadata: product.metadata || {}  
+    }));
     setShowModal(true);
     setTimeout(() => setShowModal(false), 2000);
   };
@@ -57,7 +62,7 @@ export default function Designs() {
 
       <section id="products" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-4 gap-5">
         {products.map((product) => (
-          <Card key={product.id} title={product.name} description={product.description} image={product.image_url} category="designs" buyButton={product} onBuy={() => handleAddToCart(product)} />
+          <Card key={product.id} title={product.name} description={product.description} image={product.display_image} category="designs" buyButton={product} onBuy={() => handleAddToCart(product)} />
         ))}
       </section>
 

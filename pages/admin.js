@@ -338,15 +338,296 @@ export default function Admin() {
             {/* List Assets */}
           </section>
         )}
+        
+        {activeTab === 'designs' && (
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Designs Division</h2>
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="designs">designs</option>
+              </select>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
+            </form>
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'designs').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="designs">designs</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button>
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
 
-        {/* Repeat for other divisions: designs, capital, tech, media, realty */}
+        {activeTab === 'capital' && (
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Capital Division</h2>
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="capital">capital</option>
+              </select>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
+            </form>
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'capital').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="capital">capital</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button>
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
 
-        {/* Blog Tab */}
+        {activeTab === 'tech' && (
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Tech Division</h2>
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="tech">tech</option>
+              </select>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
+            </form>
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'tech').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="tech">tech</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button>
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
+
+        {activeTab === 'media' && (
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Media Division</h2>
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="media">media</option>
+              </select>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
+            </form>
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'media').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="media">media</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button>
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
+
+        {activeTab === 'realty' && (
+          <section className="glass p-6 rounded">
+            <h2 className="text-2xl font-bold mb-4">Realty Division</h2>
+            <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
+              <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+              <select value={newProduct.division} onChange={(e) => setNewProduct({...newProduct, division: e.target.value})} disabled>
+                <option value="realty">realty</option>
+              </select>
+              <input placeholder="Image URL" value={newProduct.image_url} onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})} className="col-span-3" />
+              <textarea placeholder="Description" value={newProduct.description} onChange={(e) => setNewProduct({...newProduct, description: e.target.value})} className="col-span-3" />
+              <select value={newProduct.status} onChange={(e) => setNewProduct({...newProduct, status: e.target.value})}>
+                <option value="active">active</option>
+                <option value="draft">draft</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newProduct.metadata} onChange={(e) => setNewProduct({...newProduct, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
+            </form>
+            <table className="w-full text-sm">
+              {products.filter(p => p.division === 'realty').map(p => (
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  {/* Add edit/delete buttons */}
+                </tr>
+              ))}
+            </table>
+            <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input type="file" onChange={(e) => setNewAsset({...newAsset, file: e.target.files[0]})} />
+              <select value={newAsset.file_type} onChange={(e) => setNewAsset({...newAsset, file_type: e.target.value})}>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+              </select>
+              <select value={newAsset.division} onChange={(e) => setNewAsset({...newAsset, division: e.target.value})} disabled>
+                <option value="realty">realty</option>
+              </select>
+              <select value={newAsset.purpose} onChange={(e) => setNewAsset({...newAsset, purpose: e.target.value})}>
+                <option value="general">General</option>
+                <option value="hero">Hero</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input placeholder="Metadata JSON" value={newAsset.metadata} onChange={(e) => setNewAsset({...newAsset, metadata: e.target.value})} className="col-span-2" />
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Upload Asset</button>
+            </form>
+            {/* List Assets */}
+          </section>
+        )}
+
         {activeTab === 'blog' && (
-          <section className="glass p-6 rounded"> {/* Original */}
-            <SEO title="Manyagi Admin - Blog Management" description="Manage blog posts for Manyagi divisions." /> {/* Added SEO example */}
+          <section className="glass p-6 rounded">
+            <SEO title="Manyagi Admin - Blog Management" description="Manage blog posts for Manyagi divisions." />
             <h2 className="text-2xl font-bold mb-4">Blog</h2>
-            {/* Your existing post form and table */}
+            {/* Post Form */}
+            <form onSubmit={savePost} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
+              <input placeholder="Title" value={postForm.title} onChange={(e) => setPostForm({...postForm, title: e.target.value})} />
+              <input placeholder="Slug" value={postForm.slug} onChange={(e) => setPostForm({...postForm, slug: e.target.value})} />
+              <input placeholder="Excerpt" value={postForm.excerpt} onChange={(e) => setPostForm({...postForm, excerpt: e.target.value})} className="col-span-2" />
+              <input placeholder="Featured Image URL" value={postForm.featured_image} onChange={(e) => setPostForm({...postForm, featured_image: e.target.value})} className="col-span-2" />
+              <textarea placeholder="Content (MDX)" value={postForm.content} onChange={(e) => setPostForm({...postForm, content: e.target.value})} className="col-span-2 h-32" />
+              <select value={postForm.status} onChange={(e) => setPostForm({...postForm, status: e.target.value})}>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+              <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Save Post</button>
+              <button type="button" onClick={doPreview} className="p-2 bg-gray-500 text-white rounded">Preview</button>
+              <button type="button" onClick={clearPostForm} className="p-2 bg-red-500 text-white rounded">Clear</button>
+            </form>
+            {showPreview && mdx && (
+              <div className="glass p-6 rounded mb-6">
+                <MDXRemote {...mdx} />
+              </div>
+            )}
+            {/* List Posts */}
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map(p => (
+                  <tr key={p.id}>
+                    <td>{p.title}</td>
+                    <td>{p.status}</td>
+                    <td>
+                      <button onClick={() => loadPostToForm(p)} className="text-blue-500 mr-2">Edit</button>
+                      <button onClick={() => publishToggle(p.id, p.status === 'published' ? 'draft' : 'published')} className="text-green-500 mr-2">
+                        {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button onClick={() => deletePost(p.id)} className="text-red-500">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </section>
         )}
 

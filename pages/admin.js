@@ -4,26 +4,52 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-
 import { supabase } from '@/lib/supabase';
 import EventCalendar from '@/components/Calendar';
 import SEO from '@/components/SEO';
-
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from 'recharts';
 
-// MDX (lazy to keep admin fast)
+// --- MDX (lazy for admin speed)
 const MDXRemote = dynamic(() => import('next-mdx-remote').then(m => m.MDXRemote), { ssr: false });
 const mdxSerialize = async (content) =>
   (await import('next-mdx-remote/serialize')).serialize(content || '');
+
+// ---------- small utils ----------
+const toArrayTags = (s) =>
+  Array.from(new Set(String(s || '')
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean)));
+
+const tagsToCSV = (arr) =>
+  Array.isArray(arr) ? arr.join(', ') : '';
+
+const safeJSON = (s, fallback = {}) => {
+  try {
+    if (!s) return fallback;
+    if (typeof s === 'object') return s;
+    return JSON.parse(s);
+  } catch {
+    return fallback;
+  }
+};
+
+const copyText = async (txt) => {
+  try {
+    await navigator.clipboard.writeText(txt);
+    alert('Copied!');
+  } catch {
+    // ignore
+  }
+};
 
 // ---------- UI helpers ----------
 const TabButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`p-2 rounded transition
-      ${active ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}
+    className={`p-2 rounded transition ${active ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-800'}`}
   >
     {children}
   </button>
@@ -35,6 +61,194 @@ const SectionCard = ({ title, children, className = '' }) => (
     {children}
   </section>
 );
+
+// ---------- Quick Product Form (Designs) ----------
+function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
+  const [artFile, setArtFile] = useState(null);
+  const [assetUrl, setAssetUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  // product fields
+  const [title, setTitle] = useState('Exile Portal Tee (Prompt 1)');
+  const [price, setPrice] = useState('19.99');
+  const [printfulId, setPrintfulId] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [description, setDescription] = useState('Neon portal tee from Legacy of the Hidden Clans.');
+  const [tagsStr, setTagsStr] = useState('LOHC, prompt-1, exile-portal, tee');
+
+  // metadata fields
+  const [metaBook, setMetaBook] = useState('LOHC');
+  const [metaSeries, setMetaSeries] = useState('Legacy of the Hidden Clans');
+  const [metaPrompt, setMetaPrompt] = useState(1);
+  const [metaScene, setMetaScene] = useState('Exile Portal');
+  const [metaYear, setMetaYear] = useState(2025);
+  const [metaDrop, setMetaDrop] = useState('LOHC_Prompt_1');
+
+  const [purpose, setPurpose] = useState('general'); // upload purpose
+  const [fileType, setFileType] = useState('image'); // image / video / pdf
+
+  const doUploadAsset = async () => {
+    if (!artFile) { alert('Choose a file first.'); return; }
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      const promise = new Promise((resolve, reject) => {
+        reader.onload = resolve;
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(artFile);
+      await promise;
+      const base64 = String(reader.result || '').split(',')[1] || '';
+
+      // bearer
+      const { data: { session} } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const metadata = {
+        book: metaBook,
+        series: metaSeries,
+        prompt: Number(metaPrompt),
+        scene: metaScene,
+        year: Number(metaYear),
+        drop: metaDrop,
+      };
+
+      const res = await axios.post(
+        '/api/admin/upload-asset',
+        {
+          file: { data: base64, name: artFile.name },
+          file_type: fileType,
+          division: defaultDivision,
+          purpose,
+          metadata
+        },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.data?.error) throw new Error(res.data.error);
+      setAssetUrl(res.data.file_url || '');
+      alert('Asset uploaded. Public URL attached below.');
+    } catch (e) {
+      alert(`Upload failed: ${e.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const doCreateProduct = async () => {
+    try {
+      if (!title) return alert('Title is required.');
+      if (!price) return alert('Price is required.');
+      if (!thumbnailUrl) return alert('thumbnail_url (mockup) is required.');
+      if (!printfulId) return alert('Printful product ID is required.');
+
+      const tags = toArrayTags(tagsStr);
+      const metadata = {
+        book: metaBook,
+        series: metaSeries,
+        prompt: Number(metaPrompt),
+        scene: metaScene,
+        year: Number(metaYear),
+        drop: metaDrop,
+        asset_url: assetUrl || undefined,
+      };
+
+      const payload = {
+        name: title,
+        price: parseFloat(price),
+        division: defaultDivision,
+        description,
+        thumbnail_url: thumbnailUrl,
+        printful_product_id: printfulId,
+        status: 'active',
+        tags,
+        metadata,
+      };
+      const { error } = await supabase.from('products').insert(payload);
+      if (error) throw error;
+
+      // reset minimal inputs
+      setTitle('');
+      setPrice('');
+      setPrintfulId('');
+      setThumbnailUrl('');
+      setDescription('');
+      setTagsStr('');
+      setArtFile(null);
+
+      onCreated?.();
+      alert('Product created.');
+    } catch (e) {
+      alert(`Create product failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Quick Product (Designs) — Upload → Copy URL → Create">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 1) Upload (optional) */}
+        <div className="md:col-span-3 border rounded p-4 dark:border-gray-700">
+          <h3 className="font-semibold mb-2">1) Upload asset (optional)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+            <input type="file" onChange={(e) => setArtFile(e.target.files?.[0] || null)} />
+            <select value={fileType} onChange={e => setFileType(e.target.value)} className="dark:bg-gray-800">
+              <option value="image">image</option>
+              <option value="video">video</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <select value={purpose} onChange={e => setPurpose(e.target.value)} className="dark:bg-gray-800">
+              <option value="general">general</option>
+              <option value="hero">hero</option>
+              <option value="carousel">carousel</option>
+            </select>
+            <button
+              type="button"
+              onClick={doUploadAsset}
+              disabled={isUploading}
+              className="p-2 bg-black text-white rounded dark:bg-gray-700"
+            >
+              {isUploading ? 'Uploading…' : 'Upload → Get URL'}
+            </button>
+          </div>
+
+          {assetUrl ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input value={assetUrl} readOnly className="w-full dark:bg-gray-800" />
+              <button type="button" className="px-3 py-2 bg-blue-600 text-white rounded" onClick={() => copyText(assetUrl)}>Copy</button>
+            </div>
+          ) : null}
+
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm opacity-80">Edit default metadata</summary>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-2 mt-3">
+              <input placeholder="book" value={metaBook} onChange={e => setMetaBook(e.target.value)} />
+              <input placeholder="series" value={metaSeries} onChange={e => setMetaSeries(e.target.value)} />
+              <input placeholder="prompt" type="number" value={metaPrompt} onChange={e => setMetaPrompt(e.target.value)} />
+              <input placeholder="scene" value={metaScene} onChange={e => setMetaScene(e.target.value)} />
+              <input placeholder="year" type="number" value={metaYear} onChange={e => setMetaYear(e.target.value)} />
+              <input placeholder="drop" value={metaDrop} onChange={e => setMetaDrop(e.target.value)} />
+            </div>
+          </details>
+        </div>
+
+        {/* 2) Create product */}
+        <div className="md:col-span-3 border rounded p-4 dark:border-gray-700">
+          <h3 className="font-semibold mb-2">2) Create product</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+            <input placeholder="Price" type="number" value={price} onChange={e => setPrice(e.target.value)} />
+            <input placeholder="Printful Product ID" value={printfulId} onChange={e => setPrintfulId(e.target.value)} />
+            <input placeholder="thumbnail_url (Printful mockup URL)" value={thumbnailUrl} onChange={e => setThumbnailUrl(e.target.value)} />
+            <input className="md:col-span-2" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+            <input className="md:col-span-2" placeholder="Tags (comma-separated)" value={tagsStr} onChange={e => setTagsStr(e.target.value)} />
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button type="button" onClick={doCreateProduct} className="p-2 bg-black text-white rounded dark:bg-gray-700">Create Product</button>
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
 
 // ---------- Page ----------
 export default function Admin() {
@@ -81,6 +295,10 @@ export default function Admin() {
   // ui
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // inline editors
+  const [productEdits, setProductEdits] = useState({});
+  const [assetEdits, setAssetEdits] = useState({});
 
   // --------- lifecycle ----------
   useEffect(() => {
@@ -134,7 +352,7 @@ export default function Admin() {
     setEvents(ev.data || []);
   };
 
-  // --------- handlers: products / assets / etc. ----------
+  // --------- generic handlers ----------
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
@@ -162,17 +380,28 @@ export default function Admin() {
       reader.onload = async () => {
         try {
           const base64 = String(reader.result || '').split(',')[1] || '';
-          const res = await axios.post('/api/admin/upload-asset', {
-            file: { data: base64, name: newAsset.file.name },
-            file_type: newAsset.file_type,
-            division: newAsset.division,
-            purpose: newAsset.purpose,
-            metadata: newAsset.metadata,
-          });
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+
+          const res = await axios.post(
+            '/api/admin/upload-asset',
+            {
+              file: { data: base64, name: newAsset.file.name },
+              file_type: newAsset.file_type,
+              division: newAsset.division,
+              purpose: newAsset.purpose,
+              metadata: newAsset.metadata,
+            },
+            {
+              withCredentials: true,
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            }
+          );
+
           if (res.data?.error) throw new Error(res.data.error);
           setNewAsset({ file: null, file_type: 'image', division: newAsset.division, purpose: 'general', metadata: '' });
           await refreshAll();
-          alert('Asset uploaded.');
+          alert(`Asset uploaded.\nURL: ${res.data.file_url}`);
         } catch (err) {
           alert(`Upload failed: ${err.message}`);
         }
@@ -261,7 +490,7 @@ export default function Admin() {
         .from('events')
         .update({ ...updated, date: updated.date ? new Date(updated.date).toISOString() : null })
         .eq('id', id);
-      if (error) throw error;
+    if (error) throw error;
       await refreshAll();
       alert('Event updated.');
     } catch (err) {
@@ -348,6 +577,59 @@ export default function Admin() {
     }
   };
 
+  // inline saves
+  const saveProductRow = async (p) => {
+    try {
+      const edits = productEdits[p.id] || {};
+      if (!Object.keys(edits).length) return;
+      const payload = {
+        ...('thumbnail_url' in edits ? { thumbnail_url: edits.thumbnail_url } : {}),
+        ...('printful_product_id' in edits ? { printful_product_id: edits.printful_product_id } : {}),
+        ...('price' in edits ? { price: parseFloat(edits.price || 0) } : {}),
+        ...('description' in edits ? { description: edits.description } : {}),
+        ...('nft_url' in edits ? { nft_url: edits.nft_url } : {}),
+        ...('tagsStr' in edits ? { tags: toArrayTags(edits.tagsStr) } : {}),
+        ...('metadataStr' in edits ? { metadata: safeJSON(edits.metadataStr, p.metadata || {}) } : {}),
+      };
+      if (!Object.keys(payload).length) return;
+
+      const { error } = await supabase.from('products').update(payload).eq('id', p.id);
+      if (error) throw error;
+
+      // clear only this row's edits
+      setProductEdits(prev => ({ ...prev, [p.id]: {} }));
+      await refreshAll();
+      alert('Product saved.');
+    } catch (e) {
+      alert(`Save failed: ${e.message}`);
+    }
+  };
+
+  const saveAssetRow = async (a) => {
+    try {
+      const edits = assetEdits[a.id] || {};
+      if (!Object.keys(edits).length) return;
+
+      const payload = {
+        ...('filename' in edits ? { filename: edits.filename } : {}),
+        ...('division' in edits ? { division: edits.division } : {}),
+        ...('purpose' in edits ? { purpose: edits.purpose } : {}),
+        ...('tagsStr' in edits ? { tags: toArrayTags(edits.tagsStr) } : {}),
+        ...('metadataStr' in edits ? { metadata: safeJSON(edits.metadataStr, a.metadata || {}) } : {}),
+      };
+      if (!Object.keys(payload).length) return;
+
+      const { error } = await supabase.from('assets').update(payload).eq('id', a.id);
+      if (error) throw error;
+
+      setAssetEdits(prev => ({ ...prev, [a.id]: {} }));
+      await refreshAll();
+      alert('Asset saved.');
+    } catch (e) {
+      alert(`Save failed: ${e.message}`);
+    }
+  };
+
   // derived
   const totalRevenue = useMemo(
     () => orders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0),
@@ -386,10 +668,10 @@ export default function Admin() {
           </SectionCard>
         )}
 
-        {/* Division: Publishing */}
+        {/* Division: Publishing (generic form kept) */}
         {activeTab === 'publishing' && (
           <SectionCard title="Publishing Division">
-            {/* Product Form */}
+            {/* Product Form (generic) */}
             <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
               <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
@@ -406,7 +688,7 @@ export default function Admin() {
               <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
             </form>
 
-            {/* List Products */}
+            {/* List Products (publishing) */}
             <table className="w-full text-sm">
               <thead><tr><th>Name</th></tr></thead>
               <tbody>
@@ -416,7 +698,7 @@ export default function Admin() {
               </tbody>
             </table>
 
-            {/* Asset Form */}
+            {/* Asset Form (generic) */}
             <form onSubmit={handleUploadAsset} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input type="file" onChange={(e) => setNewAsset({ ...newAsset, file: e.target.files?.[0] || null })} />
               <select value={newAsset.file_type} onChange={(e) => setNewAsset({ ...newAsset, file_type: e.target.value })}>
@@ -434,8 +716,230 @@ export default function Admin() {
           </SectionCard>
         )}
 
-        {/* Designs / Capital / Tech / Media / Realty — same pattern */}
-        {['designs','capital','tech','media','realty'].includes(activeTab) && (
+        {/* Designs — enhanced */}
+        {activeTab === 'designs' && (
+          <SectionCard title="Designs Division">
+            {/* 🚀 Quick Product Form */}
+            <QuickProductForm defaultDivision="designs" onCreated={refreshAll} />
+
+            {/* Products (Designs) with inline editing */}
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Products (Designs)</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Thumb</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Printful ID</th>
+                    <th>thumbnail_url</th>
+                    <th>tags</th>
+                    <th>description</th>
+                    <th>nft_url</th>
+                    <th>Save</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.filter(p => p.division === 'designs').map(p => {
+                    const row = productEdits[p.id] || {};
+                    return (
+                      <tr key={p.id} className="border-b dark:border-gray-800 align-top">
+                        <td className="py-2">
+                          {p.thumbnail_url ? <img src={p.thumbnail_url} alt={p.name} className="w-16 h-16 object-cover rounded" /> : null}
+                        </td>
+                        <td className="py-2">{p.name}</td>
+
+                        <td className="py-2 min-w-[100px]">
+                          <input
+                            type="number"
+                            placeholder={String(p.price ?? '')}
+                            className="w-full dark:bg-gray-800"
+                            value={row.price ?? (p.price ?? '')}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, price: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2 min-w-[160px]">
+                          <input
+                            placeholder="printful_product_id"
+                            className="w-full dark:bg-gray-800"
+                            value={row.printful_product_id ?? (p.printful_product_id || '')}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, printful_product_id: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2 min-w-[220px]">
+                          <input
+                            placeholder="thumbnail_url"
+                            className="w-full dark:bg-gray-800"
+                            value={row.thumbnail_url ?? (p.thumbnail_url || '')}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, thumbnail_url: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2 min-w-[200px]">
+                          <input
+                            placeholder="comma,separated,tags"
+                            className="w-full dark:bg-gray-800"
+                            value={row.tagsStr ?? tagsToCSV(p.tags)}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, tagsStr: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2 min-w-[220px]">
+                          <textarea
+                            placeholder="description"
+                            className="w-full h-16 dark:bg-gray-800"
+                            value={row.description ?? (p.description || '')}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, description: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2 min-w-[240px]">
+                          <input
+                            placeholder="https://opensea.io/..."
+                            className="w-full dark:bg-gray-800"
+                            value={row.nft_url ?? (p.nft_url || (p.metadata?.nft_url || ''))}
+                            onChange={e => setProductEdits(prev => ({ ...prev, [p.id]: { ...row, nft_url: e.target.value } }))}
+                          />
+                        </td>
+
+                        <td className="py-2">
+                          <button
+                            className="px-3 py-1 bg-blue-600 text-white rounded"
+                            onClick={() => saveProductRow(p)}
+                          >
+                            Save
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {products.filter(p => p.division === 'designs').length === 0 && (
+                    <tr><td colSpan={9} className="py-6 opacity-70">No products yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 📁 Recent Assets (Designs) — copy + inline edit */}
+            <div className="mt-10">
+              <h3 className="font-semibold mb-3">Recent Assets (latest 20)</h3>
+              {assets?.length ? (
+                <div className="glass p-4 rounded">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left">
+                        <th>Preview</th>
+                        <th>Filename</th>
+                        <th>Division</th>
+                        <th>Purpose</th>
+                        <th>Tags</th>
+                        <th>Metadata (JSON)</th>
+                        <th>URL</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assets
+                        .filter(a => a.division === 'designs')
+                        .slice(0, 20)
+                        .map(a => {
+                          const row = assetEdits[a.id] || {};
+                          return (
+                            <tr key={a.id} className="align-top border-t dark:border-gray-800">
+                              <td className="py-2">
+                                {a.file_type === 'image'
+                                  ? <img src={a.file_url} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6 }} />
+                                  : a.file_type === 'video' ? '🎞️' : '📄'}
+                              </td>
+                              <td className="py-2 min-w-[160px]">
+                                <input
+                                  placeholder={a.filename || '-'}
+                                  className="w-full dark:bg-gray-800"
+                                  value={row.filename ?? (a.filename || '')}
+                                  onChange={e => setAssetEdits(prev => ({ ...prev, [a.id]: { ...row, filename: e.target.value } }))}
+                                />
+                              </td>
+                              <td className="py-2">
+                                <select
+                                  className="dark:bg-gray-800"
+                                  value={row.division ?? (a.division || 'designs')}
+                                  onChange={e => setAssetEdits(prev => ({ ...prev, [a.id]: { ...row, division: e.target.value } }))}
+                                >
+                                  <option value="designs">designs</option>
+                                  <option value="publishing">publishing</option>
+                                  <option value="capital">capital</option>
+                                  <option value="tech">tech</option>
+                                  <option value="media">media</option>
+                                  <option value="realty">realty</option>
+                                  <option value="site">site</option>
+                                </select>
+                              </td>
+                              <td className="py-2">
+                                <select
+                                  className="dark:bg-gray-800"
+                                  value={row.purpose ?? (a.purpose || 'general')}
+                                  onChange={e => setAssetEdits(prev => ({ ...prev, [a.id]: { ...row, purpose: e.target.value } }))}
+                                >
+                                  <option value="general">general</option>
+                                  <option value="hero">hero</option>
+                                  <option value="carousel">carousel</option>
+                                </select>
+                              </td>
+                              <td className="py-2 min-w-[220px]">
+                                <input
+                                  placeholder="comma,separated,tags"
+                                  className="w-full dark:bg-gray-800"
+                                  value={row.tagsStr ?? tagsToCSV(a.tags)}
+                                  onChange={e => setAssetEdits(prev => ({ ...prev, [a.id]: { ...row, tagsStr: e.target.value } }))}
+                                />
+                              </td>
+                              <td className="py-2 min-w-[260px]">
+                                <textarea
+                                  className="w-full h-16 dark:bg-gray-800"
+                                  placeholder='{"book":"LOHC","prompt":1}'
+                                  value={row.metadataStr ?? JSON.stringify(a.metadata || {}, null, 0)}
+                                  onChange={e => setAssetEdits(prev => ({ ...prev, [a.id]: { ...row, metadataStr: e.target.value } }))}
+                                />
+                              </td>
+                              <td className="py-2 max-w-[240px] truncate">
+                                {a.file_url}
+                              </td>
+                              <td className="py-2 space-x-2">
+                                <button
+                                  className="text-blue-600"
+                                  onClick={() => copyText(a.file_url)}
+                                  type="button"
+                                >
+                                  Copy URL
+                                </button>
+                                <button
+                                  className="px-3 py-1 bg-blue-600 text-white rounded"
+                                  onClick={() => saveAssetRow(a)}
+                                  type="button"
+                                >
+                                  Save
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {assets.filter(a => a.division === 'designs').length === 0 && (
+                        <tr><td colSpan={8} className="py-6 opacity-70">No assets yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="opacity-70">No assets yet.</p>
+              )}
+            </div>
+          </SectionCard>
+        )}
+
+        {/* Capital / Tech / Media / Realty — generic */}
+        {['capital','tech','media','realty'].includes(activeTab) && (
           <SectionCard title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Division`}>
             <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />

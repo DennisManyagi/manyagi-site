@@ -1,7 +1,8 @@
+// pages/_app.js
 import '@/styles/globals.css';
 import { Provider } from 'react-redux';
 import { store } from '../lib/store';
-import Header from '../components/Header';
+import Header from '../components/Header'; // Moved inside the ThemeProvider
 import Footer from '../components/Footer';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useEffect } from 'react';
@@ -9,7 +10,6 @@ import { useRouter } from 'next/router';
 import Script from 'next/script';
 import Head from 'next/head';  // Add this for viewport
 import { ThemeProvider } from 'next-themes'; // Added for dark mode
-import ThemeToggle from '@/components/ThemeToggle'; // Added for toggle
 import SEO from '@/components/SEO'; // Added for SEO
 
 function MyApp({ Component, pageProps }) {
@@ -32,7 +32,7 @@ function MyApp({ Component, pageProps }) {
       console.error('Cart load error:', e);
     }
     return unsubscribe;
-  }, []);
+  }, [router.events]);
 
   useEffect(() => {
     const handleRouteChange = (url) => {
@@ -87,16 +87,12 @@ function MyApp({ Component, pageProps }) {
         <ThemeProvider attribute="class" defaultTheme="light"> {/* Added wrapper for dark mode */}
           <SEO /> {/* Added global SEO */}
           <div className="min-h-screen gradient-bg dark:bg-gray-900 transition-colors"> {/* Added dark mode class */}
-            <header className="p-4 flex justify-between items-center glass">
-              <h1 className="text-2xl font-bold text-white">Manyagi</h1>
-              <ThemeToggle /> {/* Added toggle */}
-            </header>
+            <Header /> {/* Moved Header inside the div */}
             <main className="container mx-auto px-4 py-8 min-h-screen bg-white text-black gradient-bg">
               <Component {...pageProps} />
             </main>
           </div>
         </ThemeProvider>
-        <Header />
         <Footer />
       </ErrorBoundary>
     </Provider>

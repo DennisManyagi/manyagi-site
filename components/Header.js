@@ -1,20 +1,32 @@
+// components/Header.js
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { FaShoppingCart } from 'react-icons/fa';
+import { useTheme } from 'next-themes'; // Added for theme toggle
+import { useEffect, useState } from 'react'; // Added for mounted check
 
 const Header = () => {
   const router = useRouter();
   const items = useSelector((state) => state.cart.items || []);
   const cartCount = items.length;
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 bg-white z-50 border-b border-gray-300 text-black">
       <div className="container mx-auto flex items-center justify-between py-4 px-4 md:px-8 flex-col md:flex-row">
-        <Link href="/" className="flex items-center gap-3 font-bold uppercase tracking-widest">
-          <Image src="/images/logo.svg" alt="Manyagi Logo" width={100} height={50} loading="lazy" />
-        </Link>
+        <div className="flex flex-col items-center"> {/* Changed to column for tagline below logo */}
+          <Link href="/" className="flex items-center gap-3 font-bold uppercase tracking-widest">
+            <Image src="/images/logo.svg" alt="Manyagi Logo" width={100} height={50} loading="lazy" />
+          </Link>
+          <span className="text-sm text-gray-600 mt-1">Creativity Meets Innovation</span> {/* Added tagline */}
+        </div>
         <nav className="flex flex-wrap gap-4 md:gap-6 items-center justify-center md:justify-end mt-4 md:mt-0">
           <Link href="/" className="hover:text-yellow-500 transition">Home</Link>
           <Link href="/publishing" className="hover:text-yellow-500 transition">Publishing</Link>
@@ -36,6 +48,14 @@ const Header = () => {
               </span>
             )}
           </Link>
+          {mounted && ( // Added theme toggle
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-black dark:text-white transition-colors"
+            >
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+          )}
         </nav>
       </div>
     </header>

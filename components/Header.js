@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import { FaShoppingCart } from 'react-icons/fa';
-import { useTheme } from 'next-themes'; // Added for theme toggle
-import { useEffect, useState } from 'react'; // Added for mounted check
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 const Header = () => {
   const router = useRouter();
@@ -14,19 +14,25 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   return (
     <header className="sticky top-0 bg-white z-50 border-b border-gray-300 text-black">
       <div className="container mx-auto flex items-center justify-between py-4 px-4 md:px-8 flex-col md:flex-row">
-        <div className="flex flex-col items-center"> {/* Changed to column for tagline below logo */}
+        {/* Logo */}
+        <div className="flex items-center">
           <Link href="/" className="flex items-center gap-3 font-bold uppercase tracking-widest">
-            <Image src="/images/logo.svg" alt="Manyagi Logo" width={100} height={50} loading="lazy" />
+            <Image
+              src="/images/logo.svg"
+              alt="Manyagi Logo"
+              width={100}
+              height={50}
+              loading="lazy"
+            />
           </Link>
-          <span className="text-sm text-gray-600 mt-1">Creativity Meets Innovation</span> {/* Added tagline */}
         </div>
+
+        {/* Navigation */}
         <nav className="flex flex-wrap gap-4 md:gap-6 items-center justify-center md:justify-end mt-4 md:mt-0">
           <Link href="/" className="hover:text-yellow-500 transition">Home</Link>
           <Link href="/publishing" className="hover:text-yellow-500 transition">Publishing</Link>
@@ -40,6 +46,8 @@ const Header = () => {
           <Link href="/contact" className="hover:text-yellow-500 transition">Contact</Link>
           <Link href="/links" className="hover:text-yellow-500 transition">Links</Link>
           <Link href="/admin" className="hover:text-yellow-500 transition bg-blue-100 px-2 py-1 rounded">Admin</Link>
+
+          {/* Cart */}
           <Link href="/cart" className="relative hover:text-yellow-500 transition">
             <FaShoppingCart className="inline-block" />
             {cartCount > 0 && (
@@ -48,7 +56,9 @@ const Header = () => {
               </span>
             )}
           </Link>
-          {mounted && ( // Added theme toggle
+
+          {/* Theme Toggle */}
+          {mounted && (
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-black dark:text-white transition-colors"

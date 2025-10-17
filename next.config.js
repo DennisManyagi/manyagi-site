@@ -1,3 +1,4 @@
+// next.config.js
 const withTM = require('next-transpile-modules')(['gsap']);
 const withMDX = require('@next/mdx')({
   extension: /\.mdx?$/,
@@ -18,7 +19,7 @@ const nextConfig = withTM({
       { protocol: 'https', hostname: 'i.ytimg.com', pathname: '/**' },
       { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
       { protocol: 'https', hostname: 'dlbbjeohndiwtofitwec.supabase.co', pathname: '/**' },
-      // 👇 Printful CDNs (needed for product mockup thumbnails)
+      // Printful CDNs (mockups)
       { protocol: 'https', hostname: 'files.cdn.printful.com', pathname: '/**' },
       { protocol: 'https', hostname: 'img.printful.com', pathname: '/**' },
       // keep for scripts if you ever use next/image with external script assets
@@ -29,14 +30,12 @@ const nextConfig = withTM({
   },
 
   async headers() {
-    // NOTE: CSP must include Printful in img-src and connect-src for thumbnails to load.
+    // Allow Supabase + Printful images so product thumbnails load on production
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://platform.twitter.com https://f.convertkit.com https://js.stripe.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      // 👉 allow Supabase, Printful, YouTube thumbs, Unsplash, and data/blob URLs
       "img-src 'self' data: blob: https://manyagi.net https://images.unsplash.com https://myfxbook.com https://youtube.com https://i.ytimg.com https://img.youtube.com https://syndication.twitter.com https://dlbbjeohndiwtofitwec.supabase.co https://files.cdn.printful.com https://img.printful.com",
-      // media (mp4 from Supabase if you show reels)
       "media-src 'self' data: blob: https://dlbbjeohndiwtofitwec.supabase.co",
       "connect-src 'self' https://api.stripe.com https://api.telegram.org https://api.formspree.io https://app.convertkit.com https://www.google-analytics.com https://dlbbjeohndiwtofitwec.supabase.co wss://dlbbjeohndiwtofitwec.supabase.co https://files.cdn.printful.com https://img.printful.com",
       "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://platform.twitter.com https://syndication.twitter.com https://js.stripe.com",

@@ -19,10 +19,13 @@ const Card = ({
 }) => {
   const dispatch = useDispatch();
 
+  // product payload coming from parent (Designs page)
   const product = buyButton || {};
   const resolvedTags =
     Array.isArray(product.tags) && product.tags.length ? product.tags : tags;
-  const nftUrl = product.nft_url || product?.metadata?.nft_url || null;
+
+  // we support either top-level nft_url or metadata.nft_url
+  const nftUrl = product?.nft_url || product?.metadata?.nft_url || null;
   const hasNFT = Boolean(nftUrl);
 
   const handleClick = () => {
@@ -32,7 +35,7 @@ const Card = ({
         clicks[category] = (clicks[category] || 0) + 1;
         localStorage.setItem('clicks', JSON.stringify(clicks));
       } catch {
-        /* ignore */
+        /* ignore localStorage errors */
       }
     }
   };
@@ -62,14 +65,18 @@ const Card = ({
           />
         )}
 
-        {/* NFT Ribbon */}
+        {/* NFT Ribbon (clickable) */}
         {showNftBadge && hasNFT && (
-          <div
+          <a
+            href={nftUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="absolute top-3 right-3 bg-black/80 text-white text-xs font-semibold px-2 py-1 rounded"
-            title="This design has a linked NFT"
+            title="View NFT on OpenSea"
           >
             NFT
-          </div>
+          </a>
         )}
       </div>
 
@@ -116,11 +123,8 @@ const Card = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (typeof onBuy === 'function') {
-                  onBuy(buyButton);
-                } else {
-                  handleBuy(buyButton);
-                }
+                if (typeof onBuy === 'function') onBuy(buyButton);
+                else handleBuy(buyButton);
               }}
               className="btn bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
             >
@@ -131,7 +135,6 @@ const Card = ({
             </button>
           )}
 
-          {/* View NFT */}
           {hasNFT && (
             <a
               href={nftUrl}

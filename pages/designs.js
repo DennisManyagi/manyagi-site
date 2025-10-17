@@ -12,12 +12,13 @@ import Card from '../components/Card';
 
 const PAGE_SIZE = 16;
 
+// Prefer higher-quality image fields when available
 function pickImage(p) {
   return (
-    p?.thumbnail_url ||
-    p?.display_image ||
-    p?.image_url ||
-    p?.image ||
+    (p?.thumbnail_url && typeof p.thumbnail_url === 'string' && p.thumbnail_url) ||
+    (p?.display_image && typeof p.display_image === 'string' && p.display_image) ||
+    (p?.image_url && typeof p.image_url === 'string' && p.image_url) ||
+    (p?.image && typeof p.image === 'string' && p.image) ||
     ''
   );
 }
@@ -32,12 +33,15 @@ export default function Designs() {
   const [fetchingMore, setFetchingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const initial = useMemo(() => ({
-    q: (router.query.q || '').toString(),
-    collection: (router.query.collection || '').toString(),
-    tag: (router.query.tag || '').toString(),
-    sort: (router.query.sort || 'new').toString(),
-  }), [router.query]);
+  const initial = useMemo(
+    () => ({
+      q: (router.query.q || '').toString(),
+      collection: (router.query.collection || '').toString(),
+      tag: (router.query.tag || '').toString(),
+      sort: (router.query.sort || 'new').toString(),
+    }),
+    [router.query]
+  );
 
   const [q, setQ] = useState(initial.q);
   const [collection, setCollection] = useState(initial.collection);
@@ -79,12 +83,12 @@ export default function Designs() {
         : [];
 
       // Normalize the image field so cards never break
-      const nextItems = nextItemsRaw.map(p => ({
+      const nextItems = nextItemsRaw.map((p) => ({
         ...p,
         display_image: pickImage(p),
       }));
 
-      setItems(prev => (append ? [...prev, ...nextItems] : nextItems));
+      setItems((prev) => (append ? [...prev, ...nextItems] : nextItems));
       setTotal(Number(data?.total ?? nextItems.length));
     } catch (e) {
       console.error('Designs fetch error:', e);
@@ -147,7 +151,7 @@ export default function Designs() {
 
   const collectionOptions = useMemo(() => {
     const set = new Set();
-    items.forEach(p => {
+    items.forEach((p) => {
       if (p?.metadata?.book) set.add(p.metadata.book);
       if (p?.metadata?.series) set.add(p.metadata.series);
       if (p?.metadata?.drop) set.add(p.metadata.drop);
@@ -159,17 +163,19 @@ export default function Designs() {
 
   const tagOptions = useMemo(() => {
     const set = new Set();
-    items.forEach(p => (p?.tags || []).forEach(t => set.add(t)));
+    items.forEach((p) => (p?.tags || []).forEach((t) => set.add(t)));
     return Array.from(set);
   }, [items]);
 
   const handleAddToCart = (product) => {
-    dispatch(addToCart({
-      ...product,
-      productType: 'merch',
-      printful_product_id: product.printful_product_id,
-      metadata: product.metadata || {},
-    }));
+    dispatch(
+      addToCart({
+        ...product,
+        productType: 'merch',
+        printful_product_id: product.printful_product_id,
+        metadata: product.metadata || {},
+      })
+    );
     setShowModal(true);
     setTimeout(() => setShowModal(false), 1600);
   };
@@ -186,7 +192,10 @@ export default function Designs() {
     <>
       <Head>
         <title>Manyagi Designs — Wear Your Story</title>
-        <meta name="description" content="Explore T-shirts, mugs, and prints inspired by our stories." />
+        <meta
+          name="description"
+          content="Explore T-shirts, mugs, and prints inspired by our stories."
+        />
       </Head>
 
       <Hero
@@ -196,14 +205,20 @@ export default function Designs() {
         carouselImages={carouselImages}
         height="h-[600px]"
       >
-        <Link href="#products" className="btn bg-blue-600 text-white py-3 px-5 rounded hover:scale-105 transition">
+        <Link
+          href="#products"
+          className="btn bg-blue-600 text-white py-3 px-5 rounded hover:scale-105 transition"
+        >
           Shop Now
         </Link>
       </Hero>
 
       {/* Filter Bar */}
       <section className="container mx-auto px-4 mt-8">
-        <form onSubmit={applyFilters} className="flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+        <form
+          onSubmit={applyFilters}
+          className="flex flex-col md:flex-row gap-3 items-stretch md:items-end"
+        >
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Search</label>
             <input
@@ -221,7 +236,11 @@ export default function Designs() {
               className="border rounded px-3 py-2 w-48 dark:bg-gray-900"
             >
               <option value="">All</option>
-              {collectionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {collectionOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -232,7 +251,11 @@ export default function Designs() {
               className="border rounded px-3 py-2 w-48 dark:bg-gray-900"
             >
               <option value="">All</option>
-              {tagOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              {tagOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -248,8 +271,14 @@ export default function Designs() {
             </select>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded">Apply</button>
-            <button type="button" onClick={clearFilters} className="px-4 py-2 bg-gray-200 rounded dark:bg-gray-800">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded">
+              Apply
+            </button>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-200 rounded dark:bg-gray-800"
+            >
               Clear
             </button>
           </div>
@@ -261,7 +290,10 @@ export default function Designs() {
         {items.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-lg">No products found for your filters.</p>
-            <button onClick={clearFilters} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+            <button
+              onClick={clearFilters}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+            >
               Reset Filters
             </button>
           </div>
@@ -277,6 +309,7 @@ export default function Designs() {
                   category="designs"
                   buyButton={product}
                   onBuy={() => handleAddToCart(product)}
+                  // Card itself reads nft_url from product, so no extra props needed
                 />
               ))}
             </div>
@@ -309,7 +342,10 @@ export default function Designs() {
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center dark:bg-gray-900">
             <p className="text-base">Added to cart!</p>
-            <Link href="/cart" className="text-blue-600 hover:underline mt-4 inline-block">
+            <Link
+              href="/cart"
+              className="text-blue-600 hover:underline mt-4 inline-block"
+            >
               View Cart
             </Link>
           </div>

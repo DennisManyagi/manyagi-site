@@ -1,40 +1,44 @@
+// pages/_document.js
 import { Html, Head, Main, NextScript } from 'next/document';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://manyagi.net';
 
 export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Georgia&display=swap" rel="stylesheet" />
-        <meta name="robots" content="index,follow" />
-        <meta name="keywords" content="Manyagi, publishing, designs, capital, tech, media, books, merchandise, trading signals, apps, videos" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="sitemap" href="/sitemap.xml" type="application/xml" />
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "Manyagi",
-              "url": "https://manyagi.net",
-              "logo": "https://manyagi.net/images/logo.png",
-              "description": "Manyagi unites Publishing, Designs, Capital, Tech, Media, and Realty under one HQ.",
-              "sameAs": [
-                "https://instagram.com/manyagi.official",
-                "https://tiktok.com/@manyagi.official",
-                "https://youtube.com/@ManyagiOfficial",
-                "https://twitter.com/ManyagiOfficial",
-                "https://linkedin.com/company/manyagi",
-                "https://pinterest.com/ManyagiOfficial"
+        {/* Fonts */}
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Georgia&display=swap" rel="stylesheet" />
+        {/* Global org JSON-LD */}
+        <script
+          type="application/ld+json"
+          // Base Organization schema for the brand; pages can add more via <SEO jsonLd={...} />
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Manyagi',
+              url: SITE_URL,
+              description: 'Manyagi unites Publishing, Designs, Capital, Tech, Media, and Realty under one HQ.',
+              logo: `${SITE_URL}/images/logo.png`,
+              sameAs: [
+                'https://instagram.com/manyagi.official',
+                'https://tiktok.com/@manyagi.official',
+                'https://youtube.com/@ManyagiOfficial',
+                'https://x.com/ManyagiOfficial',
+                'https://linkedin.com/company/manyagi',
+                'https://pinterest.com/ManyagiOfficial',
               ],
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "email": "support@manyagi.net",
-                "telephone": "+1-555-123-4567"
-              }
-            }
-          `}
-        </script>
+              contactPoint: {
+                '@type': 'ContactPoint',
+                email: 'support@manyagi.net',
+                contactType: 'customer support',
+                availableLanguage: 'en',
+              },
+            }),
+          }}
+        />
+        {/* We no longer hard-code robots/meta keywords here to avoid duplicating with SEO component */}
       </Head>
       <body className="bg-white text-black">
         <Main />

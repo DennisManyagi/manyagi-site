@@ -8,42 +8,116 @@ import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 
+// Helpers
+const asList = (v) => {
+  if (Array.isArray(v)) return v;
+  if (Array.isArray(v?.items)) return v.items;
+  return [];
+};
+const pickImage = (p) =>
+  p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '';
+
 export default function Capital() {
   const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
   useEffect(() => {
     (async () => {
       try {
-        const prods = await fetch('/api/products?division=capital').then(r => r.json());
-        setProducts(prods || []);
+        const res = await fetch('/api/products?division=capital');
+        const json = await res.json();
+        const list = asList(json).map((p) => ({
+          ...p,
+          display_image: pickImage(p),
+          productType: p.productType || 'download',
+        }));
+        if (list.length === 0) {
+          const fallback = [
+            {
+              id: 'bot1',
+              name: 'Trading Bot License',
+              price: 99.99,
+              display_image:
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
+              division: 'capital',
+              description: 'Lifetime access to premium trading bot',
+              productType: 'download',
+            },
+          ];
+          setProducts(fallback);
+          setTotal(fallback.length);
+        } else {
+          setProducts(list);
+          setTotal(Number(json?.total ?? list.length));
+        }
       } catch (e) {
         console.error('Capital fetch error:', e);
-        setProducts([
-          { id: 'bot1', name: 'Trading Bot License', price: 99.99, image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp', division: 'capital', description: 'Lifetime access to premium trading bot', productType: 'download' },
-        ]);
-      } finally { setLoading(false); }
+        const fallback = [
+          {
+            id: 'bot1',
+            name: 'Trading Bot License',
+            price: 99.99,
+            display_image:
+              'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
+            division: 'capital',
+            description: 'Lifetime access to premium trading bot',
+            productType: 'download',
+          },
+        ];
+        setProducts(fallback);
+        setTotal(fallback.length);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  const handleAddToCart = (product) => { dispatch(addToCart({ ...product, productType: 'download' })); };
+  const handleAddToCart = (product) => {
+    const payload = { ...product, productType: 'download' };
+    if (!payload.display_image) payload.display_image = pickImage(product);
+    dispatch(addToCart(payload));
+  };
 
   const carouselImages = [
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp',
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png',
   ];
 
-  if (loading) return <div className="container mx-auto px-4 py-16 text-center">Loading capital products...</div>;
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        Loading capital products...
+      </div>
+    );
+  }
+
+  const list = asList(products);
 
   return (
     <>
       <Head>
         <title>Manyagi Capital — Trading Signals & Bots</title>
-        <meta name="description" content="Join our trading signals and bot community for financial success." />
+        <meta
+          name="description"
+          content="Join our trading signals and bot community for financial success."
+        />
       </Head>
-      <Hero kicker="Capital" title="Trade Smarter with Manyagi Capital" lead="Real-time signals and bot-driven insights." carouselImages={carouselImages} height="h-[600px]">
-        <Link href="#subscribe" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition">Subscribe</Link>
+
+      <Hero
+        kicker="Capital"
+        title="Trade Smarter with Manyagi Capital"
+        lead="Real-time signals and bot-driven insights."
+        carouselImages={carouselImages}
+        height="h-[600px]"
+      >
+        <Link
+          href="#subscribe"
+          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition"
+        >
+          Subscribe
+        </Link>
       </Hero>
 
       <section id="performance" className="container mx-auto px-4 py-16">
@@ -62,21 +136,40 @@ export default function Capital() {
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp"
             category="capital"
           >
-            <Link href="#products" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition">
+            <Link
+              href="#products"
+              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition"
+            >
               Explore Bots
             </Link>
           </Card>
         </div>
       </section>
 
-      <section id="products" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-5">
-        {products.map((product) => (
-          <Card key={product.id} title={product.name} description={product.description} image={product.image_url} category="capital" buyButton={product} onBuy={() => handleAddToCart(product)} />
-        ))}
+      <section
+        id="products"
+        className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-5"
+      >
+        {list.length === 0 ? (
+          <div className="col-span-full text-center text-lg">
+            No capital products found.
+          </div>
+        ) : (
+          list.map((product) => (
+            <Card
+              key={product.id}
+              title={product.name}
+              description={product.description}
+              image={product.display_image || pickImage(product)}
+              category="capital"
+              buyButton={product}
+              onBuy={() => handleAddToCart(product)}
+            />
+          ))
+        )}
       </section>
 
       <section id="subscribe" className="container mx-auto px-4 py-16">
-        {/* Rely on env NEXT_PUBLIC_STRIPE_PRICE_ID; form handles missing env gracefully */}
         <SignalsSubscriptionForm />
       </section>
 

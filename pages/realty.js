@@ -8,29 +8,66 @@ import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 
+// Helpers
+const asList = (v) => {
+  if (Array.isArray(v)) return v;
+  if (Array.isArray(v?.items)) return v.items;
+  return [];
+};
+const pickImage = (p) =>
+  p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '';
+
 export default function Realty() {
   const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetch('/api/products?division=realty').then(r => r.json());
-        setProducts(data || []);
+        const res = await fetch('/api/products?division=realty');
+        const json = await res.json();
+        const list = asList(json).map((p) => ({
+          ...p,
+          display_image: pickImage(p),
+          productType: p.productType || 'rental',
+        }));
+        if (list.length === 0) {
+          const fallback = [
+            {
+              id: 'rental1',
+              name: 'Big Bear Luxury Rental',
+              price: 299.99,
+              display_image:
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/rental-bigbear.webp',
+              division: 'realty',
+              description: 'Luxury cabin in Big Bear',
+              productType: 'rental',
+            },
+          ];
+          setProducts(fallback);
+          setTotal(fallback.length);
+        } else {
+          setProducts(list);
+          setTotal(Number(json?.total ?? list.length));
+        }
       } catch (error) {
         console.error('Realty fetch error:', error);
-        setProducts([
+        const fallback = [
           {
             id: 'rental1',
             name: 'Big Bear Luxury Rental',
             price: 299.99,
-            image_url: 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/rental-bigbear.webp',
+            display_image:
+              'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/rental-bigbear.webp',
             division: 'realty',
             description: 'Luxury cabin in Big Bear',
             productType: 'rental',
           },
-        ]);
+        ];
+        setProducts(fallback);
+        setTotal(fallback.length);
       } finally {
         setLoading(false);
       }
@@ -38,7 +75,9 @@ export default function Realty() {
   }, []);
 
   const handleAddToCart = (product) => {
-    dispatch(addToCart({ ...product, productType: 'rental' }));
+    const payload = { ...product, productType: 'rental' };
+    if (!payload.display_image) payload.display_image = pickImage(product);
+    dispatch(addToCart(payload));
   };
 
   const carouselImages = [
@@ -47,8 +86,14 @@ export default function Realty() {
   ];
 
   if (loading) {
-    return <div className="container mx-auto px-4 py-16 text-center">Loading realty listings...</div>;
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        Loading realty listings...
+      </div>
+    );
   }
+
+  const list = asList(products);
 
   return (
     <>
@@ -56,6 +101,7 @@ export default function Realty() {
         <title>Manyagi Realty — Premium Properties</title>
         <meta name="description" content="Explore our premium properties and rentals." />
       </Head>
+
       <Hero
         kicker="Realty"
         title="Live in Luxury"
@@ -63,23 +109,35 @@ export default function Realty() {
         carouselImages={carouselImages}
         height="h-[600px]"
       >
-        <Link href="#properties" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+        <Link
+          href="#properties"
+          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
           Explore Properties
         </Link>
       </Hero>
 
-      <section id="properties" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
-        {products.map((product) => (
-          <Card
-            key={product.id}
-            title={product.name}
-            description={product.description}
-            image={product.image_url}
-            category="realty"
-            buyButton={product}
-            onBuy={() => handleAddToCart(product)}
-          />
-        ))}
+      <section
+        id="properties"
+        className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5"
+      >
+        {list.length === 0 ? (
+          <div className="col-span-full text-center text-lg">
+            No realty listings found.
+          </div>
+        ) : (
+          list.map((product) => (
+            <Card
+              key={product.id}
+              title={product.name}
+              description={product.description}
+              image={product.display_image || pickImage(product)}
+              category="realty"
+              buyButton={product}
+              onBuy={() => handleAddToCart(product)}
+            />
+          ))
+        )}
       </section>
 
       <section id="subscribe" className="container mx-auto px-4 py-16">

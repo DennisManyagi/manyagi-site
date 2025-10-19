@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import EventCalendar from '@/components/Calendar';
 import SEO from '@/components/SEO';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts';
 
 // --- MDX (lazy for admin speed)
@@ -43,6 +43,15 @@ const copyText = async (txt) => {
   } catch {
     // ignore
   }
+};
+
+const currency = (n) => `$${Number(n || 0).toFixed(2)}`;
+const isWithinLastDays = (iso, days = 30) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  return d >= since;
 };
 
 // ---------- UI helpers ----------
@@ -250,6 +259,118 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   );
 }
 
+/** NEW: One form → Stripe Product + Price → Supabase products across multiple divisions */
+function QuickCreateStripeProduct({ onCreated }) {
+  const [name, setName] = useState('Exile Portal Tee');
+  const [description, setDescription] = useState('Neon portal tee from Legacy of the Hidden Clans.');
+  const [price, setPrice] = useState('29.99');
+  const [currency, setCurrency] = useState('usd'); // shadowing is local, safe
+  const [image, setImage] = useState('');
+  const [printfulVariantId, setPrintfulVariantId] = useState('');
+  const [status, setStatus] = useState('active');
+  const [tagsStr, setTagsStr] = useState('LOHC, tee, drop-1');
+  const [divisions, setDivisions] = useState(['designs']);
+  const [busy, setBusy] = useState(false);
+
+  const toggleDivision = (d) =>
+    setDivisions((prev) => (prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]));
+
+  const toTags = (s) =>
+    Array.from(new Set(String(s || '')
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)));
+
+  const submit = async () => {
+    if (!name) return alert('Name is required.');
+    if (!price || isNaN(Number(price))) return alert('Valid price required.');
+    if (!printfulVariantId) {
+      const ok = confirm('No Printful Variant ID entered. Continue anyway?');
+      if (!ok) return;
+    }
+    setBusy(true);
+    try {
+      const payload = {
+        name,
+        description,
+        price: Number(price),
+        currency,
+        image,
+        printfulVariantId: printfulVariantId || null,
+        divisions,
+        status,
+        tags: toTags(tagsStr),
+        extraMetadata: {
+          brand: 'Manyagi',
+          series: 'Legacy of the Hidden Clans',
+        },
+      };
+      const { data } = await axios.post('/api/admin/quick-create-product', payload);
+      if (!data?.ok) throw new Error(data?.error || 'Create failed');
+      onCreated?.();
+      alert(`Created!\nStripe product: ${data.stripe_product_id}\nStripe price: ${data.stripe_price_id}`);
+      // reset minimal
+      setName('');
+      setDescription('');
+      setPrice('');
+      setImage('');
+      setPrintfulVariantId('');
+    } catch (e) {
+      alert(`Quick create failed: ${e.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SectionCard title="Quick Create — Stripe + Supabase (Multi-division)">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
+        <input placeholder="Price (e.g. 29.99)" value={price} onChange={e => setPrice(e.target.value)} />
+        <select value={currency} onChange={e => setCurrency(e.target.value)}>
+          <option value="usd">USD</option>
+          <option value="eur">EUR</option>
+          <option value="gbp">GBP</option>
+        </select>
+
+        <input className="md:col-span-3" placeholder="Thumbnail / Mockup URL" value={image} onChange={e => setImage(e.target.value)} />
+        <textarea className="md:col-span-3" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+        <input className="md:col-span-2" placeholder="Tags (comma-separated)" value={tagsStr} onChange={e => setTagsStr(e.target.value)} />
+        <input placeholder="Printful Variant ID (e.g. 4012)" value={printfulVariantId} onChange={e => setPrintfulVariantId(e.target.value)} />
+
+        <div className="md:col-span-3">
+          <label className="font-semibold block mb-2">Divisions (clone into):</label>
+          <div className="flex flex-wrap gap-2">
+            {['designs','publishing','media','capital','tech','realty'].map(d => (
+              <label key={d} className="flex items-center gap-2 border px-3 py-1 rounded cursor-pointer">
+                <input type="checkbox" checked={divisions.includes(d)} onChange={() => toggleDivision(d)} />
+                <span>{d}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="md:col-span-3 flex items-center gap-3">
+          <label>Status</label>
+          <select value={status} onChange={e => setStatus(e.target.value)}>
+            <option value="active">active</option>
+            <option value="draft">draft</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy}
+            className="ml-auto px-4 py-2 rounded bg-blue-600 text-white"
+          >
+            {busy ? 'Creating…' : 'Create (Stripe + Supabase)'}
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ---------- Page ----------
 export default function Admin() {
   const router = useRouter();
@@ -287,10 +408,12 @@ export default function Admin() {
   // blog
   const [posts, setPosts] = useState([]);
   const [postForm, setPostForm] = useState({
-    id: null, title: '', slug: '', excerpt: '', content: '', featured_image: '', status: 'draft',
+    id: null, title: '', slug: '', excerpt: '', content: '', featured_image: '', status: 'draft', division: 'site',
   });
   const [showPreview, setShowPreview] = useState(false);
   const [mdx, setMdx] = useState(null);
+  const [postFilter, setPostFilter] = useState('all'); // all | draft | published
+  const [postQuery, setPostQuery] = useState('');
 
   // ui
   const [loading, setLoading] = useState(true);
@@ -359,7 +482,7 @@ export default function Admin() {
       const payload = {
         ...newProduct,
         price: parseFloat(newProduct.price || 0),
-        metadata: newProduct.metadata ? JSON.parse(newProduct.metadata) : {},
+        metadata: newProduct.metadata ? safeJSON(newProduct.metadata, {}) : {},
       };
       const { error } = await supabase.from('products').insert(payload);
       if (error) throw error;
@@ -444,7 +567,7 @@ export default function Admin() {
       const payload = {
         ...newBundle,
         price: parseFloat(newBundle.price || 0),
-        items: JSON.parse(newBundle.items || '[]'),
+        items: safeJSON(newBundle.items, []),
       };
       const { error } = await supabase.from('bundles').insert(payload);
       if (error) throw error;
@@ -490,7 +613,7 @@ export default function Admin() {
         .from('events')
         .update({ ...updated, date: updated.date ? new Date(updated.date).toISOString() : null })
         .eq('id', id);
-    if (error) throw error;
+      if (error) throw error;
       await refreshAll();
       alert('Event updated.');
     } catch (err) {
@@ -520,13 +643,14 @@ export default function Admin() {
       content: p.content || '',
       featured_image: p.featured_image || '',
       status: p.status || 'draft',
+      division: p.division || 'site',
     });
     setShowPreview(false);
     setMdx(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const clearPostForm = () => {
-    setPostForm({ id: null, title: '', slug: '', excerpt: '', content: '', featured_image: '', status: 'draft' });
+    setPostForm({ id: null, title: '', slug: '', excerpt: '', content: '', featured_image: '', status: 'draft', division: 'site' });
     setShowPreview(false);
     setMdx(null);
   };
@@ -540,6 +664,7 @@ export default function Admin() {
         content: postForm.content,
         featured_image: postForm.featured_image,
         status: postForm.status,
+        division: postForm.division || 'site',
         author_id: user.id,
       };
       if (postForm.id) {
@@ -630,17 +755,58 @@ export default function Admin() {
     }
   };
 
-  // derived
-  const totalRevenue = useMemo(
-    () => orders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0),
-    [orders],
-  );
+  // ---------- OVERVIEW DERIVED METRICS ----------
+  const kpis = useMemo(() => {
+    const last30Orders = orders.filter(o => isWithinLastDays(o.created_at, 30));
+    const revenueL30 = last30Orders.reduce((acc, o) => acc + Number(o.total_amount || 0), 0);
+    const ordersL30 = last30Orders.length;
+    const subsActive = subscriptions.filter(s => (s.status || '').toLowerCase() === 'active').length;
+    return { revenueL30, ordersL30, subsActive, users: users.length };
+  }, [orders, subscriptions, users]);
+
+  const revenueByDivision = useMemo(() => {
+    const map = {};
+    orders.forEach(o => {
+      if (!isWithinLastDays(o.created_at, 30)) return;
+      const d = (o.division || 'site').toLowerCase();
+      map[d] = (map[d] || 0) + Number(o.total_amount || 0);
+    });
+    return Object.entries(map).map(([division, total]) => ({ division, total }));
+  }, [orders]);
+
+  // -------- NEW: Admin-only fulfillment retry helper --------
+  const retryFulfillment = async (orderId) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const { data } = await axios.post(
+        '/api/admin/fulfillment/retry',
+        { order_id: orderId },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+
+      if (!data?.ok) throw new Error(data?.error || 'Retry failed');
+      await refreshAll();
+      alert('Fulfillment re-submitted to Printful.');
+    } catch (err) {
+      alert(`Retry failed: ${err.message}`);
+    }
+  };
 
   // guards
   if (loading) return <p className="p-6">Loading admin dashboard…</p>;
   if (!isAdmin) return <p className="p-6">Not authorized.</p>;
 
   // ---------- render ----------
+  const filteredPosts = posts
+    .filter(p => (postFilter === 'all' ? true : (p.status || 'draft') === (postFilter === 'draft' ? 'draft' : 'published')))
+    .filter(p => {
+      if (!postQuery) return true;
+      const q = postQuery.toLowerCase();
+      return (p.title || '').toLowerCase().includes(q) || (p.slug || '').toLowerCase().includes(q);
+    });
+
   return (
     <>
       <Head><title>Manyagi Admin Dashboard</title></Head>
@@ -660,12 +826,108 @@ export default function Admin() {
 
         {/* Overview */}
         {activeTab === 'overview' && (
-          <SectionCard title="Overview">
-            <p>Total Orders: {orders.length}</p>
-            <p>Total Subscriptions: {subscriptions.length}</p>
-            <p>Total Revenue: ${totalRevenue.toFixed(2)}</p>
-            <p>Total Users: {users.length}</p>
-          </SectionCard>
+          <>
+            <SectionCard title="Key Metrics (Last 30 Days)">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="text-sm opacity-70">Revenue</div>
+                  <div className="text-2xl font-bold">{currency(kpis.revenueL30)}</div>
+                </div>
+                <div className="p-4 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="text-sm opacity-70">Orders</div>
+                  <div className="text-2xl font-bold">{kpis.ordersL30}</div>
+                </div>
+                <div className="p-4 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="text-sm opacity-70">Active Subs</div>
+                  <div className="text-2xl font-bold">{kpis.subsActive}</div>
+                </div>
+                <div className="p-4 rounded border dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="text-sm opacity-70">Users</div>
+                  <div className="text-2xl font-bold">{kpis.users}</div>
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Revenue by Division (Last 30 Days)">
+              {revenueByDivision.length === 0 ? (
+                <p className="opacity-70">No orders in the last 30 days.</p>
+              ) : (
+                <div className="w-full h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={revenueByDivision}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="division" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="total" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </SectionCard>
+
+            {/* NEW: Recent Orders + Retry */}
+            <SectionCard title="Recent Orders (Last 30 Days)">
+              {orders.filter(o => isWithinLastDays(o.created_at, 30)).length === 0 ? (
+                <p className="opacity-70">No orders in the last 30 days.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-left border-b dark:border-gray-800">
+                        <th className="py-2 pr-2">Date</th>
+                        <th className="py-2 pr-2">Division</th>
+                        <th className="py-2 pr-2">Amount</th>
+                        <th className="py-2 pr-2">Status</th>
+                        <th className="py-2 pr-2">Fulfillment</th>
+                        <th className="py-2 pr-2">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders
+                        .filter(o => isWithinLastDays(o.created_at, 30))
+                        .slice(0, 20)
+                        .map(o => (
+                        <tr key={o.id} className="border-b dark:border-gray-900">
+                          <td className="py-2 pr-2">{new Date(o.created_at).toLocaleString()}</td>
+                          <td className="py-2 pr-2">{o.division || 'site'}</td>
+                          <td className="py-2 pr-2">{currency(o.total_amount)}</td>
+                          <td className="py-2 pr-2">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              (o.status || '').toLowerCase() === 'paid'
+                                ? 'bg-green-100 text-green-800'
+                                : (o.status || '').toLowerCase() === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {o.status || '-'}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-2">
+                            {o.fulfillment_provider
+                              ? `${o.fulfillment_provider} • ${o.fulfillment_status || '—'}${o.fulfillment_id ? ` (#${o.fulfillment_id})` : ''}`
+                              : '—'}
+                          </td>
+                          <td className="py-2 pr-2">
+                            {(o.status || '').toLowerCase() === 'paid' ? (
+                              <button
+                                className="px-3 py-1 bg-blue-600 text-white rounded"
+                                onClick={() => retryFulfillment(o.id)}
+                              >
+                                Retry
+                              </button>
+                            ) : (
+                              <span className="opacity-60">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </SectionCard>
+          </>
         )}
 
         {/* Division: Publishing (generic form kept) */}
@@ -675,7 +937,7 @@ export default function Admin() {
             <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
               <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
-              <select value={newProduct.division} onChange={(e) => setNewProduct({ ...newProduct, division: e.target.value })} disabled>
+              <select value="publishing" disabled>
                 <option value="publishing">publishing</option>
               </select>
               <input placeholder="Image URL" className="col-span-3" value={newProduct.image_url} onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })} />
@@ -684,16 +946,16 @@ export default function Admin() {
                 <option value="active">active</option>
                 <option value="draft">draft</option>
               </select>
-              <input placeholder="Metadata JSON" className="col-span-2" value={newProduct.metadata} onChange={(e) => setNewProduct({ ...newProduct, metadata: e.target.value })} />
+              <input placeholder='Metadata JSON (e.g. {"amazon_url":"https://...","pdf_url":"https://..."})' className="col-span-2" value={newProduct.metadata} onChange={(e) => setNewProduct({ ...newProduct, metadata: e.target.value })} />
               <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Product</button>
             </form>
 
             {/* List Products (publishing) */}
             <table className="w-full text-sm">
-              <thead><tr><th>Name</th></tr></thead>
+              <thead><tr><th className="text-left py-2">Name</th></tr></thead>
               <tbody>
                 {products.filter(p => p.division === 'publishing').map(p => (
-                  <tr key={p.id}><td>{p.name}</td></tr>
+                  <tr key={p.id}><td className="py-2">{p.name}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -704,7 +966,7 @@ export default function Admin() {
               <select value={newAsset.file_type} onChange={(e) => setNewAsset({ ...newAsset, file_type: e.target.value })}>
                 <option value="image">Image</option><option value="video">Video</option><option value="pdf">PDF</option>
               </select>
-              <select value={newAsset.division} onChange={(e) => setNewAsset({ ...newAsset, division: e.target.value })} disabled>
+              <select value="publishing" disabled>
                 <option value="publishing">publishing</option>
               </select>
               <select value={newAsset.purpose} onChange={(e) => setNewAsset({ ...newAsset, purpose: e.target.value })}>
@@ -719,6 +981,9 @@ export default function Admin() {
         {/* Designs — enhanced */}
         {activeTab === 'designs' && (
           <SectionCard title="Designs Division">
+            {/* NEW: One-click Stripe + Supabase Multi-division creator */}
+            <QuickCreateStripeProduct onCreated={refreshAll} />
+
             {/* 🚀 Quick Product Form */}
             <QuickProductForm defaultDivision="designs" onCreated={refreshAll} />
 
@@ -944,7 +1209,7 @@ export default function Admin() {
             <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input placeholder="Name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
               <input placeholder="Price" type="number" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
-              <select value={newProduct.division} onChange={(e) => setNewProduct({ ...newProduct, division: e.target.value })} disabled>
+              <select value={activeTab} disabled>
                 <option value={activeTab}>{activeTab}</option>
               </select>
               <input placeholder="Image URL" className="col-span-3" value={newProduct.image_url} onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })} />
@@ -957,10 +1222,10 @@ export default function Admin() {
             </form>
 
             <table className="w-full text-sm">
-              <thead><tr><th>Name</th></tr></thead>
+              <thead><tr><th className="text-left py-2">Name</th></tr></thead>
               <tbody>
                 {products.filter(p => p.division === activeTab).map(p => (
-                  <tr key={p.id}><td>{p.name}</td></tr>
+                  <tr key={p.id}><td className="py-2">{p.name}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -970,7 +1235,7 @@ export default function Admin() {
               <select value={newAsset.file_type} onChange={(e) => setNewAsset({ ...newAsset, file_type: e.target.value })}>
                 <option value="image">Image</option><option value="video">Video</option><option value="pdf">PDF</option>
               </select>
-              <select value={newAsset.division} onChange={(e) => setNewAsset({ ...newAsset, division: e.target.value })} disabled>
+              <select value={activeTab} disabled>
                 <option value={activeTab}>{activeTab}</option>
               </select>
               <select value={newAsset.purpose} onChange={(e) => setNewAsset({ ...newAsset, purpose: e.target.value })}>
@@ -986,15 +1251,45 @@ export default function Admin() {
         {activeTab === 'blog' && (
           <SectionCard title="Blog">
             <SEO title="Manyagi Admin - Blog Management" description="Manage blog posts for Manyagi divisions." />
+
+            {/* Controls */}
+            <div className="flex flex-col md:flex-row gap-3 mb-4">
+              <select
+                value={postFilter}
+                onChange={(e) => setPostFilter(e.target.value)}
+                className="p-2 rounded border dark:bg-gray-800"
+              >
+                <option value="all">All</option>
+                <option value="draft">Drafts</option>
+                <option value="published">Published</option>
+              </select>
+              <input
+                placeholder="Search title or slug…"
+                value={postQuery}
+                onChange={(e) => setPostQuery(e.target.value)}
+                className="p-2 rounded border flex-1 dark:bg-gray-800"
+              />
+            </div>
+
+            {/* Editor */}
             <form onSubmit={savePost} className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-4 rounded border mb-6 dark:bg-gray-800">
               <input placeholder="Title" value={postForm.title} onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} />
               <input placeholder="Slug" value={postForm.slug} onChange={(e) => setPostForm({ ...postForm, slug: e.target.value })} />
               <input className="col-span-2" placeholder="Excerpt" value={postForm.excerpt} onChange={(e) => setPostForm({ ...postForm, excerpt: e.target.value })} />
               <input className="col-span-2" placeholder="Featured Image URL" value={postForm.featured_image} onChange={(e) => setPostForm({ ...postForm, featured_image: e.target.value })} />
-              <textarea className="col-span-2 h-32" placeholder="Content (MDX)" value={postForm.content} onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} />
+              <select value={postForm.division} onChange={(e) => setPostForm({ ...postForm, division: e.target.value })}>
+                <option value="site">Site (general)</option>
+                <option value="publishing">Publishing</option>
+                <option value="designs">Designs</option>
+                <option value="capital">Capital</option>
+                <option value="tech">Tech</option>
+                <option value="media">Media</option>
+                <option value="realty">Realty</option>
+              </select>
               <select value={postForm.status} onChange={(e) => setPostForm({ ...postForm, status: e.target.value })}>
                 <option value="draft">Draft</option><option value="published">Published</option>
               </select>
+              <textarea className="col-span-2 h-32" placeholder="Content (MDX)" value={postForm.content} onChange={(e) => setPostForm({ ...postForm, content: e.target.value })} />
               <div className="flex gap-2">
                 <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Save Post</button>
                 <button type="button" onClick={doPreview} className="p-2 bg-gray-500 text-white rounded">Preview</button>
@@ -1006,24 +1301,44 @@ export default function Admin() {
               <SectionCard><MDXRemote {...mdx} /></SectionCard>
             )}
 
+            {/* Posts Table */}
             <table className="w-full text-sm">
               <thead>
-                <tr><th>Title</th><th>Status</th><th>Actions</th></tr>
+                <tr>
+                  <th className="text-left py-2">Title</th>
+                  <th className="text-left py-2">Slug</th>
+                  <th className="text-left py-2">Division</th>
+                  <th className="text-left py-2">Status</th>
+                  <th className="text-left py-2">Actions</th>
+                </tr>
               </thead>
               <tbody>
-                {posts.map(p => (
-                  <tr key={p.id}>
-                    <td>{p.title}</td>
-                    <td>{p.status}</td>
-                    <td className="space-x-2">
+                {filteredPosts.map(p => (
+                  <tr key={p.id} className="border-t dark:border-gray-800">
+                    <td className="py-2">{p.title}</td>
+                    <td className="py-2">{p.slug}</td>
+                    <td className="py-2">{p.division || 'site'}</td>
+                    <td className="py-2">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        (p.status || 'draft') === 'published'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {p.status || 'draft'}
+                      </span>
+                    </td>
+                    <td className="py-2 space-x-2">
                       <button onClick={() => loadPostToForm(p)} className="text-blue-500">Edit</button>
-                      <button onClick={() => publishToggle(p.id, p.status === 'published' ? 'draft' : 'published')} className="text-green-600">
-                        {p.status === 'published' ? 'Unpublish' : 'Publish'}
+                      <button onClick={() => publishToggle(p.id, (p.status || 'draft') === 'published' ? 'draft' : 'published')} className="text-green-600">
+                        {(p.status || 'draft') === 'published' ? 'Unpublish' : 'Publish'}
                       </button>
                       <button onClick={() => deletePost(p.id)} className="text-red-500">Delete</button>
                     </td>
                   </tr>
                 ))}
+                {filteredPosts.length === 0 && (
+                  <tr><td className="py-6 opacity-70" colSpan={5}>No posts found.</td></tr>
+                )}
               </tbody>
             </table>
           </SectionCard>
@@ -1038,10 +1353,10 @@ export default function Admin() {
               <button className="p-2 bg-black text-white rounded dark:bg-gray-700">Add Affiliate</button>
             </form>
             <table className="w-full text-sm">
-              <thead><tr><th>User</th><th>Code</th></tr></thead>
+              <thead><tr><th className="text-left py-2">User</th><th className="text-left py-2">Code</th></tr></thead>
               <tbody>
                 {affiliates.map(aff => (
-                  <tr key={aff.id}><td>{aff.user_id}</td><td>{aff.referral_code}</td></tr>
+                  <tr key={aff.id}><td className="py-2">{aff.user_id}</td><td className="py-2">{aff.referral_code}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -1066,9 +1381,9 @@ export default function Admin() {
               <button className="p-2 bg-black text-white rounded dark:bg-gray-700 md:col-span-3">Add Bundle</button>
             </form>
             <table className="w-full text-sm">
-              <thead><tr><th>Name</th></tr></thead>
+              <thead><tr><th className="text-left py-2">Name</th></tr></thead>
               <tbody>
-                {bundles.map(b => (<tr key={b.id}><td>{b.name}</td></tr>))}
+                {bundles.map(b => (<tr key={b.id}><td className="py-2">{b.name}</td></tr>))}
               </tbody>
             </table>
           </SectionCard>
@@ -1078,13 +1393,13 @@ export default function Admin() {
         {activeTab === 'users' && (
           <SectionCard title="Users">
             <table className="w-full text-sm">
-              <thead><tr><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+              <thead><tr><th className="text-left py-2">Email</th><th className="text-left py-2">Role</th><th className="text-left py-2">Actions</th></tr></thead>
               <tbody>
                 {users.map(u => (
                   <tr key={u.id}>
-                    <td>{u.email}</td>
-                    <td>{u.role}</td>
-                    <td>
+                    <td className="py-2">{u.email}</td>
+                    <td className="py-2">{u.role}</td>
+                    <td className="py-2">
                       <select
                         className="dark:bg-gray-800"
                         value={u.role}
@@ -1158,14 +1473,14 @@ export default function Admin() {
             </form>
 
             <table className="w-full text-sm border-collapse mb-6">
-              <thead><tr><th>Title</th><th>Date</th><th>Division</th><th>Actions</th></tr></thead>
+              <thead><tr><th className="text-left py-2">Title</th><th className="text-left py-2">Date</th><th className="text-left py-2">Division</th><th className="text-left py-2">Actions</th></tr></thead>
               <tbody>
                 {events.map(ev => (
                   <tr key={ev.id}>
-                    <td>{ev.title}</td>
-                    <td>{ev.date ? new Date(ev.date).toLocaleString() : '-'}</td>
-                    <td>{ev.division}</td>
-                    <td className="space-x-2">
+                    <td className="py-2">{ev.title}</td>
+                    <td className="py-2">{ev.date ? new Date(ev.date).toLocaleString() : '-'}</td>
+                    <td className="py-2">{ev.division}</td>
+                    <td className="py-2 space-x-2">
                       <button
                         onClick={() => setNewEvent({ ...ev, date: ev.date ? new Date(ev.date).toISOString().slice(0, 16) : '' })}
                         className="text-blue-500"

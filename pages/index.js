@@ -25,19 +25,19 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        // site config
+        // 1) site config
         const cfg = await fetch('/api/site-config')
-          .then(r => r.json())
+          .then((r) => r.json())
           .catch(() => ({}));
         setSiteConfig(cfg || {});
 
-        // products (accept both array and { items, total })
+        // 2) products (accept both array and { items, total })
         const res = await fetch('/api/products?limit=12');
         const json = await res.json().catch(() => []);
-        const items = Array.isArray(json) ? json : (Array.isArray(json.items) ? json.items : []);
+        const items = Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
 
         // normalize image field so Card gets a valid image
-        const normalized = items.map(p => ({
+        const normalized = items.map((p) => ({
           ...p,
           image_url: p.image_url || p.thumbnail_url || p.image || p.imageUrl || '',
         }));
@@ -57,18 +57,23 @@ export default function Home() {
   ];
   const heroImage = getCfgImg(siteConfig.hero, '/videos/hero-bg.mp4');
 
-  // Safe, existing fallbacks for division cards (prevents 404 on rental-bigbear.webp)
+  // Division card images with safe fallbacks
   const publishingImg = getCfgImg(siteConfig.publishing_hero, '/images/legacy-chapter-1.webp');
-  const designsImg   = getCfgImg(siteConfig.designs_hero,   '/images/mock-tee-1.webp');
-  const capitalImg   = getCfgImg(siteConfig.capital_hero,   '/images/chart-hero.webp');
-  const techImg      = getCfgImg(siteConfig.tech_hero,      '/images/daito-screenshot.webp');
-  const mediaImg     = getCfgImg(siteConfig.media_hero,     '/images/og-media.webp');
-  const realtyImg    = getCfgImg(siteConfig.realty_hero,    '/images/realty-hero.webp'); // <— changed fallback
+  const designsImg = getCfgImg(siteConfig.designs_hero, '/images/mock-tee-1.webp');
+  const capitalImg = getCfgImg(siteConfig.capital_hero, '/images/chart-hero.webp');
+  const techImg = getCfgImg(siteConfig.tech_hero, '/images/daito-screenshot.webp');
+  const mediaImg = getCfgImg(siteConfig.media_hero, '/images/og-media.webp');
+
+  // IMPORTANT: use Supabase URL as fallback so it won't 404 locally
+  const realtyImg = getCfgImg(
+    siteConfig.realty_hero,
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/realty-hero.webp'
+  );
 
   return (
     <>
       <Head>
-        <title>Manyagi — Innovation • IP • Commerce</title>
+        <title>Manyagi — Creativity Meets Innovation</title>
         <meta
           name="description"
           content="Manyagi unifies Publishing, Designs, Capital, Tech, and Media."

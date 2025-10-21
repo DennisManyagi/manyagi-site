@@ -259,7 +259,11 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   );
 }
 
-/** NEW: One form → Stripe Product + Price → Supabase products across multiple divisions */
+/** NEW: One form → Stripe Product + Price → Supabase products across multiple divisions
+ *  Also: if you leave Thumbnail empty and provide a Printful Variant ID,
+ *  the server will auto-fetch a mockup/preview from Printful.
+ *  Optional: "Also create blog draft" for the drop.
+ */
 function QuickCreateStripeProduct({ onCreated }) {
   const [name, setName] = useState('Exile Portal Tee');
   const [description, setDescription] = useState('Neon portal tee from Legacy of the Hidden Clans.');
@@ -270,6 +274,7 @@ function QuickCreateStripeProduct({ onCreated }) {
   const [status, setStatus] = useState('active');
   const [tagsStr, setTagsStr] = useState('LOHC, tee, drop-1');
   const [divisions, setDivisions] = useState(['designs']);
+  const [alsoBlog, setAlsoBlog] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const toggleDivision = (d) =>
@@ -284,31 +289,42 @@ function QuickCreateStripeProduct({ onCreated }) {
   const submit = async () => {
     if (!name) return alert('Name is required.');
     if (!price || isNaN(Number(price))) return alert('Valid price required.');
-    if (!printfulVariantId) {
-      const ok = confirm('No Printful Variant ID entered. Continue anyway?');
+    if (!image && !printfulVariantId) {
+      const ok = confirm('No Thumbnail provided. If you provide a Printful Variant ID, we can auto-fetch a mockup. Continue without either?');
       if (!ok) return;
     }
     setBusy(true);
     try {
+      // attach Supabase bearer (admin check happens server-side)
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const payload = {
         name,
         description,
         price: Number(price),
         currency,
-        image,
+        image: image || '', // can be blank — server may auto-fetch
         printfulVariantId: printfulVariantId || null,
         divisions,
         status,
         tags: toTags(tagsStr),
-        extraMetadata: {
-          brand: 'Manyagi',
-          series: 'Legacy of the Hidden Clans',
-        },
+        extraMetadata: { brand: 'Manyagi', series: 'Legacy of the Hidden Clans' },
+        alsoCreateBlogDraft: !!alsoBlog,
       };
-      const { data } = await axios.post('/api/admin/quick-create-product', payload);
+
+      const { data } = await axios.post('/api/admin/quick-create-product', payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
       if (!data?.ok) throw new Error(data?.error || 'Create failed');
       onCreated?.();
-      alert(`Created!\nStripe product: ${data.stripe_product_id}\nStripe price: ${data.stripe_price_id}`);
+      alert(
+`Created!
+Stripe product: ${data.stripe_product_id}
+Stripe price:   ${data.stripe_price_id}
+${data.thumbnail_url ? `Thumbnail: ${data.thumbnail_url}` : 'Thumbnail: (none)'}`
+      );
       // reset minimal
       setName('');
       setDescription('');
@@ -324,6 +340,9 @@ function QuickCreateStripeProduct({ onCreated }) {
 
   return (
     <SectionCard title="Quick Create — Stripe + Supabase (Multi-division)">
+      <p className="text-sm opacity-80 mb-3">
+        Leave <span className="font-mono">Thumbnail / Mockup URL</span> blank and provide a <span className="font-mono">Printful Variant ID</span> to auto-fetch a mockup from Printful.
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
         <input placeholder="Price (e.g. 29.99)" value={price} onChange={e => setPrice(e.target.value)} />
@@ -333,7 +352,7 @@ function QuickCreateStripeProduct({ onCreated }) {
           <option value="gbp">GBP</option>
         </select>
 
-        <input className="md:col-span-3" placeholder="Thumbnail / Mockup URL" value={image} onChange={e => setImage(e.target.value)} />
+        <input className="md:col-span-3" placeholder="Thumbnail / Mockup URL (optional if Variant ID provided)" value={image} onChange={e => setImage(e.target.value)} />
         <textarea className="md:col-span-3" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
         <input className="md:col-span-2" placeholder="Tags (comma-separated)" value={tagsStr} onChange={e => setTagsStr(e.target.value)} />
         <input placeholder="Printful Variant ID (e.g. 4012)" value={printfulVariantId} onChange={e => setPrintfulVariantId(e.target.value)} />
@@ -356,6 +375,11 @@ function QuickCreateStripeProduct({ onCreated }) {
             <option value="active">active</option>
             <option value="draft">draft</option>
           </select>
+
+          <label className="ml-4 flex items-center gap-2">
+            <input type="checkbox" checked={alsoBlog} onChange={(e) => setAlsoBlog(e.target.checked)} />
+            <span>Also create blog draft</span>
+          </label>
 
           <button
             type="button"

@@ -28,58 +28,81 @@ export default async function handler(req, res) {
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
+        // Expand a bit for safety
+        const session = await stripe.checkout.sessions.retrieve(
+          event.data.object.id,
+          { expand: ['customer_details', 'shipping_details', 'payment_intent'] }
+        );
 
-        // 1) Mark order as paid
+        // 1) Mark order as paid and store some helpful info
+        const email = session?.customer_details?.email || null;
+        const name  = session?.customer_details?.name || null;
+        const addr  = session?.shipping_details?.address || null;
+
         await supabaseAdmin
           .from('orders')
-          .update({ status: 'paid', updated_at: new Date().toISOString() })
+          .update({
+            status: 'paid',
+            customer_email: email,
+            customer_name: name,
+            shipping_snapshot: addr ? {
+              line1: addr.line1 || '',
+              line2: addr.line2 || '',
+              city: addr.city || '',
+              state: addr.state || '',
+              postal_code: addr.postal_code || '',
+              country: addr.country || '',
+            } : null,
+            updated_at: new Date().toISOString(),
+          })
           .eq('stripe_session_id', session.id);
 
-        // 2) Try automatic Printful fulfillment (only if product is configured)
+        // 2) Optional: automatic Printful fulfillment
         try {
-          // Load the pending order (to get product_id)
+          // Find the pending order this session created
           const { data: orderRow } = await supabaseAdmin
             .from('orders')
             .select('*')
             .eq('stripe_session_id', session.id)
             .maybeSingle();
 
-          if (orderRow?.product_id) {
-            const { data: product } = await supabaseAdmin
-              .from('products')
-              .select('*')
-              .eq('id', orderRow.product_id)
-              .maybeSingle();
+          if (!orderRow) break; // nothing else to do
 
-            const meta = product?.metadata || {};
-            const syncVariantId = meta.printful_sync_variant_id || meta.printful_sync_variant || null;
+          // Load the product to see if it should be fulfilled via Printful
+          const { data: product } = await supabaseAdmin
+            .from('products')
+            .select('*')
+            .eq('id', orderRow.product_id)
+            .maybeSingle();
 
-            // We only fulfill if:
-            // - The product is set up with a Printful "sync_variant_id"
-            // - Stripe collected a shipping address on the session
-            if (syncVariantId && session?.shipping_details?.address) {
-              const addr = session.shipping_details.address || {};
-              const recipient = {
-                name: session?.customer_details?.name || 'Customer',
-                address1: addr.line1 || '',
-                city: addr.city || '',
-                state_code: addr.state || '',
-                country_code: addr.country || 'US',
-                zip: addr.postal_code || '',
-                phone: session?.customer_details?.phone || '',
-                email: session?.customer_details?.email || '',
-              };
+          const meta = product?.metadata || {};
+          const syncVariantId = meta.printful_sync_variant_id || meta.printful_sync_variant || null;
 
-              const items = [{ sync_variant_id: Number(syncVariantId), quantity: 1 }];
+          const haveShippingAddress = Boolean(session?.shipping_details?.address?.line1);
+          if (syncVariantId && haveShippingAddress) {
+            const a = session.shipping_details.address;
+            const recipient = {
+              name: session?.customer_details?.name || 'Customer',
+              address1: a.line1 || '',
+              address2: a.line2 || '',
+              city: a.city || '',
+              state_code: a.state || '',
+              country_code: a.country || 'US',
+              zip: a.postal_code || '',
+              phone: session?.customer_details?.phone || '',
+              email: session?.customer_details?.email || '',
+            };
 
-              // Optional: add branding on packing slip
-              const packingSlip = {
-                email: 'support@manyagi.net',
-                phone: '',
-                message: 'Thank you for supporting Manyagi!',
-              };
+            const qty = Math.max(1, Number(orderRow?.quantity || 1));
+            const items = [{ sync_variant_id: Number(syncVariantId), quantity: qty }];
 
+            const packingSlip = {
+              email: 'support@manyagi.net',
+              phone: '',
+              message: 'Thank you for supporting Manyagi!',
+            };
+
+            try {
               const pf = await createPrintfulOrder({
                 externalId: session.id,
                 recipient,
@@ -87,7 +110,6 @@ export default async function handler(req, res) {
                 packingSlip,
               });
 
-              // Save fulfillment data back to order
               await supabaseAdmin
                 .from('orders')
                 .update({
@@ -97,16 +119,28 @@ export default async function handler(req, res) {
                   updated_at: new Date().toISOString(),
                 })
                 .eq('stripe_session_id', session.id);
+            } catch (pfErr) {
+              // Save the error for admin inspection, but don't fail the webhook
+              await supabaseAdmin
+                .from('orders')
+                .update({
+                  fulfillment_provider: 'printful',
+                  fulfillment_status: 'error',
+                  fulfillment_error: String(pfErr?.response?.data?.error || pfErr.message || 'unknown'),
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('stripe_session_id', session.id);
+              console.warn('Printful error:', pfErr?.response?.data || pfErr.message);
             }
           }
         } catch (fulfillErr) {
-          console.warn('Printful fulfillment skipped/failed:', fulfillErr?.response?.data || fulfillErr.message);
-          // We do not throw here — payment is already captured. You can re-try fulfillment from an admin tool later.
+          console.warn('Fulfillment skipped:', fulfillErr?.response?.data || fulfillErr.message);
         }
 
         break;
       }
 
+      // ====== your Telegram + Subscriptions logic (unchanged) ======
       case 'customer.subscription.created': {
         const subscription = event.data.object;
         const customer = await stripe.customers.retrieve(subscription.customer);

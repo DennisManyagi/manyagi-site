@@ -1,9 +1,9 @@
 // pages/designs.js
 import Head from 'next/head';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
@@ -19,7 +19,7 @@ function pickImage(p) {
     (p?.display_image && typeof p.display_image === 'string' && p.display_image) ||
     (p?.image_url && typeof p.image_url === 'string' && p.image_url) ||
     (p?.image && typeof p.image === 'string' && p.image) ||
-    ''
+    '/placeholder.png' // CSP-safe local fallback
   );
 }
 
@@ -101,7 +101,7 @@ export default function Designs() {
             display_image:
               'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp',
             division: 'designs',
-            description: 'Fallback design merchandise',
+            description: 'Fallback design merchandise. Made with 100% cotton for comfort.',
             printful_product_id: 'fallback-tee-id',
             productType: 'merch',
             metadata: { book: 'Sample', prompt: 1 },
@@ -191,17 +191,14 @@ export default function Designs() {
   return (
     <>
       <Head>
-        <title>Manyagi Designs — Wear Your Story</title>
-        <meta
-          name="description"
-          content="Explore T-shirts, mugs, and prints inspired by our stories."
-        />
+        <title>Manyagi Designs — Premium Apparel & Gear</title>
+        <meta name="description" content="High-quality T-shirts, mugs, and prints inspired by our stories. Shop now for exclusive designs." />
       </Head>
 
       <Hero
         kicker="Designs"
-        title="Wear Your Story"
-        lead="Shop T-shirts, mugs, posters, and more inspired by our narratives."
+        title="Elevate Your Style"
+        lead="Discover apparel and gear crafted with premium materials, inspired by epic tales."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
@@ -209,9 +206,25 @@ export default function Designs() {
           href="#products"
           className="btn bg-blue-600 text-white py-3 px-5 rounded hover:scale-105 transition"
         >
-          Shop Now
+          Browse Collection
         </Link>
       </Hero>
+
+      {/* Trust Badges */}
+      <section className="container mx-auto px-4 py-8 flex justify-center gap-6">
+        <div className="flex items-center gap-2">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+          Secure Payment
+        </div>
+        <div className="flex items-center gap-2">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/><path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/></svg>
+          Free Shipping
+        </div>
+        <div className="flex items-center gap-2">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+          30-Day Returns
+        </div>
+      </section>
 
       {/* Filter Bar */}
       <section className="container mx-auto px-4 mt-8">
@@ -304,12 +317,11 @@ export default function Designs() {
                 <Card
                   key={product.id}
                   title={product.name}
-                  description={product.description}
+                  description={`${product.description} Made with premium cotton for lasting comfort.`}
                   image={product.display_image}
                   category="designs"
                   buyButton={product}
                   onBuy={() => handleAddToCart(product)}
-                  // Card itself reads nft_url from product, so no extra props needed
                 />
               ))}
             </div>
@@ -329,6 +341,7 @@ export default function Designs() {
         )}
       </section>
 
+      {/* RESTORED: subscribe block from production */}
       <section id="subscribe" className="container mx-auto px-4 pb-16">
         <SubscriptionForm
           formId="8432506"

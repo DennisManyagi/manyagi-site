@@ -1,3 +1,4 @@
+// components/Cart.js
 import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart, updateQuantity } from '@/lib/cartSlice';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ function lineItemImageSrc(item) {
     item.image ||                       // safety
     item?.product?.thumbnail_url ||     // if you nest product on the item
     item?.product?.image_url ||         // safety
-    '/placeholder.png'                  // final fallback (add a small file in /public)
+    '/placeholder.png'                  // CSP-safe local fallback
   );
 }
 
@@ -56,9 +57,6 @@ const Cart = () => {
 
     const stripe = await stripePromise;
     try {
-      // NOTE: This hits your existing endpoint.
-      // If you switch to the new /api/checkout/create-session later,
-      // make sure that route accepts multiple items.
       const response = await fetch('/api/stripe/charge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,7 +80,7 @@ const Cart = () => {
 
       {items.length === 0 ? (
         <p className="text-gray-600 text-base mb-4">
-          Cart is empty.{' '}
+          Cart is empty.{` `}
           <Link href="/designs" className="text-blue-600 hover:underline">
             Shop Designs
           </Link>.
@@ -189,7 +187,7 @@ const Cart = () => {
             </>
           )}
 
-          {error && <p className="text-red-500">{error}</p>}
+          {error && <p className="text-red-500 text-base">{error}</p>}
 
           <button
             onClick={handleCheckout}
@@ -197,10 +195,10 @@ const Cart = () => {
           >
             Checkout
           </button>
+
+          <Recommender />
         </>
       )}
-
-      <Recommender />
     </div>
   );
 };

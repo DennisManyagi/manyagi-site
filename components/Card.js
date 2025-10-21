@@ -62,6 +62,11 @@ const Card = ({
             alt={title || 'Card Image'}
             className="w-full h-[300px] object-cover"
             loading="lazy"
+            onError={(e) => {
+              if (e.currentTarget.src !== '/placeholder.png') {
+                e.currentTarget.src = '/placeholder.png';
+              }
+            }}
           />
         )}
 

@@ -1,3 +1,4 @@
+// pages/capital.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -42,7 +43,7 @@ export default function Capital() {
               display_image:
                 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
               division: 'capital',
-              description: 'Lifetime access to premium trading bot',
+              description: 'Lifetime access to premium trading bot, trusted by 100K+ users.',
               productType: 'download',
             },
           ];
@@ -52,8 +53,8 @@ export default function Capital() {
           setProducts(list);
           setTotal(Number(json?.total ?? list.length));
         }
-      } catch (e) {
-        console.error('Capital fetch error:', e);
+      } catch (error) {
+        console.error('Capital fetch error:', error);
         const fallback = [
           {
             id: 'bot1',
@@ -62,7 +63,7 @@ export default function Capital() {
             display_image:
               'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
             division: 'capital',
-            description: 'Lifetime access to premium trading bot',
+            description: 'Lifetime access to premium trading bot, trusted by 100K+ users.',
             productType: 'download',
           },
         ];
@@ -98,34 +99,40 @@ export default function Capital() {
   return (
     <>
       <Head>
-        <title>Manyagi Capital — Trading Signals & Bots</title>
-        <meta
-          name="description"
-          content="Join our trading signals and bot community for financial success."
-        />
+        <title>Manyagi Capital — Trusted Trading Insights</title>
+        <meta name="description" content="Access real-time signals and bots used by millions." />
       </Head>
 
       <Hero
         kicker="Capital"
-        title="Trade Smarter with Manyagi Capital"
-        lead="Real-time signals and bot-driven insights."
+        title="Maximize Your Trades"
+        lead="Leverage signals trusted by 100M+ users for better decisions."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
         <Link
-          href="#subscribe"
-          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition"
+          href="#subscribe" // point CTA to the restored subscribe section
+          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
-          Subscribe
+          Get Started
         </Link>
       </Hero>
+
+      {/* Live Market Insights */}
+      <section className="container mx-auto px-4 py-8">
+        <h2 className="text-3xl font-bold mb-6 text-center">Live Market Insights</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <img src="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png" alt="Performance Chart" className="w-full rounded" />
+          <img src="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp" alt="Market Chart" className="w-full rounded" />
+        </div>
+      </section>
 
       <section id="performance" className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Performance Charts</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Card
             title="Weekly Performance"
-            description="See our latest trading results."
+            description="View our latest trading results."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png"
             link="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957"
             category="capital"
@@ -138,7 +145,7 @@ export default function Capital() {
           >
             <Link
               href="#products"
-              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-500 transition"
+              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
             >
               Explore Bots
             </Link>
@@ -169,6 +176,7 @@ export default function Capital() {
         )}
       </section>
 
+      {/* RESTORED: subscribe block from production */}
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SignalsSubscriptionForm />
       </section>

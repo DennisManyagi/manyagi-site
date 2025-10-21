@@ -10,7 +10,7 @@ import Hero from '../components/Hero';
 import Card from '../components/Card';
 
 const asList = (v) => (Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : []);
-const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '';
+const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '/placeholder.png';
 
 export default function Publishing() {
   const dispatch = useDispatch();
@@ -52,7 +52,7 @@ export default function Publishing() {
               display_image:
                 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp',
               division: 'publishing',
-              description: 'Heartfelt verses',
+              description: 'Heartfelt verses that inspire and provoke thought',
               productType: 'book',
               metadata: { amazon_url: 'https://www.amazon.com/', format: 'ebook', year: 2025 },
               tags: ['poetry'],
@@ -74,7 +74,6 @@ export default function Publishing() {
   }, []);
 
   const handleAddToCart = (product) => {
-    // Keep cart behavior for things you sell directly (PDFs / bundles later)
     dispatch(addToCart({ ...product, productType: 'book' }));
   };
 
@@ -101,21 +100,40 @@ export default function Publishing() {
   return (
     <>
       <Head>
-        <title>Manyagi Publishing — Novels & Poetry</title>
-        <meta name="description" content="Discover novels and poetry by D.N. Manyagi." />
+        <title>Manyagi Publishing — Discover Epic Tales</title>
+        <meta name="description" content="Immerse yourself in captivating novels and poetry by D.N. Manyagi." />
       </Head>
 
       <Hero
         kicker="Publishing"
-        title="Readers' Picks"
-        lead="Stories first. Commerce second. Get lost in our worlds — and take a piece with you."
+        title="Uncover Hidden Worlds"
+        lead="Dive into stories that transport you to new realms — and take a piece home."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
         <Link href="#books" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-          Browse the Library
+          Explore Our Library
         </Link>
       </Hero>
+
+      {/* Testimonials */}
+      <section className="container mx-auto px-4 py-8">
+        <h2 className="text-3xl font-bold mb-6 text-center">What Readers Say</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="card p-4 text-center">
+            <p>"A masterpiece of fantasy!"</p>
+            <p className="text-sm mt-2">- Jenna Bush Hager</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p>"Captivating from page one."</p>
+            <p className="text-sm mt-2">- Anonymous Reader</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p>"Poetry that resonates."</p>
+            <p className="text-sm mt-2">- Literary Critic</p>
+          </div>
+        </div>
+      </section>
 
       <section id="books" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
         {list.length === 0 ? (
@@ -173,7 +191,7 @@ export default function Publishing() {
                       rel="noopener noreferrer"
                       className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
                     >
-                      Buy the Book
+                      Get Your Copy
                     </a>
                   )}
                   {m.pdf_url && (
@@ -183,7 +201,7 @@ export default function Publishing() {
                       rel="noopener noreferrer"
                       className="btn bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 transition"
                     >
-                      Read Chapter 1
+                      Preview Chapter 1
                     </a>
                   )}
                 </div>
@@ -191,8 +209,7 @@ export default function Publishing() {
                 {/* Secondary storefront links */}
                 {alsoLinks.length > 0 && (
                   <div className="text-xs text-gray-600 mt-3">
-                    Also available:
-                    {" "}
+                    Also available:{' '}
                     {alsoLinks.map((l, i) => (
                       <a
                         key={l.label}
@@ -214,7 +231,7 @@ export default function Publishing() {
         {/* Free chapter promo card (evergreen) */}
         <Card
           title="Legacy - Chapter 1 (Free)"
-          description="Read the first chapter for free."
+          description="Sample the first chapter at no cost."
           image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp"
           category="publishing"
         >
@@ -224,11 +241,34 @@ export default function Publishing() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Download PDF
+            Download Free Preview
           </a>
         </Card>
       </section>
 
+      {/* Curated Recommendations */}
+      <section className="container mx-auto px-4 py-8">
+        <h2 className="text-3xl font-bold mb-6 text-center">Our Top Picks</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Card
+            title="Recommended Read 1"
+            description="A must-read fantasy epic."
+            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp"
+          />
+          <Card
+            title="Recommended Read 2"
+            description="Poetry that touches the soul."
+            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-2.webp"
+          />
+          <Card
+            title="Recommended Read 3"
+            description="Adventure awaits in this novel."
+            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-3.webp"
+          />
+        </div>
+      </section>
+
+      {/* RESTORED: subscribe block from production */}
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8427848"

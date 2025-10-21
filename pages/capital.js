@@ -83,7 +83,7 @@ export default function Capital() {
 
   const carouselImages = [
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp',
-    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png',
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.webp',
   ];
 
   if (loading) {
@@ -117,23 +117,14 @@ export default function Capital() {
           Get Started
         </Link>
       </Hero>
-
-      {/* Live Market Insights */}
-      <section className="container mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold mb-6 text-center">Live Market Insights</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <img src="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png" alt="Performance Chart" className="w-full rounded" />
-          <img src="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp" alt="Market Chart" className="w-full rounded" />
-        </div>
-      </section>
-
+      
       <section id="performance" className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Performance Charts</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Card
             title="Weekly Performance"
             description="View our latest trading results."
-            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.png"
+            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.webp"
             link="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957"
             category="capital"
           />

@@ -1,4 +1,3 @@
-// pages/publishing.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
@@ -8,6 +7,7 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import { supabase } from '@/lib/supabase';
 
 const asList = (v) => (Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : []);
 const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '/placeholder.png';
@@ -15,58 +15,43 @@ const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url ||
 export default function Publishing() {
   const dispatch = useDispatch();
   const [products, setProducts] = useState([]);
+  const [carouselImages, setCarouselImages] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const res  = await fetch('/api/products?division=publishing');
+        // Fetch products
+        const res = await fetch('/api/products?division=publishing');
         const json = await res.json();
         const list = asList(json).map((p) => ({ ...p, display_image: pickImage(p) }));
-        if (list.length === 0) {
-          // Friendly fallback so the page always renders
-          setProducts([
-            {
-              id: 'legacy',
-              name: 'Legacy of the Hidden Clans eBook',
-              price: 9.99,
-              display_image:
-                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp',
-              division: 'publishing',
-              description: 'Epic novel by D.N. Manyagi',
-              productType: 'book',
-              metadata: {
-                amazon_url: 'https://www.amazon.com/', // placeholder
-                pdf_url:
-                  'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/pdfs/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf',
-                format: 'ebook',
-                year: 2025,
-              },
-              tags: ['fantasy', 'lohc'],
-            },
-            {
-              id: 'poetry',
-              name: 'Poetry Collection eBook',
-              price: 4.99,
-              display_image:
+        setProducts(list);
+        setTotal(Number(json?.total ?? list.length));
+
+        // Fetch carousel images from assets
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('file_url')
+          .eq('division', 'publishing')
+          .eq('purpose', 'carousel')
+          .order('created_at', { ascending: false });
+        const fetchedImages = assetData?.map((d) => d.file_url) || [];
+        setCarouselImages(
+          fetchedImages.length > 0
+            ? fetchedImages
+            : [
                 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp',
-              division: 'publishing',
-              description: 'Heartfelt verses that inspire and provoke thought',
-              productType: 'book',
-              metadata: { amazon_url: 'https://www.amazon.com/', format: 'ebook', year: 2025 },
-              tags: ['poetry'],
-            },
-          ]);
-          setTotal(2);
-        } else {
-          setProducts(list);
-          setTotal(Number(json?.total ?? list.length));
-        }
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-2.webp',
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-3.webp',
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-4.webp',
+              ]
+        );
       } catch (err) {
         console.error('Publishing fetch error:', err);
         setProducts([]);
         setTotal(0);
+        setCarouselImages([]); // No fallback here to encourage admin uploads
       } finally {
         setLoading(false);
       }
@@ -76,16 +61,6 @@ export default function Publishing() {
   const handleAddToCart = (product) => {
     dispatch(addToCart({ ...product, productType: 'book' }));
   };
-
-  const carouselImages = useMemo(
-    () => [
-      'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp',
-      'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-2.webp',
-      'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-3.webp',
-      'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-4.webp',
-    ],
-    []
-  );
 
   if (loading) {
     return (
@@ -167,8 +142,6 @@ export default function Publishing() {
                 description={product.description}
                 image={product.display_image || pickImage(product)}
                 category="publishing"
-                buyButton={product}
-                onBuy={() => handleAddToCart(product)}
                 tags={Array.isArray(product.tags) ? product.tags : []}
               >
                 {/* Meta chips */}
@@ -250,21 +223,15 @@ export default function Publishing() {
       <section className="container mx-auto px-4 py-8">
         <h2 className="text-3xl font-bold mb-6 text-center">Our Top Picks</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Card
-            title="Recommended Read 1"
-            description="A must-read fantasy epic."
-            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-1.webp"
-          />
-          <Card
-            title="Recommended Read 2"
-            description="Poetry that touches the soul."
-            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-2.webp"
-          />
-          <Card
-            title="Recommended Read 3"
-            description="Adventure awaits in this novel."
-            image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/book-carousel-3.webp"
-          />
+          {products.slice(0, 3).map((p) => (
+            <Card
+              key={p.id}
+              title={p.name}
+              description={p.description}
+              image={p.display_image}
+            />
+          ))}
+          {products.length < 3 && <p className="col-span-full text-center opacity-70">Add more products in admin to populate recommendations.</p>}
         </div>
       </section>
 

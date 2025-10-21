@@ -1,4 +1,3 @@
-// pages/index.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useDispatch } from 'react-redux';
@@ -39,7 +38,7 @@ export default function Home() {
         // normalize image field so Card gets a valid image
         const normalized = items.map((p) => ({
           ...p,
-          image_url: p.image_url || p.thumbnail_url || p.image || p.imageUrl || '',
+          image_url: p.image_url || p.thumbnail_url || p.image || p.imageUrl || p.display_image || '',
         }));
 
         setProducts(normalized);
@@ -150,29 +149,116 @@ export default function Home() {
       <section id="featured" className="container mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold mb-6">Featured Products</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {(Array.isArray(products) ? products : []).slice(0, 3).map((product) => (
-            <Card
-              key={product.id}
-              title={product.name}
-              description={product.description}
-              image={product.image_url}
-              category={product.division}
-              buyButton={product}
-              onBuy={() =>
-                dispatch(
-                  addToCart({
-                    ...product,
-                    productType:
-                      product.division === 'designs'
-                        ? 'merch'
-                        : product.division === 'capital'
-                        ? 'download'
-                        : 'book',
-                  })
-                )
-              }
-            />
-          ))}
+          {(Array.isArray(products) ? products : []).slice(0, 3).map((product) => {
+            if (product.division === 'publishing') {
+              const m = product.metadata || {};
+              const buyUrl =
+                m.amazon_url ||
+                m.kindle_url ||
+                m.paperback_url ||
+                m.store_url ||
+                null;
+
+              const alsoLinks = [
+                m.kindle_url ? { label: "Kindle", url: m.kindle_url } : null,
+                m.paperback_url ? { label: "Paperback", url: m.paperback_url } : null,
+              ].filter(Boolean);
+
+              const chips = [
+                m.format ? String(m.format).toUpperCase() : null,
+                m.year ? `Y${m.year}` : null,
+              ].filter(Boolean);
+
+              return (
+                <Card
+                  key={product.id}
+                  title={product.name}
+                  description={product.description}
+                  image={product.image_url}
+                  category={product.division}
+                  tags={Array.isArray(product.tags) ? product.tags : []}
+                >
+                  {/* Meta chips */}
+                  {chips.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center mb-2">
+                      {chips.map((c) => (
+                        <span key={c} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Primary CTAs */}
+                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                    {buyUrl && (
+                      <a
+                        href={buyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                      >
+                        Get Your Copy
+                      </a>
+                    )}
+                    {m.pdf_url && (
+                      <a
+                        href={m.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 transition"
+                      >
+                        Preview Chapter 1
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Secondary storefront links */}
+                  {alsoLinks.length > 0 && (
+                    <div className="text-xs text-gray-600 mt-3">
+                      Also available:{' '}
+                      {alsoLinks.map((l, i) => (
+                        <a
+                          key={l.label}
+                          href={l.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-blue-700"
+                        >
+                          {l.label}{i < alsoLinks.length - 1 ? ', ' : ''}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              );
+            }
+
+            // Non-publishing products keep buyButton
+            return (
+              <Card
+                key={product.id}
+                title={product.name}
+                description={product.description}
+                image={product.image_url}
+                category={product.division}
+                buyButton={product}
+                onBuy={() =>
+                  dispatch(
+                    addToCart({
+                      ...product,
+                      productType:
+                        product.division === 'designs'
+                          ? 'merch'
+                          : product.division === 'capital'
+                          ? 'download'
+                          : 'book',
+                    })
+                  )
+                }
+              />
+            );
+          })}
         </div>
       </section>
 

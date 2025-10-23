@@ -127,7 +127,16 @@ export default function Capital() {
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/performance-chart.webp"
             link="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957"
             category="capital"
-          />
+          >
+            {/* NEW: MyFXBook embed */}
+            <iframe
+              src="https://www.myfxbook.com/widgets/11661957"
+              width="100%"
+              height="300"
+              title="MyFXBook Chart"
+              className="mt-4"
+            ></iframe>
+          </Card>
           <Card
             title="Bot Insights"
             description="Automated trading with proven results."

@@ -14,6 +14,9 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  LineChart,
+  Line,
+  Legend,
 } from 'recharts';
 
 // Lazy-load MDX for admin speed
@@ -1357,6 +1360,16 @@ export default function Admin() {
     return Object.entries(map).map(([division, total]) => ({ division, total }));
   }, [orders]);
 
+  // NEW: User growth data (example; in real, aggregate users.created_at)
+  const userGrowth = useMemo(() => {
+    const growth = users.reduce((acc, u) => {
+      const month = new Date(u.created_at).toLocaleString('default', { month: 'short', year: 'numeric' });
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(growth).map(([month, count]) => ({ month, count })).sort((a, b) => new Date(a.month) - new Date(b.month));
+  }, [users]);
+
   const toggleUserRole = async (userId, currentRole) => {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     if (!confirm(`Change role to ${newRole} for this user?`)) return;
@@ -2021,6 +2034,12 @@ export default function Admin() {
               <h4 className="font-semibold mb-2">Send Test Itinerary Email</h4>
               <RealtyTestEmailPanelWithProperty />
             </div>
+
+            {/* NEW: Property Creation Form */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Create New Property</h4>
+              <PropertyForm onCreated={refreshAll} />
+            </div>
           </div>
         )}
 
@@ -2507,7 +2526,22 @@ export default function Admin() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              {/* Add more analytics as needed, e.g., user growth, order trends */}
+              {/* NEW: User Growth Chart */}
+              <div>
+                <h3 className="font-semibold mb-3">User Growth</h3>
+                <div className="w-full h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={userGrowth}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="count" stroke="#8884d8" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
           </SectionCard>
         )}
@@ -2794,4 +2828,55 @@ function RealtyTestEmailPanel({ properties }) {
 function RealtyTestEmailPanelWithProperty() {
   // Assume fetching properties or use context; for stub, empty
   return <RealtyTestEmailPanel properties={[]} />;
+}
+
+// NEW: Realty Property Creation Form
+function PropertyForm({ onCreated }) {
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('200');
+  const [metadataStr, setMetadataStr] = useState('');
+
+  const create = async () => {
+    try {
+      if (!name || !slug) return alert('Name and slug required.');
+      const metadata = safeJSON(metadataStr, {});
+      const payload = {
+        name,
+        slug,
+        description,
+        price: Number(price || 0),
+        division: 'realty',
+        status: 'active',
+        metadata,
+      };
+      const { error } = await supabase.from('properties').insert(payload);
+      if (error) throw error;
+      setName('');
+      setSlug('');
+      setDescription('');
+      setPrice('200');
+      setMetadataStr('');
+      onCreated?.();
+      alert('Property created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Realty — Add Property">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <input placeholder="Nightly Price" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+        <textarea className="md:col-span-3" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+        <textarea className="md:col-span-3" placeholder='Metadata JSON e.g. {"location":"Big Bear, CA", "ical_urls":["https://airbnb.com/ical/xxx"]}' value={metadataStr} onChange={(e) => setMetadataStr(e.target.value)} />
+        <button type="button" onClick={create} className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white">
+          Create Property
+        </button>
+      </div>
+    </SectionCard>
+  );
 }

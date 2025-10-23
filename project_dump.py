@@ -6,13 +6,14 @@ Project Structure + Routes + Code Dump → output.txt
 - TREE:   Prints a clean directory tree (skipping junk)
 - DUMP:   Appends file contents of text-like files
 - NO LIMITS: Use --no-limits to dump 100% of every included file (no truncation)
+- INCLUDE ENV: Use --include-env to include .env files (e.g., .env.local) in the dump
 
 Usage:
   python project_dump.py [--path .] [--out output.txt]
                          [--max-mb 500] [--per-file-kb 1000]
-                         [--show-hidden] [--no-limits]
+                         [--show-hidden] [--no-limits] [--include-env]
 
-WARNING: --no-limits can produce VERY large files.
+WARNING: --no-limits and/or --include-env can produce huge files and may expose secrets.
 """
 
 import os, sys, argparse, mimetypes, re, math
@@ -25,8 +26,14 @@ SKIP_DIRS = {
     ".next", "out", "dist", "build", "coverage", "cypress", "playwright",
     "scan_reports", "venv", ".venv", "_scanscratch"
 }
-NEVER_DUMP_EXTS = {".env", ".env.local", ".env.development", ".env.production", ".env.test"}
+# lockfiles are still excluded
 NEVER_DUMP_FILES = {"package-lock.json", "package.lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lockb"}
+
+# Env files (excluded by default unless --include-env)
+ENV_FILE_NAMES = {
+    ".env", ".env.local", ".env.development", ".env.production", ".env.test"
+}
+
 TEXT_EXTS = {
     ".ts",".tsx",".js",".jsx",".mjs",".cjs",
     ".json",".toml",".yaml",".yml",
@@ -34,6 +41,10 @@ TEXT_EXTS = {
     ".md",".mdx",".html",".svg",".txt",
     ".dockerignore",".gitignore",".gitattributes",".conf",".cfg",".ini",".sh",".py",".rb",".go",".java",".rs",".php"
 }
+
+def is_env_file(p: Path) -> bool:
+    # Matches .env, .env.local, .env.production, and also .env.<anything>
+    return p.name in ENV_FILE_NAMES or p.name.startswith(".env.")
 
 def is_text_file(p: Path) -> bool:
     if p.suffix.lower() in TEXT_EXTS:
@@ -100,7 +111,7 @@ def enumerate_next_routes(root: Path):
     return routes
 
 # ---- TREE PRINTER ----
-def print_tree_lines(root: Path, show_hidden=False):
+def print_tree_lines(root: Path, show_hidden=False, include_env=False):
     lines = []
     def walk(dir_path: Path, prefix=""):
         try:
@@ -110,7 +121,8 @@ def print_tree_lines(root: Path, show_hidden=False):
             return
         filt = []
         for e in entries:
-            if not show_hidden and e.name.startswith(".") and e.name not in {".gitignore",".gitattributes",".dockerignore"}:
+            # keep .env* if include_env, otherwise apply hidden-file filter
+            if not include_env and (not show_hidden) and e.name.startswith(".") and e.name not in {".gitignore",".gitattributes",".dockerignore"}:
                 continue
             if should_skip_path(e):
                 continue
@@ -118,8 +130,12 @@ def print_tree_lines(root: Path, show_hidden=False):
         for i, e in enumerate(filt):
             connector = "└── " if i == len(filt) - 1 else "├── "
             tag = ""
-            if e.is_file() and (e.suffix in NEVER_DUMP_EXTS or e.name in NEVER_DUMP_FILES):
-                tag = "  (not dumped)"
+            # mark files that won't be dumped (lockfiles) unless env is excluded
+            if e.is_file():
+                if e.name in NEVER_DUMP_FILES:
+                    tag = "  (not dumped)"
+                elif (not include_env) and is_env_file(e):
+                    tag = "  (not dumped)"
             lines.append(prefix + connector + e.name + tag)
             if e.is_dir():
                 extension = "    " if i == len(filt) - 1 else "│   "
@@ -129,7 +145,7 @@ def print_tree_lines(root: Path, show_hidden=False):
     return lines
 
 # ---- DUMP ----
-def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, show_hidden=False):
+def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, show_hidden=False, include_env=False):
     """Yield (header_line, content) tuples for each dumped file."""
     written = 0
     infinite = not math.isfinite(max_total_bytes)
@@ -138,9 +154,13 @@ def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, s
             continue
         if should_skip_path(p):
             continue
-        if (not show_hidden) and p.name.startswith(".") and p.name not in {".gitignore",".gitattributes",".dockerignore"}:
+        # hidden files are skipped unless show_hidden OR it's an env file and include_env is set
+        if p.name.startswith(".") and p.name not in {".gitignore",".gitattributes",".dockerignore"}:
+            if not (show_hidden or (include_env and is_env_file(p))):
+                continue
+        if p.name in NEVER_DUMP_FILES:
             continue
-        if p.suffix in NEVER_DUMP_EXTS or p.name in NEVER_DUMP_FILES:
+        if (not include_env) and is_env_file(p):
             continue
         if not is_text_file(p):
             continue
@@ -155,7 +175,7 @@ def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, s
                 yield ("\n\n# --- SIZE LIMIT REACHED; remaining files omitted ---\n", "")
                 return
 
-        body = read_text_safe(p, max_bytes=per_file_bytes)  # if None → full file
+        body = read_text_safe(p, max_bytes=per_file_bytes)  # None → full file
         if not infinite:
             projected = written + len(header.encode("utf-8")) + len(body.encode("utf-8"))
             if projected > max_total_bytes:
@@ -179,14 +199,15 @@ def main():
     ap.add_argument("--out", default="output.txt", help="Output file name (default: output.txt)")
     ap.add_argument("--max-mb", type=float, default=500.0, help="Max total MB for code dump (default: 500)")
     ap.add_argument("--per-file-kb", type=int, default=1000, help="Max KB per file (default: 1000)")
-    ap.add_argument("--show-hidden", action="store_true", help="Include hidden files/dirs (still skips .env* and lockfiles)")
+    ap.add_argument("--show-hidden", action="store_true", help="Include hidden files/dirs")
     ap.add_argument("--no-limits", action="store_true", help="Dump 100% of every included file (no truncation, no total cap)")
+    ap.add_argument("--include-env", action="store_true", help="Include .env* files (e.g., .env.local) in the dump")
     args = ap.parse_args()
 
     root = Path(args.path).resolve()
     out_path = Path(args.out).resolve()
 
-    if args["no_limits"] if isinstance(args, dict) else args.no_limits:
+    if args.no_limits:
         max_total_bytes = float("inf")
         per_file_bytes = None  # full file
         size_note = "NO LIMITS (danger: huge output possible)"
@@ -202,9 +223,12 @@ def main():
         f"# Generated: {datetime.now()}",
         f"# Limits: {size_note}",
         "# Skips: " + ", ".join(sorted(SKIP_DIRS)),
-        "# Never dump: .env*, lockfiles",
+        "# Lockfiles excluded: " + ", ".join(sorted(NEVER_DUMP_FILES)),
+        "# ENV INCLUDED: YES" if args.include_env else "# ENV INCLUDED: NO (use --include-env to include .env files)",
         ""
     ]
+    if args.include_env:
+        header.append("# WARNING: .env* files may contain secrets. Handle output.txt securely.\n")
     lines.extend(header)
 
     # ROUTES
@@ -224,12 +248,12 @@ def main():
 
     # TREE
     lines.append("## DIRECTORY TREE")
-    lines.extend(print_tree_lines(root, show_hidden=args.show_hidden))
+    lines.extend(print_tree_lines(root, show_hidden=args.show_hidden, include_env=args.include_env))
     lines.append("")
 
     # CONTENTS
     lines.append("## FILE CONTENTS")
-    for header_line, body in dump_files(root, max_total_bytes, per_file_bytes, show_hidden=args.show_hidden):
+    for header_line, body in dump_files(root, max_total_bytes, per_file_bytes, show_hidden=args.show_hidden, include_env=args.include_env):
         lines.append(header_line.rstrip("\n"))
         if body:
             lines.append(body.rstrip("\n"))

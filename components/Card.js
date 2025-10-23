@@ -28,6 +28,14 @@ const Card = ({
   const nftUrl = product?.nft_url || product?.metadata?.nft_url || null;
   const hasNFT = Boolean(nftUrl);
 
+  // NEW: Media playlist embed
+  const metadata = product.metadata || {};
+  const isPlaylist = metadata.media_type === 'playlist' && metadata.media_url;
+  const playlistId = isPlaylist ? metadata.media_url.split('list=')[1] : null;
+
+  // NEW: Tech app badges
+  const isApp = metadata.app_type === 'app' && metadata.app_url;
+
   const handleClick = () => {
     if (category && typeof window !== 'undefined') {
       try {
@@ -158,6 +166,30 @@ const Card = ({
         <div className="flex flex-wrap justify-center gap-4 items-center mt-4">
           {children}
         </div>
+
+        {/* NEW: Playlist embed */}
+        {isPlaylist && playlistId && (
+          <div className="mt-4">
+            <iframe
+              width="100%"
+              height="315"
+              src={`https://www.youtube.com/embed/videoseries?list=${playlistId}`}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        )}
+
+        {/* NEW: App store badge */}
+        {isApp && (
+          <div className="mt-4">
+            <a href={metadata.app_url} target="_blank" rel="noopener noreferrer">
+              <img src="/app-store-badge.png" alt="Download on the App Store" className="h-10" />
+            </a>
+          </div>
+        )}
       </div>
     </motion.article>
   );

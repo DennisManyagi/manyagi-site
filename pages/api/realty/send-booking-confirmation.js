@@ -1,7 +1,6 @@
 // pages/api/realty/send-booking-confirmation.js
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sendItineraryEmail } from '@/lib/emails/itineraryEmail';
-import { sendBookingReceipt } from '@/lib/emails/bookingReceipt';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -24,7 +23,8 @@ export default async function handler(req, res) {
       replyTo: 'realty@manyagi.net',
     });
 
-    await sendBookingReceipt({
+    await sendItineraryEmail({
+      type: 'receipt',
       guestName: resv.guest_name,
       to: resv.guest_email,
       property: prop?.name || 'Property',

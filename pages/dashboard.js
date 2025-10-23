@@ -1,7 +1,25 @@
+// pages/dashboard.js
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
+
+function formatDate(d) {
+  try {
+    return new Date(d).toLocaleDateString();
+  } catch {
+    return '—';
+  }
+}
+
+function formatCurrency(n) {
+  if (typeof n !== 'number') return n ?? '—';
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
+  } catch {
+    return `$${n.toFixed(2)}`;
+  }
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -13,68 +31,82 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     (async () => {
       try {
-        // Fetch authenticated user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        console.log('User fetch result:', { user, authError });
-        if (authError || !user) {
-          console.log('No user or auth error, redirecting to /login');
+        // Authenticated user
+        const {
+          data: { user: authUser },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !authUser) {
           router.push('/login');
           return;
         }
-        setUser(user);
+        if (!isMounted) return;
+        setUser(authUser);
 
-        // Fetch user role
+        // Role check
         const { data: userRow, error: roleError } = await supabase
           .from('users')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .maybeSingle();
-        console.log('User ID:', user.id);
-        console.log('Fetched role:', userRow?.role);
-        console.log('Role error:', roleError);
+
         if (roleError) {
-          console.error('Role fetch failed:', roleError);
+          if (!isMounted) return;
           setError('Failed to load user role. Please try again.');
           setLoading(false);
           return;
         }
         if (!userRow) {
-          console.error('No user row found for ID:', user.id);
+          if (!isMounted) return;
           setError('User data not found. Contact support.');
           setLoading(false);
           return;
         }
         if (userRow.role === 'admin') {
-          console.log('Admin role detected, redirecting to /admin');
           router.push('/admin');
           return;
         }
 
-        // Fetch orders, subscriptions, affiliates
+        // Parallel fetches
         const [o, s, a] = await Promise.all([
-          supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('subscriptions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('affiliates').select('*').eq('user_id', user.id).maybeSingle(),
+          supabase
+            .from('orders')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', authUser.id)
+            .order('created_at', { ascending: false }),
+          supabase.from('affiliates').select('*').eq('user_id', authUser.id).maybeSingle(),
         ]);
-        console.log('Fetched data:', { orders: o.data, subscriptions: s.data, affiliate: a.data, ordersError: o.error, subscriptionsError: s.error, affiliatesError: a.error });
+
+        if (!isMounted) return;
 
         if (o.error || s.error || a.error) {
-          console.error('Data fetch errors:', { ordersError: o.error, subscriptionsError: s.error, affiliatesError: a.error });
           setError('Failed to load some dashboard data. Please try again.');
         }
 
         setOrders(o.data || []);
         setSubscriptions(s.data || []);
-        setAffiliate(a.data);
+        setAffiliate(a.data || null);
         setLoading(false);
-      } catch (err) {
-        console.error('Unexpected error:', err);
+      } catch {
+        if (!isMounted) return;
         setError('An unexpected error occurred. Please try again.');
         setLoading(false);
       }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   if (error) return <p className="p-6 text-red-500">{error}</p>;
@@ -85,68 +117,85 @@ export default function Dashboard() {
       <Head>
         <title>Manyagi User Dashboard</title>
       </Head>
+
       <div className="container mx-auto px-4 py-8 space-y-8">
         <h1 className="text-2xl font-bold">User Dashboard</h1>
+
+        {/* Orders */}
         <section>
           <h2 className="text-xl font-bold mb-2">Your Orders</h2>
           {orders.length === 0 ? (
             <p>No orders yet.</p>
           ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border p-2">Order ID</th>
-                  <th className="border p-2">Date</th>
-                  <th className="border p-2">Total</th>
-                  <th className="border p-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id}>
-                    <td className="border p-2">{order.id}</td>
-                    <td className="border p-2">{new Date(order.created_at).toLocaleDateString()}</td>
-                    <td className="border p-2">${order.total_amount}</td>
-                    <td className="border p-2">{order.status}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border p-2 text-left">Order ID</th>
+                    <th className="border p-2 text-left">Date</th>
+                    <th className="border p-2 text-left">Total</th>
+                    <th className="border p-2 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="border p-2">{order.id}</td>
+                      <td className="border p-2">{formatDate(order.created_at)}</td>
+                      <td className="border p-2">{formatCurrency(order.total_amount)}</td>
+                      <td className="border p-2 capitalize">{order.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
+
+        {/* Subscriptions */}
         <section>
           <h2 className="text-xl font-bold mb-2">Your Subscriptions</h2>
           {subscriptions.length === 0 ? (
             <p>No subscriptions yet.</p>
           ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr>
-                  <th className="border p-2">Subscription ID</th>
-                  <th className="border p-2">Start Date</th>
-                  <th className="border p-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subscriptions.map((sub) => (
-                  <tr key={sub.id}>
-                    <td className="border p-2">{sub.id}</td>
-                    <td className="border p-2">{new Date(sub.created_at).toLocaleDateString()}</td>
-                    <td className="border p-2">{sub.status}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border p-2 text-left">Subscription ID</th>
+                    <th className="border p-2 text-left">Start Date</th>
+                    <th className="border p-2 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {subscriptions.map((sub) => (
+                    <tr key={sub.id}>
+                      <td className="border p-2">{sub.id}</td>
+                      <td className="border p-2">{formatDate(sub.created_at)}</td>
+                      <td className="border p-2 capitalize">{sub.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
+
+        {/* Affiliate */}
         <section>
           <h2 className="text-xl font-bold mb-2">Your Affiliate Info</h2>
           {affiliate ? (
-            <p>Referral Code: {affiliate.referral_code}</p>
+            <div className="rounded border p-3">
+              <p>
+                <span className="font-semibold">Referral Code:</span>{' '}
+                <span className="font-mono">{affiliate.referral_code}</span>
+              </p>
+            </div>
           ) : (
             <p>No affiliate account. Contact support to join.</p>
           )}
         </section>
+
         <button
           onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
           className="p-2 bg-red-500 text-white rounded"

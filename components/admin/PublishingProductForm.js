@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags } from '@/lib/adminUtils';
 
 function PublishingProductForm({ onCreated }) {
   const [name, setName] = useState('');

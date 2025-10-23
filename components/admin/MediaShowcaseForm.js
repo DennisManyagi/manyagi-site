@@ -1,6 +1,7 @@
 // components/admin/MediaShowcaseForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function MediaShowcaseForm({ onCreated }) {
   const [title, setTitle] = useState('');

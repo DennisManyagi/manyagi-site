@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags, copyText } from '@/lib/adminUtils';
 
 function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   const [artFile, setArtFile] = useState(null);

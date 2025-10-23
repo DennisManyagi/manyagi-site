@@ -1,6 +1,8 @@
 // components/admin/CapitalProductForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags, safeJSON } from '@/lib/adminUtils';
 
 function CapitalProductForm({ onCreated }) {
   const [name, setName] = useState('');

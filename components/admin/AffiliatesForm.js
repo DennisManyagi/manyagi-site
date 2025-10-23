@@ -1,6 +1,8 @@
 // components/admin/AffiliatesForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { safeJSON } from '@/lib/adminUtils';
 
 function AffiliatesForm({ onCreated }) {
   const [name, setName] = useState('');

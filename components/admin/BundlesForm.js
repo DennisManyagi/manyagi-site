@@ -1,6 +1,7 @@
 // components/admin/BundlesForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function BundlesForm({ products, onCreated }) {
   const [name, setName] = useState('');

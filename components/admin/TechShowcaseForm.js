@@ -1,6 +1,7 @@
 // components/admin/TechShowcaseForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function TechShowcaseForm({ onCreated }) {
   const [title, setTitle] = useState('');

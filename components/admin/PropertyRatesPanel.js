@@ -1,5 +1,5 @@
 // components/admin/PropertyRatesPanel.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function PropertyRatesPanel({ properties }) {
   const [selected, setSelected] = useState('');

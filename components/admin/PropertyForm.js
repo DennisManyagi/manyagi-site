@@ -1,6 +1,8 @@
 // components/admin/PropertyForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { safeJSON } from '@/lib/adminUtils';
 
 function PropertyForm({ onCreated }) {
   const [name, setName] = useState('');

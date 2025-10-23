@@ -7,13 +7,12 @@ Project Structure + Routes + Code Dump → output.txt
 - DUMP:   Appends file contents of text-like files
 - NO LIMITS: Use --no-limits to dump 100% of every included file (no truncation)
 - INCLUDE ENV: Use --include-env to include .env files (e.g., .env.local) in the dump
+- EXCLUDES: This script itself and the output file are always excluded
 
 Usage:
   python project_dump.py [--path .] [--out output.txt]
                          [--max-mb 500] [--per-file-kb 1000]
                          [--show-hidden] [--no-limits] [--include-env]
-
-WARNING: --no-limits and/or --include-env can produce huge files and may expose secrets.
 """
 
 import os, sys, argparse, mimetypes, re, math
@@ -41,6 +40,8 @@ TEXT_EXTS = {
     ".md",".mdx",".html",".svg",".txt",
     ".dockerignore",".gitignore",".gitattributes",".conf",".cfg",".ini",".sh",".py",".rb",".go",".java",".rs",".php"
 }
+
+SELF_PATH = Path(__file__).resolve()
 
 def is_env_file(p: Path) -> bool:
     # Matches .env, .env.local, .env.production, and also .env.<anything>
@@ -111,7 +112,7 @@ def enumerate_next_routes(root: Path):
     return routes
 
 # ---- TREE PRINTER ----
-def print_tree_lines(root: Path, show_hidden=False, include_env=False):
+def print_tree_lines(root: Path, show_hidden: bool, include_env: bool, exclude_paths: set[Path]):
     lines = []
     def walk(dir_path: Path, prefix=""):
         try:
@@ -121,6 +122,9 @@ def print_tree_lines(root: Path, show_hidden=False, include_env=False):
             return
         filt = []
         for e in entries:
+            # exclude this script and output file
+            if e.resolve() in exclude_paths:
+                continue
             # keep .env* if include_env, otherwise apply hidden-file filter
             if not include_env and (not show_hidden) and e.name.startswith(".") and e.name not in {".gitignore",".gitattributes",".dockerignore"}:
                 continue
@@ -130,7 +134,6 @@ def print_tree_lines(root: Path, show_hidden=False, include_env=False):
         for i, e in enumerate(filt):
             connector = "└── " if i == len(filt) - 1 else "├── "
             tag = ""
-            # mark files that won't be dumped (lockfiles) unless env is excluded
             if e.is_file():
                 if e.name in NEVER_DUMP_FILES:
                     tag = "  (not dumped)"
@@ -145,12 +148,15 @@ def print_tree_lines(root: Path, show_hidden=False, include_env=False):
     return lines
 
 # ---- DUMP ----
-def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, show_hidden=False, include_env=False):
+def dump_files(root: Path, max_total_bytes: float, per_file_bytes: int | None, show_hidden: bool, include_env: bool, exclude_paths: set[Path]):
     """Yield (header_line, content) tuples for each dumped file."""
     written = 0
     infinite = not math.isfinite(max_total_bytes)
     for p in sorted(root.rglob("*"), key=lambda x: str(x).lower()):
         if not p.is_file():
+            continue
+        rp = p.resolve()
+        if rp in exclude_paths:
             continue
         if should_skip_path(p):
             continue
@@ -207,6 +213,9 @@ def main():
     root = Path(args.path).resolve()
     out_path = Path(args.out).resolve()
 
+    # Exclude this script and the output file from both TREE and CONTENTS
+    exclude_paths = {SELF_PATH, out_path}
+
     if args.no_limits:
         max_total_bytes = float("inf")
         per_file_bytes = None  # full file
@@ -225,10 +234,11 @@ def main():
         "# Skips: " + ", ".join(sorted(SKIP_DIRS)),
         "# Lockfiles excluded: " + ", ".join(sorted(NEVER_DUMP_FILES)),
         "# ENV INCLUDED: YES" if args.include_env else "# ENV INCLUDED: NO (use --include-env to include .env files)",
+        "# NOTE: This script file and the output file are excluded.",
         ""
     ]
     if args.include_env:
-        header.append("# WARNING: .env* files may contain secrets. Handle output.txt securely.\n")
+        header.append("# WARNING: .env* files may contain secrets. Handle output securely.\n")
     lines.extend(header)
 
     # ROUTES
@@ -248,12 +258,19 @@ def main():
 
     # TREE
     lines.append("## DIRECTORY TREE")
-    lines.extend(print_tree_lines(root, show_hidden=args.show_hidden, include_env=args.include_env))
+    lines.extend(print_tree_lines(root, show_hidden=args.show_hidden, include_env=args.include_env, exclude_paths=exclude_paths))
     lines.append("")
 
     # CONTENTS
     lines.append("## FILE CONTENTS")
-    for header_line, body in dump_files(root, max_total_bytes, per_file_bytes, show_hidden=args.show_hidden, include_env=args.include_env):
+    for header_line, body in dump_files(
+        root,
+        max_total_bytes,
+        per_file_bytes,
+        show_hidden=args.show_hidden,
+        include_env=args.include_env,
+        exclude_paths=exclude_paths
+    ):
         lines.append(header_line.rstrip("\n"))
         if body:
             lines.append(body.rstrip("\n"))

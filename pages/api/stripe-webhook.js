@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import axios from 'axios';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createPrintfulOrder } from '@/lib/printful';
-import { sendEmail } from '@/lib/email';
+import { sendEmail } from '@/lib/sendEmail';
 
 export const config = { api: { bodyParser: false } };
 

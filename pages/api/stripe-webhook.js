@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import axios from 'axios';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { createPrintfulOrder } from '@/lib/printful';
+import { sendEmail } from '@/lib/email';
 
 export const config = { api: { bodyParser: false } };
 
@@ -28,13 +29,57 @@ export default async function handler(req, res) {
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        // Expand a bit for safety
+        // Expand
         const session = await stripe.checkout.sessions.retrieve(
           event.data.object.id,
           { expand: ['customer_details', 'shipping_details', 'payment_intent'] }
         );
 
-        // 1) Mark order as paid and store some helpful info
+        // --- Realty bookings ---------------------------------------
+        if (session?.metadata?.type === 'realty_booking') {
+          const {
+            property_id, checkin, checkout, guests, guestEmail, guestName,
+          } = session.metadata;
+
+          // 1) Mark reservation row paid
+          await supabaseAdmin
+            .from('realty_reservations')
+            .update({
+              status: 'paid',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('stripe_session_id', session.id);
+
+          // 2) Fetch property for name and ical URL
+          const { data: prop } = await supabaseAdmin
+            .from('properties')
+            .select('id, name, metadata')
+            .eq('id', property_id)
+            .maybeSingle();
+
+          const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://manyagi.net';
+          const icsUrl = `${site}/api/realty/ical-export?property_id=${property_id}`;
+          const slug = prop?.metadata?.slug || prop?.id;
+          const detailsUrl = `${site}/realty/${slug}`;
+
+          // 3) Email the itinerary (if SMTP configured and guestEmail present)
+          if (guestEmail) {
+            const html = itineraryEmailHTML({
+              propertyName: prop?.name,
+              checkin, checkout, guests,
+              guestName,
+              icsUrl,
+              detailsUrl,
+              supportEmail: process.env.SUPPORT_EMAIL || 'realty@manyagi.net',
+            });
+            try { await sendEmail({ to: guestEmail, subject: 'Your Manyagi stay is confirmed', html }); }
+            catch (e) { console.warn('Email send failed:', e.message); }
+          }
+
+          break;
+        }
+
+        // --- Physical merch fulfillment (kept from your version) ---
         const email = session?.customer_details?.email || null;
         const name  = session?.customer_details?.name || null;
         const addr  = session?.shipping_details?.address || null;
@@ -57,18 +102,15 @@ export default async function handler(req, res) {
           })
           .eq('stripe_session_id', session.id);
 
-        // 2) Optional: automatic Printful fulfillment
         try {
-          // Find the pending order this session created
           const { data: orderRow } = await supabaseAdmin
             .from('orders')
             .select('*')
             .eq('stripe_session_id', session.id)
             .maybeSingle();
 
-          if (!orderRow) break; // nothing else to do
+          if (!orderRow) break;
 
-          // Load the product to see if it should be fulfilled via Printful
           const { data: product } = await supabaseAdmin
             .from('products')
             .select('*')
@@ -120,7 +162,6 @@ export default async function handler(req, res) {
                 })
                 .eq('stripe_session_id', session.id);
             } catch (pfErr) {
-              // Save the error for admin inspection, but don't fail the webhook
               await supabaseAdmin
                 .from('orders')
                 .update({

@@ -202,7 +202,7 @@ function MultiUploader({
   );
 }
 
-// QuickProductForm Component
+// QuickProductForm Component (for Designs)
 function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   const [artFile, setArtFile] = useState(null);
   const [assetUrl, setAssetUrl] = useState('');
@@ -615,6 +615,485 @@ function PublishingProductForm({ onCreated }) {
   );
 }
 
+// New CapitalProductForm Component
+function CapitalProductForm({ onCreated }) {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('99.99');
+  const [description, setDescription] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [tagsStr, setTagsStr] = useState('trading, signals');
+  const [licenseType, setLicenseType] = useState('bot');
+  const [apiAccess, setApiAccess] = useState(false);
+  const [metadataStr, setMetadataStr] = useState('');
+
+  const create = async () => {
+    try {
+      if (!name) return alert('Title required.');
+      if (!price) return alert('Price required.');
+      if (!thumbnailUrl) return alert('Thumbnail URL required.');
+
+      const metadata = {
+        license_type: licenseType,
+        api_access: apiAccess,
+        ...(metadataStr ? safeJSON(metadataStr, {}) : {}),
+      };
+
+      const payload = {
+        name,
+        price: Number(price || 0),
+        division: 'capital',
+        description,
+        display_image: thumbnailUrl,
+        thumbnail_url: thumbnailUrl,
+        status: 'active',
+        tags: toArrayTags(tagsStr),
+        metadata,
+        productType: 'download',
+      };
+
+      const { error } = await supabase.from('products').insert(payload);
+      if (error) throw error;
+
+      setName('');
+      setPrice('99.99');
+      setDescription('');
+      setThumbnailUrl('');
+      setTagsStr('trading, signals');
+      setLicenseType('bot');
+      setApiAccess(false);
+      setMetadataStr('');
+      onCreated?.();
+      alert('Capital product created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Capital — Add Product (Bot License, eBook, etc.)">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          placeholder="Product Title (e.g., Trading Bot License)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          placeholder="Price"
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+        />
+        <select
+          value={licenseType}
+          onChange={(e) => setLicenseType(e.target.value)}
+          className="dark:bg-gray-800"
+        >
+          <option value="bot">Bot License</option>
+          <option value="ebook">eBook</option>
+          <option value="course">Course</option>
+          <option value="api">API Access</option>
+        </select>
+        <input
+          placeholder="Thumbnail URL"
+          className="md:col-span-2"
+          value={thumbnailUrl}
+          onChange={(e) => setThumbnailUrl(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <input
+          className="md:col-span-2"
+          placeholder="Tags (comma-separated)"
+          value={tagsStr}
+          onChange={(e) => setTagsStr(e.target.value)}
+        />
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={apiAccess}
+            onChange={(e) => setApiAccess(e.target.checked)}
+          />
+          Includes API Access
+        </label>
+        <textarea
+          className="md:col-span-3"
+          placeholder='Additional Metadata (JSON, e.g., {"strategy":"mean-reversion"})'
+          value={metadataStr}
+          onChange={(e) => setMetadataStr(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={create}
+          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+        >
+          Create Capital Product
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
+// New TechShowcaseForm Component
+function TechShowcaseForm({ onCreated }) {
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [content, setContent] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
+  const [appUrl, setAppUrl] = useState('');
+  const [appType, setAppType] = useState('app');
+
+  const create = async () => {
+    try {
+      if (!title) return alert('Title required.');
+      if (!slug) return alert('Slug required.');
+
+      const payload = {
+        title,
+        slug,
+        excerpt,
+        content,
+        featured_image: featuredImage || undefined,
+        status: 'published',
+        division: 'tech',
+        metadata: { app_type: appType, app_url: appUrl || undefined },
+      };
+
+      const { error } = await supabase.from('posts').insert(payload);
+      if (error) throw error;
+
+      setTitle('');
+      setSlug('');
+      setExcerpt('');
+      setContent('');
+      setFeaturedImage('');
+      setAppUrl('');
+      setAppType('app');
+      onCreated?.();
+      alert('Tech showcase item created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Tech — Add Showcase Item (App/Website)">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          placeholder="Title (e.g., Daito App)"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          placeholder="Slug (e.g., daito-app)"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+        />
+        <select
+          value={appType}
+          onChange={(e) => setAppType(e.target.value)}
+          className="dark:bg-gray-800"
+        >
+          <option value="app">App</option>
+          <option value="website">Website</option>
+          <option value="review">Review</option>
+        </select>
+        <input
+          placeholder="Featured Image URL"
+          className="md:col-span-2"
+          value={featuredImage}
+          onChange={(e) => setFeaturedImage(e.target.value)}
+        />
+        <input
+          placeholder="App/Website URL"
+          className="md:col-span-1"
+          value={appUrl}
+          onChange={(e) => setAppUrl(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3"
+          placeholder="Excerpt"
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3 h-32"
+          placeholder="Content (MDX)"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={create}
+          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+        >
+          Create Showcase Item
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
+// New MediaShowcaseForm Component
+function MediaShowcaseForm({ onCreated }) {
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [content, setContent] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState('playlist');
+
+  const create = async () => {
+    try {
+      if (!title) return alert('Title required.');
+      if (!slug) return alert('Slug required.');
+
+      const payload = {
+        title,
+        slug,
+        excerpt,
+        content,
+        featured_image: featuredImage || undefined,
+        status: 'published',
+        division: 'media',
+        metadata: { media_type: mediaType, media_url: mediaUrl || undefined },
+      };
+
+      const { error } = await supabase.from('posts').insert(payload);
+      if (error) throw error;
+
+      setTitle('');
+      setSlug('');
+      setExcerpt('');
+      setContent('');
+      setFeaturedImage('');
+      setMediaUrl('');
+      setMediaType('playlist');
+      onCreated?.();
+      alert('Media showcase item created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Media — Add Showcase Item (Playlist, Podcast, etc.)">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          placeholder="Title (e.g., Manyagi Playlist)"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          placeholder="Slug (e.g., manyagi-playlist)"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+        />
+        <select
+          value={mediaType}
+          onChange={(e) => setMediaType(e.target.value)}
+          className="dark:bg-gray-800"
+        >
+          <option value="playlist">Playlist</option>
+          <option value="podcast">Podcast</option>
+          <option value="reel">Reel</option>
+          <option value="short">YouTube Short</option>
+          <option value="audiobook">Audiobook</option>
+        </select>
+        <input
+          placeholder="Featured Image URL"
+          className="md:col-span-2"
+          value={featuredImage}
+          onChange={(e) => setFeaturedImage(e.target.value)}
+        />
+        <input
+          placeholder="Media URL (e.g., YouTube Playlist)"
+          className="md:col-span-1"
+          value={mediaUrl}
+          onChange={(e) => setMediaUrl(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3"
+          placeholder="Excerpt"
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3 h-32"
+          placeholder="Content (MDX)"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={create}
+          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+        >
+          Create Showcase Item
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
+// New AffiliatesForm Component
+function AffiliatesForm({ onCreated }) {
+  const [name, setName] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [commissionRate, setCommissionRate] = useState('0.1');
+  const [metadataStr, setMetadataStr] = useState('');
+
+  const create = async () => {
+    try {
+      if (!name) return alert('Name required.');
+      if (!referralCode) return alert('Referral code required.');
+
+      const payload = {
+        name,
+        referral_code: referralCode,
+        commission_rate: Number(commissionRate),
+        status: 'active',
+        metadata: metadataStr ? safeJSON(metadataStr, {}) : {},
+      };
+
+      const { error } = await supabase.from('affiliates').insert(payload);
+      if (error) throw error;
+
+      setName('');
+      setReferralCode('');
+      setCommissionRate('0.1');
+      setMetadataStr('');
+      onCreated?.();
+      alert('Affiliate created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Affiliates — Add Partner">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          placeholder="Partner Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          placeholder="Referral Code"
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
+        />
+        <input
+          placeholder="Commission Rate (e.g., 0.1 for 10%)"
+          type="number"
+          step="0.01"
+          value={commissionRate}
+          onChange={(e) => setCommissionRate(e.target.value)}
+        />
+        <textarea
+          className="md:col-span-3"
+          placeholder='Metadata (JSON, e.g., {"partner_type":"influencer"})'
+          value={metadataStr}
+          onChange={(e) => setMetadataStr(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={create}
+          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+        >
+          Create Affiliate
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
+// New BundlesForm Component
+function BundlesForm({ products, onCreated }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('49.99');
+  const [productIds, setProductIds] = useState([]);
+
+  const create = async () => {
+    try {
+      if (!name) return alert('Name required.');
+      if (!price) return alert('Price required.');
+      if (productIds.length === 0) return alert('Select at least one product.');
+
+      const payload = {
+        name,
+        description,
+        price: Number(price),
+        product_ids: productIds,
+        status: 'active',
+      };
+
+      const { error } = await supabase.from('bundles').insert(payload);
+      if (error) throw error;
+
+      setName('');
+      setDescription('');
+      setPrice('49.99');
+      setProductIds([]);
+      onCreated?.();
+      alert('Bundle created.');
+    } catch (e) {
+      alert(`Create failed: ${e.message}`);
+    }
+  };
+
+  return (
+    <SectionCard title="Bundles — Create Product Bundle">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input
+          placeholder="Bundle Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          placeholder="Price"
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+        />
+        <select
+          multiple
+          value={productIds}
+          onChange={(e) =>
+            setProductIds([...e.target.selectedOptions].map((o) => o.value))
+          }
+          className="md:col-span-3 h-32 dark:bg-gray-800"
+        >
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({p.division})
+            </option>
+          ))}
+        </select>
+        <textarea
+          className="md:col-span-3"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <button
+          type="button"
+          onClick={create}
+          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+        >
+          Create Bundle
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
+
 // Main Admin Component
 export default function Admin() {
   const router = useRouter();
@@ -666,6 +1145,7 @@ export default function Admin() {
         .select('role')
         .eq('id', user.id)
         .maybeSingle();
+
       if (userRow?.role !== 'admin') {
         router.push('/dashboard');
         return;
@@ -876,6 +1356,21 @@ export default function Admin() {
     });
     return Object.entries(map).map(([division, total]) => ({ division, total }));
   }, [orders]);
+
+  const toggleUserRole = async (userId, currentRole) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    if (!confirm(`Change role to ${newRole} for this user?`)) return;
+    const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+    if (error) alert(`Failed to update role: ${error.message}`);
+    else await refreshAll();
+  };
+
+  const deleteEvent = async (id) => {
+    if (!confirm('Delete this event?')) return;
+    const { error } = await supabase.from('events').delete().eq('id', id);
+    if (error) alert(`Delete failed: ${error.message}`);
+    else await refreshAll();
+  };
 
   if (loading) return <p className="p-6">Loading admin dashboard…</p>;
   if (!isAdmin) return <p className="p-6">Not authorized.</p>;
@@ -1233,19 +1728,18 @@ export default function Admin() {
           </SectionCard>
         )}
 
-        {['capital', 'tech', 'media', 'realty'].includes(activeTab) && (
-          <SectionCard title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Division`}>
-            <p className="text-sm opacity-80 mb-3">
-              Add products for this division (metadata JSON supported). For Realty, we’ll add
-              booking + calendar sync in a follow-up module.
-            </p>
-            <div className="overflow-x-auto">
+        {activeTab === 'capital' && (
+          <SectionCard title="Capital Division">
+            <CapitalProductForm onCreated={refreshAll} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Products (Capital)</h3>
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="text-left border-b dark:border-gray-700">
-                    <th className="py-2">Name</th>
-                    <th>Image</th>
+                    <th className="py-2">Thumb</th>
+                    <th>Name</th>
                     <th>Price</th>
+                    <th>Thumbnail URL</th>
                     <th>Tags</th>
                     <th>Description</th>
                     <th>Metadata JSON</th>
@@ -1254,29 +1748,20 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {products
-                    .filter((p) => p.division === activeTab)
+                    .filter((p) => p.division === 'capital')
                     .map((p) => {
                       const row = productEdits[p.id] || {};
                       return (
                         <tr key={p.id} className="border-b dark:border-gray-800 align-top">
-                          <td className="py-2">{p.name}</td>
-                          <td className="py-2 min-w-[220px]">
-                            <input
-                              className="w-full dark:bg-gray-800"
-                              placeholder="display_image / thumbnail_url"
-                              value={row.display_image ?? (p.display_image || p.thumbnail_url || '')}
-                              onChange={(e) =>
-                                setProductEdits((prev) => ({
-                                  ...prev,
-                                  [p.id]: {
-                                    ...row,
-                                    display_image: e.target.value,
-                                    thumbnail_url: e.target.value,
-                                  },
-                                }))
-                              }
-                            />
+                          <td className="py-2">
+                            {p.thumbnail_url ? (
+                              <img
+                                src={p.thumbnail_url}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            ) : null}
                           </td>
+                          <td className="py-2">{p.name}</td>
                           <td className="py-2 min-w-[100px]">
                             <input
                               type="number"
@@ -1286,6 +1771,19 @@ export default function Admin() {
                                 setProductEdits((prev) => ({
                                   ...prev,
                                   [p.id]: { ...row, price: e.target.value },
+                                }))
+                              }
+                            />
+                          </td>
+                          <td className="py-2 min-w-[220px]">
+                            <input
+                              className="w-full dark:bg-gray-800"
+                              placeholder="thumbnail_url"
+                              value={row.thumbnail_url ?? (p.thumbnail_url || '')}
+                              onChange={(e) =>
+                                setProductEdits((prev) => ({
+                                  ...prev,
+                                  [p.id]: { ...row, thumbnail_url: e.target.value },
                                 }))
                               }
                             />
@@ -1319,7 +1817,7 @@ export default function Admin() {
                           <td className="py-2 min-w-[300px]">
                             <textarea
                               className="w-full h-20 dark:bg-gray-800"
-                              placeholder='{"any":"metadata"}'
+                              placeholder='{"license_type":"bot","api_access":false}'
                               value={row.metadata ?? JSON.stringify(p.metadata || {}, null, 0)}
                               onChange={(e) =>
                                 setProductEdits((prev) => ({
@@ -1346,10 +1844,78 @@ export default function Admin() {
                         </tr>
                       );
                     })}
-                  {products.filter((p) => p.division === activeTab).length === 0 && (
+                  {products.filter((p) => p.division === 'capital').length === 0 && (
                     <tr>
-                      <td colSpan={7} className="py-6 opacity-70">
+                      <td colSpan={8} className="py-6 opacity-70">
                         No products yet.
+                      </td>
+                    </tr>
+                 )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'tech' && (
+          <SectionCard title="Tech Division">
+            <TechShowcaseForm onCreated={refreshAll} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Showcase Items (Tech)</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Title</th>
+                    <th>Slug</th>
+                    <th>Image</th>
+                    <th>Metadata</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts
+                    .filter((p) => p.division === 'tech')
+                    .map((p) => (
+                      <tr key={p.id} className="border-b dark:border-gray-800 align-top">
+                        <td className="py-2">{p.title}</td>
+                        <td className="py-2">{p.slug}</td>
+                        <td className="py-2">
+                          {p.featured_image ? (
+                            <img
+                              src={p.featured_image}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className="py-2 min-w-[200px]">
+                          <textarea
+                            className="w-full h-16 dark:bg-gray-800"
+                            value={JSON.stringify(p.metadata || {}, null, 0)}
+                            readOnly
+                          />
+                        </td>
+                        <td className="py-2 space-x-2">
+                          <button
+                            className="px-3 py-1 bg-blue-600 text-white rounded"
+                            onClick={() => loadPostToForm(p)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="px-3 py-1 bg-red-600 text-white rounded"
+                            onClick={() => deletePost(p.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {posts.filter((p) => p.division === 'tech').length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 opacity-70">
+                        No showcase items yet.
                       </td>
                     </tr>
                   )}
@@ -1357,6 +1923,105 @@ export default function Admin() {
               </table>
             </div>
           </SectionCard>
+        )}
+
+        {activeTab === 'media' && (
+          <SectionCard title="Media Division">
+            <MediaShowcaseForm onCreated={refreshAll} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Showcase Items (Media)</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Title</th>
+                    <th>Slug</th>
+                    <th>Image</th>
+                    <th>Metadata</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posts
+                    .filter((p) => p.division === 'media')
+                    .map((p) => (
+                      <tr key={p.id} className="border-b dark:border-gray-800 align-top">
+                        <td className="py-2">{p.title}</td>
+                        <td className="py-2">{p.slug}</td>
+                        <td className="py-2">
+                          {p.featured_image ? (
+                            <img
+                              src={p.featured_image}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className="py-2 min-w-[200px]">
+                          <textarea
+                            className="w-full h-16 dark:bg-gray-800"
+                            value={JSON.stringify(p.metadata || {}, null, 0)}
+                            readOnly
+                          />
+                        </td>
+                        <td className="py-2 space-x-2">
+                          <button
+                            className="px-3 py-1 bg-blue-600 text-white rounded"
+                            onClick={() => loadPostToForm(p)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="px-3 py-1 bg-red-600 text-white rounded"
+                            onClick={() => deletePost(p.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {posts.filter((p) => p.division === 'media').length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 opacity-70">
+                        No showcase items yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'realty' && (
+          <div className="mt-8 glass p-6 rounded">
+            <h3 className="text-xl font-bold mb-2">Realty Gallery Uploader</h3>
+            <p className="text-sm opacity-80 mb-4">
+              Upload multiple images to storage under <code>assets/realty/&lt;purpose&gt;/YYYY/MM</code>.
+              Then attach them to a property.
+            </p>
+
+            <MultiUploader
+              division="realty"
+              purpose="gallery"
+              onUploaded={refreshAll}
+            />
+
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Attach uploaded URLs to a property</h4>
+              <AttachToProperty properties={properties} onAfter={refreshAll} />
+            </div>
+
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Manage Seasonal Rates for a Property</h4>
+              <PropertyRatesPanel properties={properties.filter(p => p.division === 'realty')} />
+            </div>
+
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Send Test Itinerary Email</h4>
+              <RealtyTestEmailPanelWithProperty />
+            </div>
+          </div>
         )}
 
         {activeTab === 'assets' && (
@@ -1677,7 +2342,456 @@ export default function Admin() {
             </table>
           </SectionCard>
         )}
+
+        {activeTab === 'affiliates' && (
+          <SectionCard title="Affiliates Division">
+            <AffiliatesForm onCreated={refreshAll} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Affiliates</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Name</th>
+                    <th>Referral Code</th>
+                    <th>Commission Rate</th>
+                    <th>Metadata</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {affiliates.map((aff) => (
+                    <tr key={aff.id} className="border-b dark:border-gray-800 align-top">
+                      <td className="py-2">{aff.name}</td>
+                      <td className="py-2">{aff.referral_code}</td>
+                      <td className="py-2">{aff.commission_rate * 100}%</td>
+                      <td className="py-2 min-w-[200px]">
+                        <textarea
+                          className="w-full h-16 dark:bg-gray-800"
+                          value={JSON.stringify(aff.metadata || {}, null, 0)}
+                          readOnly
+                        />
+                      </td>
+                      <td className="py-2">
+                        <button
+                          className="px-3 py-1 bg-red-600 text-white rounded"
+                          onClick={async () => {
+                            if (!confirm('Delete this affiliate?')) return;
+                            const { error } = await supabase.from('affiliates').delete().eq('id', aff.id);
+                            if (error) alert(`Delete failed: ${error.message}`);
+                            else await refreshAll();
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {affiliates.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 opacity-70">
+                        No affiliates yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'bundles' && (
+          <SectionCard title="Bundles Division">
+            <BundlesForm products={products} onCreated={refreshAll} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Bundles</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Products</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bundles.map((bund) => (
+                    <tr key={bund.id} className="border-b dark:border-gray-800 align-top">
+                      <td className="py-2">{bund.name}</td>
+                      <td className="py-2">{bund.description || '—'}</td>
+                      <td className="py-2">{currency(bund.price)}</td>
+                      <td className="py-2">{bund.product_ids.length} products</td>
+                      <td className="py-2">
+                        <button
+                          className="px-3 py-1 bg-red-600 text-white rounded"
+                          onClick={async () => {
+                            if (!confirm('Delete this bundle?')) return;
+                            const { error } = await supabase.from('bundles').delete().eq('id', bund.id);
+                            if (error) alert(`Delete failed: ${error.message}`);
+                            else await refreshAll();
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {bundles.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-6 opacity-70">
+                        No bundles yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'users' && (
+          <SectionCard title="Users Management">
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Email</th>
+                    <th>Role</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b dark:border-gray-800">
+                      <td className="py-2">{u.email}</td>
+                      <td className="py-2">{u.role || 'user'}</td>
+                      <td className="py-2">{new Date(u.created_at).toLocaleString()}</td>
+                      <td className="py-2">
+                        <button
+                          className="px-3 py-1 bg-blue-600 text-white rounded"
+                          onClick={() => toggleUserRole(u.id, u.role)}
+                        >
+                          Toggle Role
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-6 opacity-70">
+                        No users yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'analytics' && (
+          <SectionCard title="Analytics Dashboard">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold mb-3">Revenue by Division</h3>
+                <div className="w-full h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={revenueByDivision}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="division" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="total" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              {/* Add more analytics as needed, e.g., user growth, order trends */}
+            </div>
+          </SectionCard>
+        )}
+
+        {activeTab === 'events' && (
+          <SectionCard title="Events Management">
+            {/* Simple form to add events */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+              <input
+                placeholder="Event Title"
+                value={postForm.title} // Reusing postForm for simplicity, but ideally separate state
+                onChange={(e) => setPostForm({ ...postForm, title: e.target.value })}
+              />
+              <input
+                type="datetime-local"
+                placeholder="Start Date"
+                onChange={(e) => setPostForm({ ...postForm, start_date: e.target.value })}
+              />
+              <input
+                type="datetime-local"
+                placeholder="End Date"
+                onChange={(e) => setPostForm({ ...postForm, end_date: e.target.value })}
+              />
+              <textarea
+                className="md:col-span-3"
+                placeholder="Description"
+                value={postForm.description || ''}
+                onChange={(e) => setPostForm({ ...postForm, description: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const payload = {
+                    title: postForm.title,
+                    description: postForm.description,
+                    start_date: postForm.start_date,
+                    end_date: postForm.end_date,
+                    division: 'site',
+                  };
+                  const { error } = await supabase.from('events').insert(payload);
+                  if (error) alert(`Create failed: ${error.message}`);
+                  else {
+                    clearPostForm();
+                    refreshAll();
+                    alert('Event created.');
+                  }
+                }}
+                className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white"
+              >
+                Add Event
+              </button>
+            </div>
+            <EventCalendar events={events} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3">Events List</h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="text-left border-b dark:border-gray-700">
+                    <th className="py-2">Title</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((ev) => (
+                    <tr key={ev.id} className="border-b dark:border-gray-800">
+                      <td className="py-2">{ev.title}</td>
+                      <td className="py-2">{new Date(ev.start_date).toLocaleString()}</td>
+                      <td className="py-2">{ev.end_date ? new Date(ev.end_date).toLocaleString() : '—'}</td>
+                      <td className="py-2">
+                        <button
+                          className="px-3 py-1 bg-red-600 text-white rounded"
+                          onClick={() => deleteEvent(ev.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {events.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="py-6 opacity-70">
+                        No events yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        )}
       </div>
     </>
   );
+}
+
+// Added as per patch
+function AttachToProperty({ properties, onAfter }) {
+  const [propertyId, setPropertyId] = useState('');
+  const [urls, setUrls] = useState(''); // newline or comma separated
+
+  const save = async () => {
+    if (!propertyId) return alert('Pick a property');
+    const list = Array.from(new Set(
+      urls.split(/\s|,/).map(s => s.trim()).filter(Boolean)
+    ));
+
+    if (list.length === 0) return alert('Add at least one URL');
+
+    // insert into property_images
+    const rows = list.map((u, i) => ({
+      property_id: propertyId,
+      file_url: u,
+      file_type: u.match(/\.(mp4)$/i) ? 'video' : 'image',
+      position: i,
+    }));
+
+    const { error } = await supabase.from('property_images').insert(rows);
+    if (error) return alert(error.message);
+
+    setUrls('');
+    onAfter?.();
+    alert('Attached!');
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <select value={propertyId} onChange={e => setPropertyId(e.target.value)} className="dark:bg-gray-800">
+        <option value="">Select property</option>
+        {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <textarea
+        className="md:col-span-2 h-24 dark:bg-gray-800"
+        placeholder="Paste one URL per line (or comma separated)"
+        value={urls}
+        onChange={(e) => setUrls(e.target.value)}
+      />
+      <button onClick={save} className="px-4 py-2 rounded bg-blue-600 text-white">Attach</button>
+    </div>
+  );
+}
+
+// Added as per patch
+function RealtyRatesManager({ propertyId }) {
+  const [items, setItems] = useState([]);
+  const [form, setForm] = useState({
+    start_date: '',
+    end_date: '',
+    nightly_rate: '',
+    min_nights: '',
+    priority: 0,
+    notes: '',
+  });
+  const load = async () => {
+    if (!propertyId) return;
+    const r = await fetch(`/api/realty/rates?property_id=${encodeURIComponent(propertyId)}`);
+    const j = await r.json();
+    setItems(j.items || []);
+  };
+  useEffect(() => { load(); }, [propertyId]);
+
+  const add = async () => {
+    if (!form.start_date || !form.end_date || !form.nightly_rate) {
+      alert('Start, end and nightly rate are required');
+      return;
+    }
+    const r = await fetch('/api/realty/rates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ property_id: propertyId, ...form }),
+    });
+    const j = await r.json();
+    if (!j.ok) return alert(j.error || 'Failed');
+    setForm({ start_date: '', end_date: '', nightly_rate: '', min_nights: '', priority: 0, notes: '' });
+    load();
+  };
+  const delItem = async (id) => {
+    if (!confirm('Delete rate?')) return;
+    const r = await fetch(`/api/realty/rates?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const j = await r.json();
+    if (!j.ok) return alert(j.error || 'Failed');
+    load();
+  };
+
+  return (
+    <div className="mt-6 glass p-4 rounded">
+      <h3 className="font-semibold mb-3">Seasonal / Holiday Rates</h3>
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+        <input type="date" value={form.start_date} onChange={(e)=>setForm({...form,start_date:e.target.value})} />
+        <input type="date" value={form.end_date} onChange={(e)=>setForm({...form,end_date:e.target.value})} />
+        <input type="number" placeholder="Nightly $" value={form.nightly_rate} onChange={(e)=>setForm({...form,nightly_rate:e.target.value})}/>
+        <input type="number" placeholder="Min nights" value={form.min_nights} onChange={(e)=>setForm({...form,min_nights:e.target.value})}/>
+        <input type="number" placeholder="Priority (higher wins)" value={form.priority} onChange={(e)=>setForm({...form,priority:e.target.value})}/>
+        <input placeholder="Notes" value={form.notes} onChange={(e)=>setForm({...form,notes:e.target.value})}/>
+      </div>
+      <button className="mt-3 px-3 py-2 rounded bg-blue-600 text-white" onClick={add}>Add Rate</button>
+
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="text-left border-b dark:border-gray-800">
+              <th className="py-2">Dates</th><th>Nightly</th><th>Min</th><th>Priority</th><th>Notes</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(r => (
+              <tr key={r.id} className="border-b dark:border-gray-900">
+                <td className="py-2">{r.start_date} → {r.end_date}</td>
+                <td className="py-2">${Number(r.nightly_rate).toFixed(2)}</td>
+                <td className="py-2">{r.min_nights ?? '—'}</td>
+                <td className="py-2">{r.priority ?? 0}</td>
+                <td className="py-2">{r.notes || '—'}</td>
+                <td className="py-2">
+                  <button className="text-red-600" onClick={()=>delItem(r.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+            {items.length === 0 && <tr><td colSpan={6} className="py-4 opacity-70">No overrides yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Added as per patch
+function PropertyRatesPanel({ properties }) {
+  const [selected, setSelected] = useState('');
+  return (
+    <div className="glass p-4 rounded">
+      <div className="flex items-center gap-3 mb-3">
+        <select
+          className="dark:bg-gray-900"
+          value={selected}
+          onChange={(e)=>setSelected(e.target.value)}
+        >
+          <option value="">Select property…</option>
+          {properties.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+      {selected ? <RealtyRatesManager propertyId={selected} /> : <p className="opacity-70 text-sm">Choose a property to manage seasonal rates.</p>}
+    </div>
+  );
+}
+
+// Added stub for RealtyTestEmailPanel as per partial
+function RealtyTestEmailPanel({ properties }) {
+  const [selected, setSelected] = useState('');
+  const [email, setEmail] = useState(process.env.NEXT_PUBLIC_TEST_EMAIL || '');
+  const [busy, setBusy] = useState(false);
+
+  const sendTest = async () => {
+    if (!selected) return alert('Select a property');
+    if (!email) return alert('Enter an email');
+    setBusy(true);
+    try {
+      const { data } = await axios.post('/api/realty/test-email', { property_id: selected, email });
+      alert(data.message || 'Sent!');
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="glass p-4 rounded">
+      <select value={selected} onChange={e => setSelected(e.target.value)} className="dark:bg-gray-800">
+        <option value="">Select property</option>
+        {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Test email" className="dark:bg-gray-800" />
+      <button onClick={sendTest} disabled={busy} className="px-4 py-2 rounded bg-blue-600 text-white">
+        {busy ? 'Sending...' : 'Send Test Email'}
+      </button>
+    </div>
+  );
+}
+
+// Added stub for RealtyTestEmailPanelWithProperty as per partial
+function RealtyTestEmailPanelWithProperty() {
+  // Assume fetching properties or use context; for stub, empty
+  return <RealtyTestEmailPanel properties={[]} />;
 }

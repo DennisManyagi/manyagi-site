@@ -18,6 +18,7 @@ import {
   Line,
   Legend,
 } from 'recharts';
+import React from 'react';
 
 // Import extracted components
 import MultiUploader from '@/components/admin/MultiUploader';
@@ -129,6 +130,16 @@ function Admin() {
   const [activeTab, setActiveTab] = useState('overview');
   const [productEdits, setProductEdits] = useState({});
   const [assetEdits, setAssetEdits] = useState({});
+  const [propertyEdits, setPropertyEdits] = useState({});
+  // which property's gallery editor is open (id or null)
+  const [openGalleryFor, setOpenGalleryFor] = useState(null);
+
+  // local working copy of gallery arrays, keyed by prop.id
+  // shape: { [propertyId]: ["url1", "url2", ...] }
+  const [galleryDrafts, setGalleryDrafts] = useState({});
+
+  // temp input text for adding new images (per property)
+  const [newGalleryInput, setNewGalleryInput] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -255,6 +266,64 @@ function Admin() {
       alert(`Save failed: ${e.message}`);
     }
   };
+
+  const savePropertyRow = async (propRow) => {
+  try {
+    const edits = propertyEdits[propRow.id] || {};
+    if (!Object.keys(edits).length) return;
+
+    // start with existing metadata
+    const baseMeta = propRow.metadata || {};
+    let mergedMeta = baseMeta;
+
+    // if user edited the raw metadata textarea, trust that as the base
+    if (edits.metadataStr !== undefined) {
+      mergedMeta = safeJSON(edits.metadataStr, baseMeta);
+    }
+
+    // if user edited cover_url in its own field, apply it (overwrite in metadata)
+    if (edits.cover_url !== undefined) {
+      mergedMeta = {
+        ...mergedMeta,
+        cover_url: edits.cover_url || '',
+      };
+    }
+
+    const payload = {
+      ...('name' in edits ? { name: edits.name } : {}),
+      ...('slug' in edits ? { slug: edits.slug } : {}),
+      ...('price' in edits
+  ? {
+      price:
+        edits.price === '' || edits.price === null || edits.price === undefined
+          ? propRow.price // leave as-is if blank
+          : parseFloat(edits.price)
+    }
+  : {}),
+      ...('status' in edits ? { status: edits.status } : {}),
+      ...('description' in edits ? { description: edits.description } : {}),
+      // only send metadata if they changed metadataStr or cover_url
+      ...(
+        (edits.metadataStr !== undefined || edits.cover_url !== undefined)
+          ? { metadata: mergedMeta }
+          : {}
+      ),
+    };
+
+    const { error } = await supabase
+      .from('properties')
+      .update(payload)
+      .eq('id', propRow.id);
+
+    if (error) throw error;
+
+    setPropertyEdits((prev) => ({ ...prev, [propRow.id]: {} }));
+    await refreshAll();
+    alert('Property saved.');
+  } catch (e) {
+    alert(`Save failed: ${e.message}`);
+  }
+};
 
   const loadPostToForm = (p) => {
     setPostForm({
@@ -383,6 +452,84 @@ function Admin() {
     else await refreshAll();
   };
 
+// open editor for that property row
+const toggleGalleryEditor = (propRow) => {
+  setOpenGalleryFor((cur) => (cur === propRow.id ? null : propRow.id));
+
+  setGalleryDrafts((prev) => {
+    // if we already have a draft, keep it
+    if (prev[propRow.id]) return prev;
+    const existing = Array.isArray(propRow.metadata?.gallery_urls)
+      ? propRow.metadata.gallery_urls
+      : [];
+    return {
+      ...prev,
+      [propRow.id]: [...existing],
+    };
+  });
+
+  setNewGalleryInput((prev) => ({
+    ...prev,
+    [propRow.id]: '',
+  }));
+};
+
+// remove one image from draft
+const removeGalleryImage = (propId, idx) => {
+  setGalleryDrafts((prev) => {
+    const list = prev[propId] || [];
+    const next = list.filter((_, i) => i !== idx);
+    return { ...prev, [propId]: next };
+  });
+};
+
+// add one or many URLs from textarea/field
+const addGalleryImages = (propId) => {
+  setGalleryDrafts((prev) => {
+    const current = prev[propId] || [];
+    const raw = newGalleryInput[propId] || '';
+    // allow comma or newline separated
+    const toAdd = raw
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const deduped = Array.from(new Set([...current, ...toAdd]));
+    return { ...prev, [propId]: deduped };
+  });
+
+  setNewGalleryInput((prev) => ({
+    ...prev,
+    [propId]: '',
+  }));
+};
+
+// persist galleryDrafts[propId] back to Supabase for that property
+const saveGallery = async (propRow) => {
+  const propId = propRow.id;
+  const draftList = galleryDrafts[propId] || [];
+
+  // build new metadata object: merge existing metadata but overwrite gallery_urls
+  const mergedMeta = {
+    ...(propRow.metadata || {}),
+    gallery_urls: draftList,
+  };
+
+  // push to supabase
+  const { error } = await supabase
+    .from('properties')
+    .update({ metadata: mergedMeta })
+    .eq('id', propId);
+
+  if (error) {
+    alert(`Failed to save gallery: ${error.message}`);
+    return;
+  }
+
+  alert('Gallery saved.');
+  // refresh all data so UI reflects latest
+  await refreshAll();
+};
+
   if (loading) return <p className="p-6">Loading admin dashboard…</p>;
   if (!isAdmin) return <p className="p-6">Not authorized.</p>;
 
@@ -398,6 +545,14 @@ function Admin() {
         : (p.title || '').toLowerCase().includes(postQuery.toLowerCase()) ||
           (p.slug || '').toLowerCase().includes(postQuery.toLowerCase())
     );
+
+  const realtyAssets = assets
+    .filter((a) => a.division === 'realty' && a.purpose === 'gallery')
+    .slice(0, 50);
+
+  const realtyProperties = properties
+    .filter((p) => (p.division || 'realty') === 'realty')
+    .slice(0, 50);
 
   return (
     <>
@@ -1037,6 +1192,367 @@ function Admin() {
             <div className="mt-6 border-t pt-4">
               <h4 className="font-semibold mb-2">Create New Property</h4>
               <PropertyForm onCreated={refreshAll} />
+            </div>
+
+            {/* NEW: Recently uploaded (realty/gallery) assets */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Recent Realty Uploads (gallery)</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b dark:border-gray-700">
+                      <th className="py-2">Preview</th>
+                      <th>Filename</th>
+                      <th>URL</th>
+                      <th>Copy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {realtyAssets.length > 0 ? (
+                      realtyAssets.map((a) => (
+                        <tr key={a.id} className="border-b dark:border-gray-800 align-top">
+                          <td className="py-2">
+                            {a.file_type === 'image' ? (
+                              <img
+                                src={a.file_url}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="py-2">{a.filename || '—'}</td>
+                          <td className="py-2 max-w-[280px] truncate">{a.file_url}</td>
+                          <td className="py-2">
+                            <button
+                              className="text-blue-600 underline"
+                              type="button"
+                              onClick={() => copyText(a.file_url)}
+                            >
+                              Copy URL
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="py-6 opacity-70" colSpan={4}>
+                          No realty uploads yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs opacity-60 mt-2">
+                Tip: copy a few URLs, paste them into the property's Gallery editor or "Attach uploaded URLs to a property" below.
+              </p>
+            </div>
+
+            {/* NEW: Existing properties list / inline edit */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Your Properties (Most Recent First)</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="text-left border-b dark:border-gray-700">
+                      <th className="py-2">Name</th>
+                      <th>Slug</th>
+                      <th>Base Price</th>
+                      <th>Status</th>
+                      <th>Description</th>
+                      <th>Cover & Metadata</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {realtyProperties.length > 0 ? (
+                      realtyProperties.map((propRow) => {
+                        const row = propertyEdits[propRow.id] || {};
+                        return (
+                          <React.Fragment key={propRow.id}>
+    <tr
+      className="border-b dark:border-gray-800 align-top"
+    >
+      {/* Name */}
+  <td className="py-2 min-w-[180px]">
+    <input
+      className="w-full dark:bg-gray-800"
+      placeholder={propRow.name || ''}
+      value={row.name ?? (propRow.name || '')}
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            name: e.target.value,
+          },
+        }))
+      }
+    />
+  </td>
+
+  {/* Slug */}
+  <td className="py-2 min-w-[160px]">
+    <input
+      className="w-full dark:bg-gray-800"
+      placeholder={propRow.slug || ''}
+      value={row.slug ?? (propRow.slug || '')}
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            slug: e.target.value,
+          },
+        }))
+      }
+    />
+    <div className="text-[10px] opacity-60">
+      /realty/{row.slug ?? propRow.slug}
+    </div>
+  </td>
+
+  {/* Base Price */}
+  <td className="py-2 min-w-[100px]">
+    <input
+      type="number"
+      className="w-full dark:bg-gray-800"
+      placeholder={String(propRow.price ?? '')}
+      value={row.price ?? (propRow.price ?? '')}
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            price: e.target.value,
+          },
+        }))
+      }
+    />
+  </td>
+
+  {/* Status */}
+  <td className="py-2 min-w-[120px]">
+    <input
+      className="w-full dark:bg-gray-800"
+      placeholder={propRow.status || 'active'}
+      value={row.status ?? (propRow.status || '')}
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            status: e.target.value,
+          },
+        }))
+      }
+    />
+  </td>
+
+  {/* Description */}
+  <td className="py-2 min-w-[260px]">
+    <textarea
+      className="w-full h-24 dark:bg-gray-800"
+      placeholder="Description"
+      value={row.description ?? (propRow.description || '')}
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            description: e.target.value,
+          },
+        }))
+      }
+    />
+  </td>
+
+  {/* Metadata JSON + Cover URL */}
+  <td className="py-2 min-w-[320px]">
+    {/* Cover preview + Cover URL input */}
+    <div className="mb-2 flex gap-2 items-start">
+      <div className="w-16 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-500">
+        {(() => {
+          const liveCover =
+            row.cover_url ??
+            propRow.metadata?.cover_url ??
+            '';
+        return liveCover ? (
+            <img
+              src={liveCover}
+              className="w-full h-full object-cover"
+              alt="cover"
+            />
+          ) : (
+            'no img'
+          );
+        })()}
+      </div>
+      <div className="flex-1">
+        <label className="block text-[11px] opacity-60 mb-1">
+          Cover URL (card / hero image)
+        </label>
+        <input
+          className="w-full dark:bg-gray-800 text-xs"
+          placeholder="https://.../your-image.webp"
+          value={
+            row.cover_url ??
+            propRow.metadata?.cover_url ??
+            ''
+          }
+          onChange={(e) =>
+            setPropertyEdits((prev) => ({
+              ...prev,
+              [propRow.id]: {
+                ...prev[propRow.id],
+                cover_url: e.target.value,
+              },
+            }))
+          }
+        />
+      </div>
+    </div>
+
+    {/* Raw metadata editor */}
+    <textarea
+      className="w-full h-24 dark:bg-gray-800 text-xs"
+      placeholder='{"location":"Big Bear, CA","ical_urls":["https://..."],"cover_url":"https://..."}'
+      value={
+        row.metadataStr ??
+        JSON.stringify(propRow.metadata || {}, null, 0)
+      }
+      onChange={(e) =>
+        setPropertyEdits((prev) => ({
+          ...prev,
+          [propRow.id]: {
+            ...prev[propRow.id],
+            metadataStr: e.target.value,
+          },
+        }))
+      }
+    />
+    <div className="text-[10px] opacity-60 mt-1">
+      Tip: location, cover_url, ical_urls all live in metadata.
+    </div>
+  </td>
+
+      {/* Actions */}
+      <td className="py-2 min-w-[100px] space-y-2">
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded w-full"
+          onClick={() => savePropertyRow(propRow)}
+        >
+          Save
+        </button>
+
+        {/* NEW: open gallery editor */}
+        <button
+          className="px-3 py-1 bg-gray-700 text-white rounded w-full"
+          onClick={() => toggleGalleryEditor(propRow)}
+        >
+          {openGalleryFor === propRow.id ? 'Close Gallery' : 'Gallery'}
+        </button>
+      </td>
+    </tr>
+
+    {openGalleryFor === propRow.id && (
+      <tr className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40">
+        <td colSpan={7} className="p-4">
+          {/* GALLERY EDITOR PANEL */}
+          <div className="space-y-4">
+            <div className="text-sm font-semibold">
+              Property Gallery ({galleryDrafts[propRow.id]?.length || 0} images)
+            </div>
+
+            {/* thumbnails grid */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+              {(galleryDrafts[propRow.id] || []).map((url, idx) => (
+                <div
+                  key={idx}
+                  className="relative border rounded overflow-hidden bg-gray-200 dark:bg-gray-800"
+                >
+                  <img
+                    src={url}
+                    className="w-full h-24 object-cover"
+                    alt={`img-${idx}`}
+                  />
+                  <button
+                    className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded"
+                    onClick={() => removeGalleryImage(propRow.id, idx)}
+                    title="Remove this image from gallery"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              {(galleryDrafts[propRow.id] || []).length === 0 && (
+                <div className="text-xs text-gray-500 col-span-full">
+                  No images yet.
+                </div>
+              )}
+            </div>
+
+            {/* add new images input */}
+            <div className="space-y-2">
+              <label className="block text-xs opacity-70">
+                Add image URLs (comma or newline separated). Paste from
+                “Recent Realty Uploads” or wherever.
+              </label>
+              <textarea
+                className="w-full h-20 text-xs dark:bg-gray-800 border rounded p-2"
+                value={newGalleryInput[propRow.id] || ''}
+                onChange={(e) =>
+                  setNewGalleryInput((prev) => ({
+                    ...prev,
+                    [propRow.id]: e.target.value,
+                  }))
+                }
+                placeholder={`https://.../photo1.webp\nhttps://.../photo2.webp`}
+              />
+              <button
+                className="px-3 py-1 bg-gray-800 text-white rounded text-sm"
+                type="button"
+                onClick={() => addGalleryImages(propRow.id)}
+              >
+                Add to Gallery
+              </button>
+            </div>
+
+            {/* save button */}
+            <div>
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded text-sm"
+                type="button"
+                onClick={() => saveGallery(propRow)}
+              >
+                Save Gallery Changes
+              </button>
+            </div>
+
+            <div className="text-[10px] opacity-60 leading-relaxed">
+              Tip: first image in this list is what shows as the big hero on
+              the property page. Reorder by removing and re-adding in the
+              order you want for now (later we could add drag-and-drop).
+            </div>
+          </div>
+        </td>
+      </tr>
+    )}
+  </React.Fragment>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td className="py-6 opacity-70" colSpan={7}>
+                          No properties yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

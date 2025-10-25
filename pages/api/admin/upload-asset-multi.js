@@ -1,102 +1,243 @@
 // pages/api/admin/upload-asset-multi.js
+// Fault-tolerant batch uploader.
+//
+// What it does now:
+// - Auth check (must be 'admin' in public.users)
+// - For each file:
+//    - convert base64 -> Buffer
+//    - upload to Supabase Storage bucket 'assets'
+//    - generate public URL
+//    - insert a row in public.assets
+// - We catch errors PER FILE so one bad file doesn't kill the others.
+// - We always respond 200 with { ok, items, errors } so frontend can summarize.
+//
+// This fixes the "2nd file throws 500 and stops everything" problem you saw.
+
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { nanoid } from 'nanoid';
 
-export const config = { api: { bodyParser: { sizeLimit: '25mb' } } }; // allow chunky uploads
+export const config = {
+  api: {
+    bodyParser: { sizeLimit: '50mb' }, // allow large batches of photos/videos
+  },
+};
 
-const BUCKET = 'assets';
+// Map extension -> Content-Type header for storage
+function guessContentType(ext) {
+  switch ((ext || '').toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'svg':
+      return 'image/svg+xml';
+    case 'heic':
+    case 'heif':
+      return 'image/heic';
+    case 'pdf':
+      return 'application/pdf';
+    case 'mp4':
+      return 'video/mp4';
+    case 'mov':
+    case 'm4v':
+      return 'video/quicktime';
+    case 'webm':
+      return 'video/webm';
+    default:
+      return 'application/octet-stream';
+  }
+}
 
-/**
- * Body:
- * {
- *   files: [{ data: base64WithoutPrefix, name: "photo.webp" }, ...],
- *   division: "realty" | "publishing" | "designs" | "site" ...,
- *   purpose: "general" | "hero" | "carousel",
- *   folder: "optional/extra/path",
- *   metadata: { ... } // optional metadata to save in assets table
- * }
- *
- * Returns: { ok: true, items: [{ file_url, path, name }] }
- */
+// Decide what we store in assets.file_type
+function logicalTypeFromExt(ext) {
+  const e = (ext || '').toLowerCase();
+  if (
+    ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'heic', 'heif'].includes(e)
+  ) {
+    return 'image';
+  }
+  if (['mp4', 'mov', 'm4v', 'webm'].includes(e)) {
+    return 'video';
+  }
+  if (e === 'pdf') {
+    return 'pdf';
+  }
+  return 'file';
+}
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    // Added: Admin auth check
+    // ---------- 1) Auth check ----------
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+    if (!token) {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Unauthorized (no token)' }],
+      });
+    }
 
     const { data: userResp, error: getUserErr } = await supabaseAdmin.auth.getUser(token);
-    if (getUserErr || !userResp?.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (getUserErr || !userResp?.user) {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Unauthorized (bad token)' }],
+      });
+    }
 
-    const { data: roleRow } = await supabaseAdmin
+    const userId = userResp.user.id;
+
+    // role check in public.users
+    const { data: roleRow, error: roleErr } = await supabaseAdmin
       .from('users')
       .select('role')
-      .eq('id', userResp.user.id)
+      .eq('id', userId)
       .maybeSingle();
 
-    if ((roleRow?.role || 'user') !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
+    if (roleErr || (roleRow?.role || 'user') !== 'admin') {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Forbidden (not admin)' }],
+      });
     }
 
-    const { files, division = 'site', purpose = 'general', folder = '', metadata = {} } = req.body || {};
+    // ---------- 2) Parse and prep ----------
+    const {
+      files,
+      division = 'site',
+      purpose = 'general',
+      folder = '',
+      metadata = {},
+    } = req.body || {};
+
     if (!Array.isArray(files) || files.length === 0) {
-      return res.status(400).json({ error: 'No files provided' });
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'No files provided' }],
+      });
     }
 
+    // We'll store uploads like:
+    // assets bucket / division / purpose / YYYY / MM / [folder?] / <random>-<filename>
     const now = new Date();
     const yyyy = now.getUTCFullYear();
     const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
 
-    const basePrefix = `${division}/${purpose}/${yyyy}/${mm}${folder ? `/${folder}` : ''}`;
+    const basePrefix = [division, purpose, yyyy, mm, folder ? folder : null]
+      .filter(Boolean)
+      .join('/');
 
-    const out = [];
+    const items = [];
+    const errors = [];
 
+    // ---------- 3) Process each file independently ----------
     for (const f of files) {
-      const name = f?.name || `upload-${nanoid(8)}`;
-      // guess contentType from name
-      const ext = name.split('.').pop()?.toLowerCase() || 'bin';
-      const contentType =
-        ext === 'webp' ? 'image/webp'
-      : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
-      : ext === 'png' ? 'image/png'
-      : ext === 'mp4' ? 'video/mp4'
-      : ext === 'pdf' ? 'application/pdf'
-      : 'application/octet-stream';
+      const originalName = f?.name || `upload-${nanoid(8)}`;
+      try {
+        if (!f?.data) {
+          throw new Error('Missing base64 data');
+        }
 
-      const path = `${basePrefix}/${nanoid(6)}-${name}`;
-      const buffer = Buffer.from(f.data, 'base64');
+        let buffer;
+        try {
+          buffer = Buffer.from(f.data, 'base64');
+        } catch {
+          throw new Error('Invalid base64');
+        }
 
-      const { error: upErr } = await supabaseAdmin.storage
-        .from(BUCKET)
-        .upload(path, buffer, { contentType, upsert: false });
+        const ext = (originalName.split('.').pop() || 'bin').toLowerCase();
+        const contentType = guessContentType(ext);
+        const logicalType = logicalTypeFromExt(ext);
 
-      if (upErr) throw upErr;
+        const storagePath = `${basePrefix}/${nanoid(6)}-${originalName}`;
 
-      const { data: pub } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
-      const file_url = pub?.publicUrl;
+        // 3a. upload to Supabase Storage
+        const { error: upErr } = await supabaseAdmin.storage
+          .from('assets')
+          .upload(storagePath, buffer, {
+            contentType,
+            upsert: false,
+          });
 
-      // OPTIONAL: record in your `assets` table for discoverability
-      await supabaseAdmin.from('assets').insert({
-        bucket: BUCKET,
-        path,
-        file_url,
-        file_type: contentType.startsWith('image') ? 'image'
-                 : contentType.startsWith('video') ? 'video'
-                 : 'file',
-        division,
-        purpose,
-        filename: name,
-        metadata,
-      });
+        if (upErr) {
+          throw new Error(
+            `Storage upload failed: ${upErr.message || 'unknown'}`
+          );
+        }
 
-      out.push({ file_url, path, name });
+        // 3b. get public URL
+        const { data: pub } = await supabaseAdmin.storage
+          .from('assets')
+          .getPublicUrl(storagePath);
+        const file_url = pub?.publicUrl;
+        if (!file_url) {
+          throw new Error('Failed to generate public URL');
+        }
+
+        // 3c. insert DB row in public.assets
+        const insertPayload = {
+          file_url,
+          file_type: logicalType, // 'image' | 'video' | 'pdf' | 'file'
+          division,
+          purpose,
+          filename: originalName,
+          metadata,
+        };
+
+        const { data: inserted, error: insertErr } = await supabaseAdmin
+          .from('assets')
+          .insert(insertPayload)
+          .select('*')
+          .single();
+
+        if (insertErr) {
+          throw new Error(`DB insert failed: ${insertErr.message}`);
+        }
+
+        // 3d. push success record
+        items.push({
+          id: inserted.id,
+          file_url,
+          filename: originalName,
+          division,
+          purpose,
+        });
+      } catch (err) {
+        // push error record for this file, but continue loop for others
+        errors.push({
+          name: originalName,
+          reason: String(err.message || err),
+        });
+      }
     }
 
-    return res.status(200).json({ ok: true, items: out });
-  } catch (e) {
-    console.error('upload-asset-multi error', e);
-    return res.status(500).json({ error: e.message || 'Upload failed' });
+    // ---------- 4) Respond with successes + failures ----------
+    return res.status(200).json({
+      ok: errors.length === 0,
+      items,
+      errors,
+    });
+  } catch (fatal) {
+    // truly unexpected crash outside the loop
+    return res.status(200).json({
+      ok: false,
+      items: [],
+      errors: [
+        { name: '(fatal)', reason: String(fatal?.message || fatal) },
+      ],
+    });
   }
 }

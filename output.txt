@@ -1,6 +1,6 @@
 # PROJECT DUMP
 # Root: /home/blackkungfu/manyagi-site
-# Generated: 2025-10-23 04:08:37.599896
+# Generated: 2025-10-25 00:39:26.380781
 # Limits: NO LIMITS (danger: huge output possible)
 # Skips: .cache, .git, .husky, .next, .turbo, .venv, .vercel, .vscode, _scanscratch, build, coverage, cypress, dist, node_modules, out, playwright, scan_reports, venv
 # Lockfiles excluded: bun.lockb, package-lock.json, package.lock.json, pnpm-lock.yaml, yarn.lock
@@ -88,6 +88,7 @@ manyagi-site/
 │   │   ├── PublishingProductForm.js
 │   │   ├── QuickProductForm.js
 │   │   ├── RealtyTestEmailPanelWithProperty.js
+│   │   ├── SectionCard.js
 │   │   └── TechShowcaseForm.js
 │   ├── Calendar.js
 │   ├── Card.js
@@ -105,6 +106,7 @@ manyagi-site/
 │   ├── emails
 │   │   ├── bookingReceipt.js
 │   │   └── itineraryEmail.js
+│   ├── adminUtils.js
 │   ├── cartSlice.js
 │   ├── emailTemplates.js
 │   ├── printful.js
@@ -253,10 +255,12 @@ manyagi-site/
 ## FILE CONTENTS
 
 
-===== FILE: components/admin/AffiliatesForm.js  (size=2313 bytes) =====
+===== FILE: components/admin/AffiliatesForm.js  (size=2420 bytes) =====
 // components/admin/AffiliatesForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { safeJSON } from '@/lib/adminUtils';
 
 function AffiliatesForm({ onCreated }) {
   const [name, setName] = useState('');
@@ -385,10 +389,11 @@ function AttachToProperty({ properties, onAfter }) {
 export default AttachToProperty;
 
 
-===== FILE: components/admin/BundlesForm.js  (size=2443 bytes) =====
+===== FILE: components/admin/BundlesForm.js  (size=2504 bytes) =====
 // components/admin/BundlesForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function BundlesForm({ products, onCreated }) {
   const [name, setName] = useState('');
@@ -473,10 +478,12 @@ function BundlesForm({ products, onCreated }) {
 export default BundlesForm;
 
 
-===== FILE: components/admin/CapitalProductForm.js  (size=4045 bytes) =====
+===== FILE: components/admin/CapitalProductForm.js  (size=4165 bytes) =====
 // components/admin/CapitalProductForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags, safeJSON } from '@/lib/adminUtils';
 
 function CapitalProductForm({ onCreated }) {
   const [name, setName] = useState('');
@@ -602,10 +609,11 @@ function CapitalProductForm({ onCreated }) {
 export default CapitalProductForm;
 
 
-===== FILE: components/admin/MediaShowcaseForm.js  (size=3379 bytes) =====
+===== FILE: components/admin/MediaShowcaseForm.js  (size=3440 bytes) =====
 // components/admin/MediaShowcaseForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function MediaShowcaseForm({ onCreated }) {
   const [title, setTitle] = useState('');
@@ -712,8 +720,7 @@ function MediaShowcaseForm({ onCreated }) {
 export default MediaShowcaseForm;
 
 
-===== FILE: components/admin/MultiUploader.js  (size=3997 bytes) =====
-// components/admin/MultiUploader.js
+===== FILE: components/admin/MultiUploader.js  (size=7381 bytes) =====
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
@@ -731,40 +738,147 @@ function MultiUploader({
   const [localDivision, setLocalDivision] = useState(division);
   const [localType, setLocalType] = useState(fileType);
 
+  // how many files we send per request to avoid 413s
+  const BATCH_SIZE = 2;
+
+  async function fileToPayload(file) {
+    const base64Full = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    // "data:image/jpeg;base64,AAAA..."
+    const base64Only = base64Full.includes('base64,')
+      ? base64Full.split('base64,').pop()
+      : base64Full;
+
+    return {
+      name: file.name,
+      data: base64Only,
+    };
+  }
+
+  async function uploadBatch({ token, filesChunk }) {
+    // turn raw File objects -> {name,data} base64 payloads
+    const encodedFiles = [];
+    for (const f of filesChunk) {
+      const payloadPiece = await fileToPayload(f);
+      encodedFiles.push(payloadPiece);
+    }
+
+    console.log(
+      '[MultiUploader] prepared chunk of',
+      encodedFiles.length,
+      'file(s)'
+    );
+
+    const resp = await axios.post(
+      '/api/admin/upload-asset-multi',
+      {
+        files: encodedFiles,
+        division: localDivision,
+        purpose: localPurpose,
+        metadata,
+      },
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+
+    return resp.data || { ok: false, items: [], errors: [] };
+  }
+
   const uploadFiles = async (files) => {
     if (!files?.length) return;
     setBusy(true);
+
     try {
+      // 1. get supabase token
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = session?.access_token || null;
+      console.log('[MultiUploader] session token?', token ? 'yes' : 'no');
 
-      for (const file of files) {
-        const base64 = await new Promise((resolve, reject) => {
-          const r = new FileReader();
-          r.onload = () => resolve(String(r.result).split(',')[1] || '');
-          r.onerror = reject;
-          r.readAsDataURL(file);
-        });
+      // 2. break files into batches
+      const allFiles = [...files]; // FileList -> Array<File>
+      const batches = [];
+      for (let i = 0; i < allFiles.length; i += BATCH_SIZE) {
+        batches.push(allFiles.slice(i, i + BATCH_SIZE));
+      }
 
-        await axios.post(
-          '/api/admin/upload-asset',
-          {
-            file: { data: base64, name: file.name },
-            file_type: localType,
-            division: localDivision,
-            purpose: localPurpose,
-            metadata,
-          },
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      console.log(
+        '[MultiUploader] total files:',
+        allFiles.length,
+        ' ->',
+        batches.length,
+        'batch(es)'
+      );
+
+      // 3. upload each batch sequentially
+      const allItems = [];
+      const allErrors = [];
+
+      for (const chunk of batches) {
+        try {
+          const { ok, items = [], errors = [] } = await uploadBatch({
+            token,
+            filesChunk: chunk,
+          });
+
+          allItems.push(...items);
+          allErrors.push(...errors);
+
+          console.log(
+            '[MultiUploader] batch result:',
+            items.length,
+            'items,',
+            errors.length,
+            'errors, ok=',
+            ok
+          );
+        } catch (batchErr) {
+          // if the entire batch call itself exploded (network / 413 / etc)
+          console.error('[MultiUploader] batch upload failed:', batchErr);
+          const serverMsg =
+            batchErr?.response?.data?.error || batchErr.message;
+          // mark every file in this chunk as failed
+          for (const f of chunk) {
+            allErrors.push({
+              name: f?.name || '(unknown)',
+              reason: serverMsg || 'batch failed',
+            });
+          }
+        }
+      }
+
+      // 4. show a summary alert
+      const successCount = allItems.length;
+      const errorCount = allErrors.length;
+
+      if (errorCount === 0) {
+        alert(`Upload complete. ${successCount} file(s) uploaded.`);
+      } else {
+        const errLines = allErrors
+          .slice(0, 8)
+          .map((e) => `• ${e.name}: ${e.reason}`)
+          .join('\n');
+
+        alert(
+          `Uploaded ${successCount} file(s), ${errorCount} failed:\n${errLines}${
+            allErrors.length > 8 ? '\n…' : ''
+          }`
         );
       }
 
-      onUploaded?.();
-      alert('Upload complete.');
+      // 5. let parent know
+      onUploaded?.({ ok: errorCount === 0, items: allItems, errors: allErrors });
     } catch (e) {
-      alert(`Upload failed: ${e.message}`);
+      const serverMsg = e?.response?.data?.error || e.message;
+      console.error('[MultiUploader] upload failed:', e);
+      alert(`Upload failed: ${serverMsg}`);
     } finally {
       setBusy(false);
       setDndOver(false);
@@ -793,17 +907,28 @@ function MultiUploader({
       }`}
     >
       <div className="flex flex-wrap gap-3 mb-3">
+        {/* Division dropdown */}
         <select
           value={localDivision}
           onChange={(e) => setLocalDivision(e.target.value)}
           className="dark:bg-gray-900"
         >
-          {['site', 'publishing', 'designs', 'capital', 'tech', 'media', 'realty'].map((d) => (
+          {[
+            'site',
+            'publishing',
+            'designs',
+            'capital',
+            'tech',
+            'media',
+            'realty',
+          ].map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
           ))}
         </select>
+
+        {/* Purpose dropdown */}
         <select
           value={localPurpose}
           onChange={(e) => setLocalPurpose(e.target.value)}
@@ -812,7 +937,10 @@ function MultiUploader({
           <option value="general">general</option>
           <option value="hero">hero</option>
           <option value="carousel">carousel</option>
+          <option value="gallery">gallery</option>
         </select>
+
+        {/* File type dropdown (cosmetic / planning) */}
         <select
           value={localType}
           onChange={(e) => setLocalType(e.target.value)}
@@ -822,6 +950,8 @@ function MultiUploader({
           <option value="video">video</option>
           <option value="pdf">pdf</option>
         </select>
+
+        {/* File chooser */}
         <label className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 cursor-pointer">
           <input
             type="file"
@@ -832,10 +962,12 @@ function MultiUploader({
           Choose files…
         </label>
       </div>
+
       <p className="text-sm opacity-80">
         Drag & drop files here (multi-upload supported). They’ll go to{' '}
         <b>{localDivision}</b> / <b>{localPurpose}</b>.
       </p>
+
       {busy && <p className="mt-2 text-sm">Uploading…</p>}
     </div>
   );
@@ -844,10 +976,12 @@ function MultiUploader({
 export default MultiUploader;
 
 
-===== FILE: components/admin/PropertyForm.js  (size=2150 bytes) =====
+===== FILE: components/admin/PropertyForm.js  (size=2257 bytes) =====
 // components/admin/PropertyForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { safeJSON } from '@/lib/adminUtils';
 
 function PropertyForm({ onCreated }) {
   const [name, setName] = useState('');
@@ -902,9 +1036,9 @@ function PropertyForm({ onCreated }) {
 export default PropertyForm;
 
 
-===== FILE: components/admin/PropertyRatesPanel.js  (size=4536 bytes) =====
+===== FILE: components/admin/PropertyRatesPanel.js  (size=4549 bytes) =====
 // components/admin/PropertyRatesPanel.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function PropertyRatesPanel({ properties }) {
   const [selected, setSelected] = useState('');
@@ -1012,11 +1146,13 @@ function RealtyRatesManager({ propertyId }) {
 export default PropertyRatesPanel;
 
 
-===== FILE: components/admin/PublishingProductForm.js  (size=6780 bytes) =====
+===== FILE: components/admin/PublishingProductForm.js  (size=6890 bytes) =====
 // components/admin/PublishingProductForm.js
 import { useState } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags } from '@/lib/adminUtils';
 
 function PublishingProductForm({ onCreated }) {
   const [name, setName] = useState('');
@@ -1220,11 +1356,13 @@ function PublishingProductForm({ onCreated }) {
 export default PublishingProductForm;
 
 
-===== FILE: components/admin/QuickProductForm.js  (size=7559 bytes) =====
+===== FILE: components/admin/QuickProductForm.js  (size=7679 bytes) =====
 // components/admin/QuickProductForm.js
 import { useState } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
+import { toArrayTags, copyText } from '@/lib/adminUtils';
 
 function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   const [artFile, setArtFile] = useState(null);
@@ -1487,10 +1625,25 @@ function RealtyTestEmailPanel({ properties }) {
 export default RealtyTestEmailPanelWithProperty;
 
 
-===== FILE: components/admin/TechShowcaseForm.js  (size=3172 bytes) =====
+===== FILE: components/admin/SectionCard.js  (size=313 bytes) =====
+'use client';
+import React from 'react';
+
+export default function SectionCard({ title, className = '', children }) {
+  return (
+    <section className={`glass p-6 rounded ${className}`}>
+      {title ? <h2 className="text-2xl font-bold mb-4">{title}</h2> : null}
+      {children}
+    </section>
+  );
+}
+
+
+===== FILE: components/admin/TechShowcaseForm.js  (size=3233 bytes) =====
 // components/admin/TechShowcaseForm.js
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import SectionCard from '@/components/admin/SectionCard';
 
 function TechShowcaseForm({ onCreated }) {
   const [title, setTitle] = useState('');
@@ -2822,6 +2975,37 @@ export default function ThemeToggle() {
 }
 
 
+===== FILE: lib/adminUtils.js  (size=541 bytes) =====
+export const toArrayTags = (s) =>
+  Array.from(
+    new Set(
+      String(s || '')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+    )
+  );
+
+export const safeJSON = (s, fallback = {}) => {
+  try {
+    if (!s) return fallback;
+    if (typeof s === 'object') return s;
+    return JSON.parse(s);
+  } catch {
+    return fallback;
+  }
+};
+
+export const copyText = async (txt) => {
+  try {
+    await navigator.clipboard.writeText(txt);
+    alert('Copied!');
+  } catch {
+    // ignore
+  }
+};
+
+
 ===== FILE: lib/cartSlice.js  (size=1035 bytes) =====
 // lib/cartSlice.js
 import { createSlice } from '@reduxjs/toolkit';
@@ -3562,29 +3746,88 @@ function MyApp({ Component, pageProps }) {
 export default MyApp;
 
 
-===== FILE: pages/_document.js  (size=1889 bytes) =====
+===== FILE: pages/_document.js  (size=3860 bytes) =====
 // pages/_document.js
 import { Html, Head, Main, NextScript } from 'next/document';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://manyagi.net';
 
 export default function Document() {
+  // Detect build environment at render time on server
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // In dev: go loose so Next.js HMR, inline scripts, eval, etc. work
+  const devCsp = `
+    default-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* blob: data:;
+    img-src 'self' blob: data: https:;
+    font-src 'self' data: https://fonts.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://js.stripe.com https://maps.googleapis.com https://www.gstatic.com https://www.google.com;
+    connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* https: http: wss: blob:;
+    frame-src 'self' https://js.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://maps.google.com https://www.google.com;
+    media-src 'self' blob: data: https:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self' https://js.stripe.com;
+  `;
+
+  // In prod: tighter, but still allow Stripe checkout + Google Maps iframe + YouTube embeds
+  const prodCsp = `
+    default-src 'self';
+    img-src 'self' data: blob: https:;
+    font-src 'self' data: https://fonts.gstatic.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    script-src
+      'self'
+      'unsafe-inline'
+      'unsafe-eval'
+      blob:
+      https://js.stripe.com
+      https://www.gstatic.com
+      https://maps.googleapis.com
+      https://www.google.com;
+    connect-src
+      'self'
+      https:
+      wss:;
+    frame-src
+      'self'
+      https://www.youtube.com
+      https://www.youtube-nocookie.com
+      https://js.stripe.com
+      https://maps.google.com
+      https://www.google.com;
+    media-src 'self' blob: data: https:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self' https://js.stripe.com;
+  `;
+
+  const cspToUse = isProd ? prodCsp : devCsp;
+
   return (
     <Html lang="en">
       <Head>
+        {/* Content Security Policy */}
+        <meta httpEquiv="Content-Security-Policy" content={cspToUse} />
+
         {/* Fonts */}
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Georgia&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Georgia&display=swap"
+          rel="stylesheet"
+        />
+
         {/* Global org JSON-LD */}
         <script
           type="application/ld+json"
-          // Base Organization schema for the brand; pages can add more via <SEO jsonLd={...} />
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'Manyagi',
               url: SITE_URL,
-              description: 'Manyagi unites Publishing, Designs, Capital, Tech, Media, and Realty under one HQ.',
+              description:
+                'Manyagi unites Publishing, Designs, Capital, Tech, Media, and Realty under one HQ.',
               logo: `${SITE_URL}/images/logo.png`,
               sameAs: [
                 'https://instagram.com/manyagi.official',
@@ -3603,7 +3846,6 @@ export default function Document() {
             }),
           }}
         />
-        {/* We no longer hard-code robots/meta keywords here to avoid duplicating with SEO component */}
       </Head>
       <body className="bg-white text-black">
         <Main />
@@ -3649,7 +3891,7 @@ export default function About() {
 }
 
 
-===== FILE: pages/admin.js  (size=69098 bytes) =====
+===== FILE: pages/admin.js  (size=80734 bytes) =====
 // pages/admin.js
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -3781,6 +4023,7 @@ function Admin() {
   const [activeTab, setActiveTab] = useState('overview');
   const [productEdits, setProductEdits] = useState({});
   const [assetEdits, setAssetEdits] = useState({});
+  const [propertyEdits, setPropertyEdits] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -3903,6 +4146,40 @@ function Admin() {
       setAssetEdits((prev) => ({ ...prev, [a.id]: {} }));
       await refreshAll();
       alert('Asset saved.');
+    } catch (e) {
+      alert(`Save failed: ${e.message}`);
+    }
+  };
+
+  const savePropertyRow = async (propRow) => {
+    try {
+      const edits = propertyEdits[propRow.id] || {};
+      if (!Object.keys(edits).length) return;
+
+      const nextMeta = {
+        ...(propRow.metadata || {}),
+        ...(edits.metadataStr ? safeJSON(edits.metadataStr, propRow.metadata || {}) : {}),
+      };
+
+      const payload = {
+        ...('name' in edits ? { name: edits.name } : {}),
+        ...('slug' in edits ? { slug: edits.slug } : {}),
+        ...('price' in edits ? { price: parseFloat(edits.price || 0) } : {}),
+        ...('status' in edits ? { status: edits.status } : {}),
+        ...('description' in edits ? { description: edits.description } : {}),
+        ...(edits.metadataStr ? { metadata: nextMeta } : {}),
+      };
+
+      const { error } = await supabase
+        .from('properties')
+        .update(payload)
+        .eq('id', propRow.id);
+
+      if (error) throw error;
+
+      setPropertyEdits((prev) => ({ ...prev, [propRow.id]: {} }));
+      await refreshAll();
+      alert('Property saved.');
     } catch (e) {
       alert(`Save failed: ${e.message}`);
     }
@@ -4050,6 +4327,14 @@ function Admin() {
         : (p.title || '').toLowerCase().includes(postQuery.toLowerCase()) ||
           (p.slug || '').toLowerCase().includes(postQuery.toLowerCase())
     );
+
+  const realtyAssets = assets
+    .filter((a) => a.division === 'realty' && a.purpose === 'gallery')
+    .slice(0, 50);
+
+  const realtyProperties = properties
+    .filter((p) => (p.division || 'realty') === 'realty')
+    .slice(0, 50);
 
   return (
     <>
@@ -4689,6 +4974,222 @@ function Admin() {
             <div className="mt-6 border-t pt-4">
               <h4 className="font-semibold mb-2">Create New Property</h4>
               <PropertyForm onCreated={refreshAll} />
+            </div>
+
+            {/* NEW: Recently uploaded (realty/gallery) assets */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Recent Realty Uploads (gallery)</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left border-b dark:border-gray-700">
+                      <th className="py-2">Preview</th>
+                      <th>Filename</th>
+                      <th>URL</th>
+                      <th>Copy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {realtyAssets.length > 0 ? (
+                      realtyAssets.map((a) => (
+                        <tr key={a.id} className="border-b dark:border-gray-800 align-top">
+                          <td className="py-2">
+                            {a.file_type === 'image' ? (
+                              <img
+                                src={a.file_url}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="py-2">{a.filename || '—'}</td>
+                          <td className="py-2 max-w-[280px] truncate">{a.file_url}</td>
+                          <td className="py-2">
+                            <button
+                              className="text-blue-600 underline"
+                              type="button"
+                              onClick={() => copyText(a.file_url)}
+                            >
+                              Copy URL
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td className="py-6 opacity-70" colSpan={4}>
+                          No realty uploads yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs opacity-60 mt-2">
+                Tip: copy a few URLs, paste them into "Attach uploaded URLs to a property" below.
+              </p>
+            </div>
+
+            {/* NEW: Existing properties list / inline edit */}
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold mb-2">Your Properties (Most Recent First)</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="text-left border-b dark:border-gray-700">
+                      <th className="py-2">Name</th>
+                      <th>Slug</th>
+                      <th>Base Price</th>
+                      <th>Status</th>
+                      <th>Description</th>
+                      <th>Metadata JSON</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {realtyProperties.length > 0 ? (
+                      realtyProperties.map((propRow) => {
+                        const row = propertyEdits[propRow.id] || {};
+                        return (
+                          <tr
+                            key={propRow.id}
+                            className="border-b dark:border-gray-800 align-top"
+                          >
+                            <td className="py-2 min-w-[180px]">
+                              <input
+                                className="w-full dark:bg-gray-800"
+                                placeholder={propRow.name || ''}
+                                value={row.name ?? (propRow.name || '')}
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      name: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </td>
+
+                            <td className="py-2 min-w-[160px]">
+                              <input
+                                className="w-full dark:bg-gray-800"
+                                placeholder={propRow.slug || ''}
+                                value={row.slug ?? (propRow.slug || '')}
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      slug: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                              <div className="text-[10px] opacity-60">
+                                /realty/{row.slug ?? propRow.slug}
+                              </div>
+                            </td>
+
+                            <td className="py-2 min-w-[100px]">
+                              <input
+                                type="number"
+                                className="w-full dark:bg-gray-800"
+                                placeholder={String(propRow.price ?? '')}
+                                value={row.price ?? (propRow.price ?? '')}
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      price: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </td>
+
+                            <td className="py-2 min-w-[120px]">
+                              <input
+                                className="w-full dark:bg-gray-800"
+                                placeholder={propRow.status || 'active'}
+                                value={row.status ?? (propRow.status || '')}
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      status: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </td>
+
+                            <td className="py-2 min-w-[260px]">
+                              <textarea
+                                className="w-full h-24 dark:bg-gray-800"
+                                placeholder="Description"
+                                value={row.description ?? (propRow.description || '')}
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      description: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                            </td>
+
+                            <td className="py-2 min-w-[320px]">
+                              <textarea
+                                className="w-full h-24 dark:bg-gray-800"
+                                placeholder='{"location":"Big Bear, CA","ical_urls":["https://..."]}'
+                                value={
+                                  row.metadataStr ??
+                                  JSON.stringify(propRow.metadata || {}, null, 0)
+                                }
+                                onChange={(e) =>
+                                  setPropertyEdits((prev) => ({
+                                    ...prev,
+                                    [propRow.id]: {
+                                      ...row,
+                                      metadataStr: e.target.value,
+                                    },
+                                  }))
+                                }
+                              />
+                              <div className="text-[10px] opacity-60 mt-1">
+                                Tip: include {"{ \"cover_url\": \"https://...\" }"} to control hero
+                                image on listing cards.
+                              </div>
+                            </td>
+
+                            <td className="py-2 min-w-[100px] space-y-2">
+                              <button
+                                className="px-3 py-1 bg-blue-600 text-white rounded w-full"
+                                onClick={() => savePropertyRow(propRow)}
+                              >
+                                Save
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td className="py-6 opacity-70" colSpan={7}>
+                          No properties yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -5585,107 +6086,248 @@ export default async function handler(req, res) {
 }
 
 
-===== FILE: pages/api/admin/upload-asset-multi.js  (size=3559 bytes) =====
+===== FILE: pages/api/admin/upload-asset-multi.js  (size=6823 bytes) =====
 // pages/api/admin/upload-asset-multi.js
+// Fault-tolerant batch uploader.
+//
+// What it does now:
+// - Auth check (must be 'admin' in public.users)
+// - For each file:
+//    - convert base64 -> Buffer
+//    - upload to Supabase Storage bucket 'assets'
+//    - generate public URL
+//    - insert a row in public.assets
+// - We catch errors PER FILE so one bad file doesn't kill the others.
+// - We always respond 200 with { ok, items, errors } so frontend can summarize.
+//
+// This fixes the "2nd file throws 500 and stops everything" problem you saw.
+
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { nanoid } from 'nanoid';
 
-export const config = { api: { bodyParser: { sizeLimit: '25mb' } } }; // allow chunky uploads
+export const config = {
+  api: {
+    bodyParser: { sizeLimit: '50mb' }, // allow large batches of photos/videos
+  },
+};
 
-const BUCKET = 'assets';
+// Map extension -> Content-Type header for storage
+function guessContentType(ext) {
+  switch ((ext || '').toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    case 'svg':
+      return 'image/svg+xml';
+    case 'heic':
+    case 'heif':
+      return 'image/heic';
+    case 'pdf':
+      return 'application/pdf';
+    case 'mp4':
+      return 'video/mp4';
+    case 'mov':
+    case 'm4v':
+      return 'video/quicktime';
+    case 'webm':
+      return 'video/webm';
+    default:
+      return 'application/octet-stream';
+  }
+}
 
-/**
- * Body:
- * {
- *   files: [{ data: base64WithoutPrefix, name: "photo.webp" }, ...],
- *   division: "realty" | "publishing" | "designs" | "site" ...,
- *   purpose: "general" | "hero" | "carousel",
- *   folder: "optional/extra/path",
- *   metadata: { ... } // optional metadata to save in assets table
- * }
- *
- * Returns: { ok: true, items: [{ file_url, path, name }] }
- */
+// Decide what we store in assets.file_type
+function logicalTypeFromExt(ext) {
+  const e = (ext || '').toLowerCase();
+  if (
+    ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'heic', 'heif'].includes(e)
+  ) {
+    return 'image';
+  }
+  if (['mp4', 'mov', 'm4v', 'webm'].includes(e)) {
+    return 'video';
+  }
+  if (e === 'pdf') {
+    return 'pdf';
+  }
+  return 'file';
+}
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   try {
-    // Added: Admin auth check
+    // ---------- 1) Auth check ----------
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
+    if (!token) {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Unauthorized (no token)' }],
+      });
+    }
 
     const { data: userResp, error: getUserErr } = await supabaseAdmin.auth.getUser(token);
-    if (getUserErr || !userResp?.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (getUserErr || !userResp?.user) {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Unauthorized (bad token)' }],
+      });
+    }
 
-    const { data: roleRow } = await supabaseAdmin
+    const userId = userResp.user.id;
+
+    // role check in public.users
+    const { data: roleRow, error: roleErr } = await supabaseAdmin
       .from('users')
       .select('role')
-      .eq('id', userResp.user.id)
+      .eq('id', userId)
       .maybeSingle();
 
-    if ((roleRow?.role || 'user') !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
+    if (roleErr || (roleRow?.role || 'user') !== 'admin') {
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'Forbidden (not admin)' }],
+      });
     }
 
-    const { files, division = 'site', purpose = 'general', folder = '', metadata = {} } = req.body || {};
+    // ---------- 2) Parse and prep ----------
+    const {
+      files,
+      division = 'site',
+      purpose = 'general',
+      folder = '',
+      metadata = {},
+    } = req.body || {};
+
     if (!Array.isArray(files) || files.length === 0) {
-      return res.status(400).json({ error: 'No files provided' });
+      return res.status(200).json({
+        ok: false,
+        items: [],
+        errors: [{ name: '(all)', reason: 'No files provided' }],
+      });
     }
 
+    // We'll store uploads like:
+    // assets bucket / division / purpose / YYYY / MM / [folder?] / <random>-<filename>
     const now = new Date();
     const yyyy = now.getUTCFullYear();
     const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
 
-    const basePrefix = `${division}/${purpose}/${yyyy}/${mm}${folder ? `/${folder}` : ''}`;
+    const basePrefix = [division, purpose, yyyy, mm, folder ? folder : null]
+      .filter(Boolean)
+      .join('/');
 
-    const out = [];
+    const items = [];
+    const errors = [];
 
+    // ---------- 3) Process each file independently ----------
     for (const f of files) {
-      const name = f?.name || `upload-${nanoid(8)}`;
-      // guess contentType from name
-      const ext = name.split('.').pop()?.toLowerCase() || 'bin';
-      const contentType =
-        ext === 'webp' ? 'image/webp'
-      : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
-      : ext === 'png' ? 'image/png'
-      : ext === 'mp4' ? 'video/mp4'
-      : ext === 'pdf' ? 'application/pdf'
-      : 'application/octet-stream';
+      const originalName = f?.name || `upload-${nanoid(8)}`;
+      try {
+        if (!f?.data) {
+          throw new Error('Missing base64 data');
+        }
 
-      const path = `${basePrefix}/${nanoid(6)}-${name}`;
-      const buffer = Buffer.from(f.data, 'base64');
+        let buffer;
+        try {
+          buffer = Buffer.from(f.data, 'base64');
+        } catch {
+          throw new Error('Invalid base64');
+        }
 
-      const { error: upErr } = await supabaseAdmin.storage
-        .from(BUCKET)
-        .upload(path, buffer, { contentType, upsert: false });
+        const ext = (originalName.split('.').pop() || 'bin').toLowerCase();
+        const contentType = guessContentType(ext);
+        const logicalType = logicalTypeFromExt(ext);
 
-      if (upErr) throw upErr;
+        const storagePath = `${basePrefix}/${nanoid(6)}-${originalName}`;
 
-      const { data: pub } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
-      const file_url = pub?.publicUrl;
+        // 3a. upload to Supabase Storage
+        const { error: upErr } = await supabaseAdmin.storage
+          .from('assets')
+          .upload(storagePath, buffer, {
+            contentType,
+            upsert: false,
+          });
 
-      // OPTIONAL: record in your `assets` table for discoverability
-      await supabaseAdmin.from('assets').insert({
-        bucket: BUCKET,
-        path,
-        file_url,
-        file_type: contentType.startsWith('image') ? 'image'
-                 : contentType.startsWith('video') ? 'video'
-                 : 'file',
-        division,
-        purpose,
-        filename: name,
-        metadata,
-      });
+        if (upErr) {
+          throw new Error(
+            `Storage upload failed: ${upErr.message || 'unknown'}`
+          );
+        }
 
-      out.push({ file_url, path, name });
+        // 3b. get public URL
+        const { data: pub } = await supabaseAdmin.storage
+          .from('assets')
+          .getPublicUrl(storagePath);
+        const file_url = pub?.publicUrl;
+        if (!file_url) {
+          throw new Error('Failed to generate public URL');
+        }
+
+        // 3c. insert DB row in public.assets
+        const insertPayload = {
+          file_url,
+          file_type: logicalType, // 'image' | 'video' | 'pdf' | 'file'
+          division,
+          purpose,
+          filename: originalName,
+          metadata,
+        };
+
+        const { data: inserted, error: insertErr } = await supabaseAdmin
+          .from('assets')
+          .insert(insertPayload)
+          .select('*')
+          .single();
+
+        if (insertErr) {
+          throw new Error(`DB insert failed: ${insertErr.message}`);
+        }
+
+        // 3d. push success record
+        items.push({
+          id: inserted.id,
+          file_url,
+          filename: originalName,
+          division,
+          purpose,
+        });
+      } catch (err) {
+        // push error record for this file, but continue loop for others
+        errors.push({
+          name: originalName,
+          reason: String(err.message || err),
+        });
+      }
     }
 
-    return res.status(200).json({ ok: true, items: out });
-  } catch (e) {
-    console.error('upload-asset-multi error', e);
-    return res.status(500).json({ error: e.message || 'Upload failed' });
+    // ---------- 4) Respond with successes + failures ----------
+    return res.status(200).json({
+      ok: errors.length === 0,
+      items,
+      errors,
+    });
+  } catch (fatal) {
+    // truly unexpected crash outside the loop
+    return res.status(200).json({
+      ok: false,
+      items: [],
+      errors: [
+        { name: '(fatal)', reason: String(fatal?.message || fatal) },
+      ],
+    });
   }
 }
 
@@ -6963,35 +7605,114 @@ export default async function handler(req, res) {
 }
 
 
-===== FILE: pages/api/realty/property.js  (size=1027 bytes) =====
+===== FILE: pages/api/realty/property.js  (size=3262 bytes) =====
 // pages/api/realty/property.js
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+function sendJSON(res, status, payload) {
+  res.status(status).json(payload);
+}
+
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const { slug } = req.query;
-  if (!slug) return res.status(400).json({ error: 'slug required' });
+  if (req.method !== 'GET') {
+    return sendJSON(res, 405, { error: 'Method not allowed' });
+  }
+
+  const { slug, all } = req.query;
 
   try {
-    const { data: property, error: pErr } = await supabaseAdmin
+    //
+    // LIST MODE: /api/realty/property?all=1
+    //
+    if (all) {
+      const { data, error } = await supabaseAdmin
+        .from('properties')
+        .select('*')
+        .eq('division', 'realty')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('properties list error', error);
+        return sendJSON(res, 500, { error: error.message });
+      }
+
+      const properties = (data || []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description || '',
+        nightly_price: Number(p.price || 0), // <- normalize "price"
+        image_url:
+          (p.metadata && p.metadata.cover_url) ||
+          (p.metadata && p.metadata.hero_url) ||
+          '', // fallback if you add cover_url later
+        metadata: p.metadata || {},
+        created_at: p.created_at,
+      }));
+
+      return sendJSON(res, 200, { ok: true, properties });
+    }
+
+    //
+    // DETAIL MODE: /api/realty/property?slug=...
+    //
+    if (!slug) {
+      return sendJSON(res, 400, { error: 'slug required' });
+    }
+
+    const { data: rows, error: propErr } = await supabaseAdmin
       .from('properties')
       .select('*')
       .eq('slug', slug)
-      .maybeSingle();
-    if (pErr || !property) return res.status(404).json({ error: 'Property not found' });
+      .limit(1);
 
-    const { data: availability, error: aErr } = await supabaseAdmin
-      .from('property_availability')
-      .select('*')
-      .eq('property_id', property.id)
-      .order('date');
+    if (propErr) {
+      console.error('property fetch error', propErr);
+      return sendJSON(res, 500, { error: propErr.message });
+    }
 
-    if (aErr) throw aErr;
+    const prop = rows && rows[0];
+    if (!prop) {
+      return sendJSON(res, 404, { error: 'Property not found' });
+    }
 
-    res.status(200).json({ property, availability: availability || [] });
+    // normalize the property shape for the frontend
+    const property = {
+      id: prop.id,
+      name: prop.name,
+      slug: prop.slug,
+      description: prop.description || '',
+      nightly_price: Number(prop.price || 0),
+      image_url:
+        (prop.metadata && prop.metadata.cover_url) ||
+        (prop.metadata && prop.metadata.hero_url) ||
+        '',
+      metadata: prop.metadata || {},
+    };
+
+    // availability table is optional; if you have this table, keep this block.
+    // if you *don't* actually have property_availability yet, comment this out and just use [].
+    let availability = [];
+    try {
+      const { data: availRows, error: aErr } = await supabaseAdmin
+        .from('property_availability')
+        .select('*')
+        .eq('property_id', prop.id)
+        .order('date');
+
+      if (aErr) {
+        console.warn('availability lookup error (non-fatal)', aErr.message);
+      } else {
+        availability = availRows || [];
+      }
+    } catch (innerErr) {
+      console.warn('availability lookup threw (non-fatal)', innerErr);
+    }
+
+    return sendJSON(res, 200, { ok: true, property, availability });
   } catch (err) {
-    console.error('Realty property API error:', err);
-    res.status(500).json({ error: 'Internal error' });
+    console.error('unhandled property api error', err);
+    return sendJSON(res, 500, { error: 'Server error' });
   }
 }
 
@@ -9763,7 +10484,8 @@ export default function Publishing() {
 }
 
 
-===== FILE: pages/realty.js  (size=3298 bytes) =====
+===== FILE: pages/realty.js  (size=4334 bytes) =====
+// pages/realty.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -9772,24 +10494,40 @@ import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 
-// Helpers
-const asList = (v) => (Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : []);
-const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '/placeholder.png';
+// helpers
+const asList = (v) =>
+  Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : [];
+
+const pickCardImage = (p) => {
+  // priority: metadata.cover_url -> thumbnail_url -> display_image -> image_url -> image -> placeholder
+  if (p?.metadata?.cover_url) return p.metadata.cover_url;
+  return (
+    p?.thumbnail_url ||
+    p?.display_image ||
+    p?.image_url ||
+    p?.image ||
+    '/placeholder.png'
+  );
+};
 
 export default function RealtyList() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Load "properties" from products?division=realty (your API already exists)
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/api/products?division=realty');
         const json = await res.json();
-        const list = asList(json).map((p) => ({ ...p, display_image: pickImage(p) }));
+        const list = asList(json).map((p) => ({
+          ...p,
+          display_image: pickCardImage(p),
+        }));
         setProperties(list);
       } catch (err) {
         console.error('Realty list fetch error:', err);
-        setProperties([]); // fallback to empty
+        setProperties([]);
       } finally {
         setLoading(false);
       }
@@ -9801,13 +10539,14 @@ export default function RealtyList() {
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/og-realty.webp',
   ];
 
-  if (loading) return <div className="text-center py-20">Loading properties...</div>;
-
   return (
     <>
       <Head>
         <title>Manyagi Realty — Premium Properties & Rentals</title>
-        <meta name="description" content="Discover story-inspired stays and premium rentals." />
+        <meta
+          name="description"
+          content="Discover story-inspired stays and premium rentals."
+        />
       </Head>
 
       <Hero
@@ -9817,26 +10556,54 @@ export default function RealtyList() {
         carouselImages={carouselImages}
         height="h-[600px]"
       >
-        <Link href="#properties" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+        <Link
+          href="#properties"
+          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+        >
           Browse Rentals
         </Link>
       </Hero>
 
-      <section id="properties" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
-        {properties.length === 0 ? (
-          <div className="col-span-full text-center text-lg">No properties available yet. Check back soon!</div>
+      <section
+        id="properties"
+        className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5"
+      >
+        {loading ? (
+          <div className="col-span-full text-center text-lg">
+            Loading properties...
+          </div>
+        ) : properties.length === 0 ? (
+          <div className="col-span-full text-center text-lg">
+            No properties available yet. Check back soon!
+          </div>
         ) : (
           properties.map((prop) => (
             <Card
               key={prop.id}
               title={prop.name}
-              description={prop.description || 'Premium rental property'}
+              description={
+                prop.description || 'Premium rental property experience.'
+              }
               image={prop.display_image}
               category="realty"
             >
-              <Link href={`/realty/${prop.slug}`} className="btn bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition">
-                View Details & Book
-              </Link>
+              <div className="text-sm mb-2 font-semibold">
+                {prop.price
+                  ? `From $${prop.price} / night`
+                  : 'Nightly pricing available'}
+              </div>
+              {prop.slug ? (
+                <Link
+                  href={`/realty/${prop.slug}`}
+                  className="btn bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400 transition"
+                >
+                  View Details &amp; Book
+                </Link>
+              ) : (
+                <span className="text-xs opacity-70">
+                  (no slug set yet, cannot view details)
+                </span>
+              )}
             </Card>
           ))
         )}
@@ -9857,11 +10624,11 @@ export default function RealtyList() {
 }
 
 
-===== FILE: pages/realty/[slug].js  (size=5759 bytes) =====
+===== FILE: pages/realty/[slug].js  (size=9048 bytes) =====
 // pages/realty/[slug].js
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
@@ -9872,12 +10639,13 @@ const localizer = dateFnsLocalizer({
   parse,
   startOfWeek,
   getDay,
-  locales: { 'en-US': enUS }
+  locales: { 'en-US': enUS },
 });
 
 export default function PropertyDetail() {
   const router = useRouter();
   const { slug } = router.query;
+
   const [property, setProperty] = useState(null);
   const [availability, setAvailability] = useState([]);
   const [checkin, setCheckin] = useState('');
@@ -9891,30 +10659,58 @@ export default function PropertyDetail() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  // Fetch property + availability
   useEffect(() => {
-    if (slug) {
-      fetch(`/api/realty/property?slug=${slug}`)
-        .then(res => res.json())
-        .then(data => {
+    if (!slug) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/realty/property?slug=${slug}`);
+        const data = await res.json();
+        if (data.error) {
+          console.error('property fetch error:', data.error);
+          setProperty(null);
+        } else {
           setProperty(data.property);
           setAvailability(data.availability || []);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
+        }
+      } catch (err) {
+        console.error('property fetch crash:', err);
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [slug]);
 
+  // Normalize calendar events
+  const events = useMemo(
+    () =>
+      availability.map((a) => ({
+        title: a.status || 'unavailable',
+        start: new Date(a.date),
+        end: new Date(a.date),
+        allDay: true,
+      })),
+    [availability]
+  );
+
+  // booking quote
   const getQuote = async () => {
     if (!checkin || !checkout) return alert('Select dates');
+    if (!property) return;
     setBusy(true);
     try {
       const res = await fetch('/api/realty/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ property_id: property.id, checkin, checkout }),
+        body: JSON.stringify({
+          property_id: property.id,
+          checkin,
+          checkout,
+        }),
       });
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) throw new Error(data.error || 'Failed to get quote');
       setQuote(data);
     } catch (e) {
       alert(e.message);
@@ -9943,8 +10739,11 @@ export default function PropertyDetail() {
         }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else alert('Failed to book');
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Failed to book');
+      }
     } catch (e) {
       alert(e.message);
     } finally {
@@ -9952,67 +10751,155 @@ export default function PropertyDetail() {
     }
   };
 
-  const events = availability.map(a => ({
-    title: a.status,
-    start: new Date(a.date),
-    end: new Date(a.date),
-    allDay: true,
-  }));
+  if (loading) return <div className="p-8">Loading property...</div>;
+  if (!property) return <div className="p-8">Property not found</div>;
 
-  if (loading) return <div>Loading property...</div>;
-  if (!property) return <div>Property not found</div>;
+  const coverImg =
+    property.metadata?.cover_url ||
+    property.image_url ||
+    property.thumbnail_url ||
+    '/placeholder.png';
 
   return (
     <>
       <Head>
         <title>{property.name} — Manyagi Realty</title>
-        <meta name="description" content={property.description} />
+        <meta name="description" content={property.description || ''} />
       </Head>
+
       <section className="container mx-auto px-4 py-16">
         <h1 className="text-4xl font-bold mb-4">{property.name}</h1>
-        <img src={property.image_url} alt={property.name} className="w-full h-64 object-cover rounded mb-6" />
-        <p className="mb-4">{property.description}</p>
-        <p><strong>Price per night:</strong> ${property.nightly_price}</p>
 
-        {/* NEW: Google Map embed if location */}
+        <img
+          src={coverImg}
+          alt={property.name}
+          className="w-full h-64 object-cover rounded mb-6 bg-gray-200"
+        />
+
+        <p className="mb-4">{property.description}</p>
+        <p>
+          <strong>Price per night:</strong>{' '}
+          {property.price ? `$${property.price}` : '—'}
+        </p>
+
+        {/* Map */}
         {property.metadata?.location && (
-          <div className="mt-6">
+          <div className="mt-8">
             <h2 className="text-2xl font-bold mb-2">Location</h2>
-            <iframe
-              src={`https://maps.google.com/maps?q=${encodeURI(property.metadata.location)}&output=embed`}
-              width="100%"
-              height="450"
-              style={{ border: 0 }}
-              allowFullScreen=""
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
+            <div className="w-full h-[450px] bg-gray-200 rounded overflow-hidden">
+              <iframe
+                src={`https://maps.google.com/maps?q=${encodeURI(
+                  property.metadata.location
+                )}&output=embed`}
+                width="100%"
+                height="450"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         )}
 
-        <h2 className="text-2xl font-bold mt-8">Availability</h2>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 500 }}
-        />
+        {/* Availability */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-2">Availability</h2>
+          <div className="bg-white rounded shadow p-4 overflow-auto">
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500 }}
+            />
+          </div>
+        </div>
 
-        <h2 className="text-2xl font-bold mt-8">Book Now</h2>
-        <div className="space-y-4">
-          <input type="date" value={checkin} onChange={e => setCheckin(e.target.value)} />
-          <input type="date" value={checkout} onChange={e => setCheckout(e.target.value)} />
-          <input type="number" value={guests} onChange={e => setGuests(e.target.value)} min="1" />
-          <button onClick={getQuote} disabled={busy}>Get Quote</button>
-          {quote && (
+        {/* Booking */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Book Now</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
-              <p>Total: ${quote.summary.total}</p>
-              <input placeholder="Name" value={guestName} onChange={e => setGuestName(e.target.value)} />
-              <input placeholder="Email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} />
-              <input placeholder="Phone" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
-              <textarea placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-              <button onClick={book} disabled={busy}>Book Now</button>
+              <label className="block text-sm font-semibold">Check-in</label>
+              <input
+                type="date"
+                className="border rounded px-2 py-1 w-full"
+                value={checkin}
+                onChange={(e) => setCheckin(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">Check-out</label>
+              <input
+                type="date"
+                className="border rounded px-2 py-1 w-full"
+                value={checkout}
+                onChange={(e) => setCheckout(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold">Guests</label>
+              <input
+                type="number"
+                className="border rounded px-2 py-1 w-full"
+                min="1"
+                value={guests}
+                onChange={(e) => setGuests(e.target.value)}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={getQuote}
+                disabled={busy}
+                className="bg-blue-600 text-white rounded px-4 py-2 w-full"
+              >
+                Get Quote
+              </button>
+            </div>
+          </div>
+
+          {quote && (
+            <div className="bg-yellow-50 border border-yellow-300 rounded p-4 mb-4">
+              <p className="mb-2">
+                <strong>Total:</strong> ${quote.summary.total}
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <input
+                  className="border rounded px-2 py-1 w-full"
+                  placeholder="Name"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                />
+                <input
+                  className="border rounded px-2 py-1 w-full"
+                  placeholder="Email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                />
+                <input
+                  className="border rounded px-2 py-1 w-full"
+                  placeholder="Phone"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                />
+              </div>
+
+              <textarea
+                className="border rounded px-2 py-1 w-full mb-4"
+                placeholder="Notes for host (optional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+
+              <button
+                onClick={book}
+                disabled={busy}
+                className="bg-green-600 text-white rounded px-4 py-2"
+              >
+                Book Now
+              </button>
             </div>
           )}
         </div>

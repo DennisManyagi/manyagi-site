@@ -1,5 +1,5 @@
 // components/admin/RealtyTab.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import MultiUploader from '@/components/admin/MultiUploader';
 import AttachToProperty from '@/components/admin/AttachToProperty';
@@ -9,7 +9,197 @@ import PropertyForm from '@/components/admin/PropertyForm';
 import SectionCard from '@/components/admin/SectionCard';
 import { safeJSON, copyText, updateRow } from '@/lib/adminUtils';
 
-export default function RealtyTab({ properties: allProperties, assets, refreshAll }) {
+/**
+ * Small money formatter helper for table display.
+ * amount_cents is stored as integer cents.
+ */
+function formatMoney(amount_cents, currency = 'usd') {
+  if (amount_cents == null) return '—';
+  const dollars = Number(amount_cents) / 100;
+  return `${currency.toUpperCase()} $${dollars.toFixed(2)}`;
+}
+
+/**
+ * UpcomingStaysPanel
+ * - Fetches reservations from /api/realty/reservations-admin
+ * - Shows future (and recent) stays, guest info, and money
+ */
+function UpcomingStaysPanel() {
+  const [loadingResv, setLoadingResv] = useState(true);
+  const [reservations, setReservations] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/realty/reservations-admin');
+        const j = await r.json();
+        if (j.ok) {
+          setReservations(j.items || []);
+        } else {
+          console.error('reservations-admin error:', j.error);
+          setReservations([]);
+        }
+      } catch (err) {
+        console.error('reservations-admin crash:', err);
+        setReservations([]);
+      } finally {
+        setLoadingResv(false);
+      }
+    })();
+  }, []);
+
+  // simple revenue sum of PAID
+  const totalPaidCents = reservations
+    .filter((r) => r.status === 'paid')
+    .reduce((acc, r) => acc + (Number(r.amount_cents) || 0), 0);
+
+  return (
+    <div className="space-y-4 mb-10">
+      <h3 className="text-xl font-bold">Upcoming Stays / Revenue</h3>
+
+      <div className="text-sm opacity-80">
+        <div>
+          <strong>Total Paid (all listed):</strong>{' '}
+          {formatMoney(totalPaidCents, 'usd')}
+        </div>
+        <div className="text-[11px] opacity-60">
+          Includes only reservations currently marked &quot;paid&quot;.
+        </div>
+      </div>
+
+      <div className="overflow-x-auto border rounded dark:border-gray-700">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="text-left border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+              <th className="py-2 px-2">Property</th>
+              <th className="py-2 px-2">Stay</th>
+              <th className="py-2 px-2">Nights / Guests</th>
+              <th className="py-2 px-2">Guest Contact</th>
+              <th className="py-2 px-2">Notes</th>
+              <th className="py-2 px-2 whitespace-nowrap">Total</th>
+              <th className="py-2 px-2">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loadingResv ? (
+              <tr>
+                <td
+                  className="py-6 text-center opacity-70"
+                  colSpan={7}
+                >
+                  Loading reservations…
+                </td>
+              </tr>
+            ) : reservations.length === 0 ? (
+              <tr>
+                <td
+                  className="py-6 text-center opacity-70"
+                  colSpan={7}
+                >
+                  No reservations yet.
+                </td>
+              </tr>
+            ) : (
+              reservations.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b dark:border-gray-800 align-top"
+                >
+                  {/* Property name / link */}
+                  <td className="py-2 px-2 min-w-[140px]">
+                    <div className="font-semibold">
+                      {r.property_name || '—'}
+                    </div>
+                    {r.property_slug ? (
+                      <a
+                        className="text-xs text-blue-600 underline"
+                        href={`/realty/${r.property_slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        /realty/{r.property_slug}
+                      </a>
+                    ) : (
+                      <div className="text-[10px] opacity-50">
+                        (no slug)
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Dates */}
+                  <td className="py-2 px-2 min-w-[140px] text-xs leading-relaxed">
+                    <div>
+                      <strong>Check-in:</strong> {r.checkin}
+                    </div>
+                    <div>
+                      <strong>Check-out:</strong> {r.checkout}
+                    </div>
+                  </td>
+
+                  {/* Nights / guests */}
+                  <td className="py-2 px-2 min-w-[90px] text-xs leading-relaxed">
+                    <div>{r.nights} nights</div>
+                    <div>{r.guests} guests</div>
+                  </td>
+
+                  {/* Guest contact */}
+                  <td className="py-2 px-2 min-w-[160px] text-xs leading-relaxed">
+                    <div className="font-medium">
+                      {r.guest_name || '—'}
+                    </div>
+                    <div className="break-words">
+                      {r.guest_email || '—'}
+                    </div>
+                    {r.guest_phone ? (
+                      <div className="opacity-70">
+                        {r.guest_phone}
+                      </div>
+                    ) : null}
+                  </td>
+
+                  {/* Notes to host */}
+                  <td className="py-2 px-2 min-w-[160px] text-xs">
+                    {r.notes ? r.notes : <span className="opacity-50">—</span>}
+                  </td>
+
+                  {/* Amount */}
+                  <td className="py-2 px-2 whitespace-nowrap text-xs font-semibold">
+                    {formatMoney(r.amount_cents, r.currency)}
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-2 px-2 min-w-[80px] text-xs">
+                    <span
+                      className={
+                        r.status === 'paid'
+                          ? 'bg-green-100 text-green-800 px-2 py-1 rounded text-[11px] font-semibold'
+                          : 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-[11px] font-semibold'
+                      }
+                    >
+                      {r.status || '—'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-[10px] opacity-60 leading-relaxed">
+        This is your internal board. Cleaners / ops can look here for
+        arrivals, departures, and payout amounts without touching Stripe
+        or Supabase.
+      </p>
+    </div>
+  );
+}
+
+export default function RealtyTab({
+  properties: allProperties,
+  assets,
+  refreshAll,
+}) {
   const [edits, setEdits] = useState({});
   const [openGalleryFor, setOpenGalleryFor] = useState(null);
   const [galleryDrafts, setGalleryDrafts] = useState({});
@@ -18,10 +208,15 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
   // filter just realty props and gallery assets
   const realtyProperties = allProperties
     .filter((p) => (p.division || 'realty') === 'realty')
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    .sort(
+      (a, b) =>
+        new Date(b.created_at) - new Date(a.created_at)
+    );
 
   const realtyAssets = assets
-    .filter((a) => a.division === 'realty' && a.purpose === 'gallery')
+    .filter(
+      (a) => a.division === 'realty' && a.purpose === 'gallery'
+    )
     .slice(0, 50);
 
   // build payload for saving edits of a property row
@@ -36,16 +231,24 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
 
     // if they edited cover_url directly, inject into metadata
     if (row.cover_url !== undefined) {
-      mergedMeta = { ...mergedMeta, cover_url: row.cover_url || '' };
+      mergedMeta = {
+        ...mergedMeta,
+        cover_url: row.cover_url || '',
+      };
     }
 
     return {
       ...(row.name !== undefined ? { name: row.name } : {}),
       ...(row.slug !== undefined ? { slug: row.slug } : {}),
-      ...(row.price !== undefined ? { price: parseFloat(row.price || 0) } : {}),
+      ...(row.price !== undefined
+        ? { price: parseFloat(row.price || 0) }
+        : {}),
       ...(row.status !== undefined ? { status: row.status } : {}),
-      ...(row.description !== undefined ? { description: row.description } : {}),
-      ...((row.metadataStr !== undefined || row.cover_url !== undefined)
+      ...(row.description !== undefined
+        ? { description: row.description }
+        : {}),
+      ...((row.metadataStr !== undefined ||
+        row.cover_url !== undefined)
         ? { metadata: mergedMeta }
         : {}),
     };
@@ -70,7 +273,9 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
 
   // expand/collapse gallery editor for one property
   const toggleGalleryEditor = (propRow) => {
-    setOpenGalleryFor((cur) => (cur === propRow.id ? null : propRow.id));
+    setOpenGalleryFor((cur) =>
+      cur === propRow.id ? null : propRow.id
+    );
 
     setGalleryDrafts((prev) => {
       if (prev[propRow.id]) return prev;
@@ -110,7 +315,9 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
         .split(/[\n,]/)
         .map((s) => s.trim())
         .filter(Boolean);
-      const deduped = Array.from(new Set([...current, ...toAdd]));
+      const deduped = Array.from(
+        new Set([...current, ...toAdd])
+      );
       return { ...prev, [propId]: deduped };
     });
 
@@ -145,14 +352,21 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
 
   return (
     <SectionCard title="Realty / Rentals">
-      {/* uploader */}
       <div className="space-y-6">
+        {/* NEW: Upcoming stays / revenue dashboard */}
+        <UpcomingStaysPanel />
+
+        {/* uploader */}
         <div>
-          <h3 className="text-xl font-bold mb-2">Realty Gallery Uploader</h3>
+          <h3 className="text-xl font-bold mb-2">
+            Realty Gallery Uploader
+          </h3>
           <p className="text-sm opacity-80 mb-4">
             Upload multiple images to storage under{' '}
-            <code>assets/realty/&lt;purpose&gt;/YYYY/MM</code>. Then attach
-            them to a property (gallery).
+            <code>
+              assets/realty/&lt;purpose&gt;/YYYY/MM
+            </code>
+            . Then attach them to a property (gallery).
           </p>
 
           <MultiUploader
@@ -178,18 +392,24 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
           <h4 className="font-semibold mb-2">
             Manage Seasonal Rates for a Property
           </h4>
-          <PropertyRatesPanel properties={realtyProperties} />
+          <PropertyRatesPanel
+            properties={realtyProperties}
+          />
         </div>
 
         {/* test email */}
         <div className="border-t pt-4">
-          <h4 className="font-semibold mb-2">Send Test Itinerary Email</h4>
+          <h4 className="font-semibold mb-2">
+            Send Test Itinerary Email
+          </h4>
           <RealtyTestEmailPanelWithProperty />
         </div>
 
         {/* new property form */}
         <div className="border-t pt-4">
-          <h4 className="font-semibold mb-2">Create New Property</h4>
+          <h4 className="font-semibold mb-2">
+            Create New Property
+          </h4>
           <PropertyForm onCreated={refreshAll} />
         </div>
 
@@ -227,7 +447,9 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                           '—'
                         )}
                       </td>
-                      <td className="py-2">{a.filename || '—'}</td>
+                      <td className="py-2">
+                        {a.filename || '—'}
+                      </td>
                       <td className="py-2 max-w-[280px] truncate">
                         {a.file_url}
                       </td>
@@ -235,7 +457,9 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                         <button
                           className="text-blue-600 underline"
                           type="button"
-                          onClick={() => copyText(a.file_url)}
+                          onClick={() =>
+                            copyText(a.file_url)
+                          }
                         >
                           Copy URL
                         </button>
@@ -244,7 +468,10 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                   ))
                 ) : (
                   <tr>
-                    <td className="py-6 opacity-70" colSpan={4}>
+                    <td
+                      className="py-6 opacity-70"
+                      colSpan={4}
+                    >
                       No realty uploads yet.
                     </td>
                   </tr>
@@ -254,8 +481,8 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
           </div>
 
           <p className="text-xs opacity-60 mt-2">
-            Tip: copy a few URLs, paste them into the property gallery editor
-            below.
+            Tip: copy a few URLs, paste them into the property
+            gallery editor below.
           </p>
         </div>
 
@@ -282,29 +509,47 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
               <tbody>
                 {realtyProperties.length > 0 ? (
                   realtyProperties.map((propRow) => {
-                    const row = edits[propRow.id] || {};
+                    const row =
+                      edits[propRow.id] || {};
                     const coverPreview =
                       row.cover_url ??
                       propRow.metadata?.cover_url ??
                       '';
 
                     return (
-                      <React.Fragment key={propRow.id}>
+                      <React.Fragment
+                        key={propRow.id}
+                      >
                         <tr className="border-b dark:border-gray-800 align-top">
                           {/* name */}
                           <td className="py-2 min-w-[180px]">
                             <input
                               className="w-full dark:bg-gray-800"
-                              placeholder={propRow.name || ''}
-                              value={row.name ?? propRow.name ?? ''}
+                              placeholder={
+                                propRow.name ||
+                                ''
+                              }
+                              value={
+                                row.name ??
+                                propRow.name ??
+                                ''
+                              }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    name: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        name: e
+                                          .target
+                                          .value,
+                                      },
+                                  })
+                                )
                               }
                             />
                           </td>
@@ -313,20 +558,37 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                           <td className="py-2 min-w-[160px]">
                             <input
                               className="w-full dark:bg-gray-800"
-                              placeholder={propRow.slug || ''}
-                              value={row.slug ?? propRow.slug ?? ''}
+                              placeholder={
+                                propRow.slug ||
+                                ''
+                              }
+                              value={
+                                row.slug ??
+                                propRow.slug ??
+                                ''
+                              }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    slug: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        slug: e
+                                          .target
+                                          .value,
+                                      },
+                                  })
+                                )
                               }
                             />
                             <div className="text-[10px] opacity-60">
-                              /realty/{row.slug ?? propRow.slug}
+                              /realty/
+                              {row.slug ??
+                                propRow.slug}
                             </div>
                           </td>
 
@@ -335,16 +597,31 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                             <input
                               type="number"
                               className="w-full dark:bg-gray-800"
-                              placeholder={String(propRow.price ?? '')}
-                              value={row.price ?? propRow.price ?? ''}
+                              placeholder={String(
+                                propRow.price ??
+                                  ''
+                              )}
+                              value={
+                                row.price ??
+                                propRow.price ??
+                                ''
+                              }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    price: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        price: e
+                                          .target
+                                          .value,
+                                      },
+                                  })
+                                )
                               }
                             />
                           </td>
@@ -353,16 +630,32 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                           <td className="py-2 min-w-[120px]">
                             <input
                               className="w-full dark:bg-gray-800"
-                              placeholder={propRow.status || 'active'}
-                              value={row.status ?? propRow.status ?? ''}
+                              placeholder={
+                                propRow.status ||
+                                'active'
+                              }
+                              value={
+                                row.status ??
+                                propRow.status ??
+                                ''
+                              }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    status: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        status:
+                                          e
+                                            .target
+                                            .value,
+                                      },
+                                  })
+                                )
                               }
                             />
                           </td>
@@ -373,16 +666,29 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                               className="w-full h-24 dark:bg-gray-800"
                               placeholder="Description"
                               value={
-                                row.description ?? propRow.description ?? ''
+                                row
+                                  .description ??
+                                propRow
+                                  .description ??
+                                ''
                               }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    description: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        description:
+                                          e
+                                            .target
+                                            .value,
+                                      },
+                                  })
+                                )
                               }
                             />
                           </td>
@@ -393,7 +699,9 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                               <div className="w-16 h-16 rounded overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-500">
                                 {coverPreview ? (
                                   <img
-                                    src={coverPreview}
+                                    src={
+                                      coverPreview
+                                    }
                                     className="w-full h-full object-cover"
                                     alt="cover"
                                   />
@@ -404,20 +712,32 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
 
                               <div className="flex-1">
                                 <label className="block text-[11px] opacity-60 mb-1">
-                                  Cover URL (card / hero image)
+                                  Cover URL (card /
+                                  hero image)
                                 </label>
                                 <input
                                   className="w-full dark:bg-gray-800 text-xs"
                                   placeholder="https://.../your-image.webp"
-                                  value={coverPreview}
+                                  value={
+                                    coverPreview
+                                  }
                                   onChange={(e) =>
-                                    setEdits((prev) => ({
-                                      ...prev,
-                                      [propRow.id]: {
-                                        ...prev[propRow.id],
-                                        cover_url: e.target.value,
-                                      },
-                                    }))
+                                    setEdits(
+                                      (prev) => ({
+                                        ...prev,
+                                        [propRow.id]:
+                                          {
+                                            ...prev[
+                                              propRow
+                                                .id
+                                            ],
+                                            cover_url:
+                                              e
+                                                .target
+                                                .value,
+                                          },
+                                      })
+                                    )
                                   }
                                 />
                               </div>
@@ -427,22 +747,41 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                               className="w-full h-24 dark:bg-gray-800 text-xs"
                               placeholder='{"location":"Big Bear, CA","ical_urls":["https://..."],"cover_url":"https://..."}'
                               value={
-                                row.metadataStr ??
-                                JSON.stringify(propRow.metadata || {}, null, 0)
+                                row
+                                  .metadataStr ??
+                                JSON.stringify(
+                                  propRow
+                                    .metadata ||
+                                    {},
+                                  null,
+                                  0
+                                )
                               }
                               onChange={(e) =>
-                                setEdits((prev) => ({
-                                  ...prev,
-                                  [propRow.id]: {
-                                    ...prev[propRow.id],
-                                    metadataStr: e.target.value,
-                                  },
-                                }))
+                                setEdits(
+                                  (prev) => ({
+                                    ...prev,
+                                    [propRow.id]:
+                                      {
+                                        ...prev[
+                                          propRow
+                                            .id
+                                        ],
+                                        metadataStr:
+                                          e
+                                            .target
+                                            .value,
+                                      },
+                                  })
+                                )
                               }
                             />
 
                             <div className="text-[10px] opacity-60 mt-1">
-                              location, cover_url, ical_urls all live in
+                              location,
+                              cover_url,
+                              ical_urls all
+                              live in
                               metadata.
                             </div>
                           </td>
@@ -451,42 +790,70 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                           <td className="py-2 min-w-[100px] space-y-2">
                             <button
                               className="px-3 py-1 bg-blue-600 text-white rounded w-full"
-                              onClick={() => saveProperty(propRow)}
+                              onClick={() =>
+                                saveProperty(
+                                  propRow
+                                )
+                              }
                             >
                               Save
                             </button>
 
                             <button
                               className="px-3 py-1 bg-gray-700 text-white rounded w-full"
-                              onClick={() => toggleGalleryEditor(propRow)}
+                              onClick={() =>
+                                toggleGalleryEditor(
+                                  propRow
+                                )
+                              }
                             >
-                              {openGalleryFor === propRow.id
+                              {openGalleryFor ===
+                              propRow.id
                                 ? 'Close Gallery'
                                 : 'Gallery'}
                             </button>
                           </td>
                         </tr>
 
-                        {openGalleryFor === propRow.id && (
+                        {openGalleryFor ===
+                          propRow.id && (
                           <tr className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40">
-                            <td colSpan={7} className="p-4">
+                            <td
+                              colSpan={7}
+                              className="p-4"
+                            >
                               {/* gallery editor block */}
                               <div className="space-y-4">
                                 <div className="text-sm font-semibold">
                                   Property Gallery (
-                                  {galleryDrafts[propRow.id]?.length || 0}{' '}
+                                  {galleryDrafts[
+                                    propRow
+                                      .id
+                                  ]?.length || 0}{' '}
                                   images)
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-                                  {(galleryDrafts[propRow.id] || []).map(
-                                    (url, idx) => (
+                                  {(
+                                    galleryDrafts[
+                                      propRow
+                                        .id
+                                    ] || []
+                                  ).map(
+                                    (
+                                      url,
+                                      idx
+                                    ) => (
                                       <div
-                                        key={idx}
+                                        key={
+                                          idx
+                                        }
                                         className="relative border rounded overflow-hidden bg-gray-200 dark:bg-gray-800"
                                       >
                                         <img
-                                          src={url}
+                                          src={
+                                            url
+                                          }
                                           className="w-full h-24 object-cover"
                                           alt={`img-${idx}`}
                                         />
@@ -506,29 +873,62 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                                     )
                                   )}
 
-                                  {(galleryDrafts[propRow.id] || []).length ===
+                                  {(
+                                    galleryDrafts[
+                                      propRow
+                                        .id
+                                    ] || []
+                                  ).length ===
                                     0 && (
                                     <div className="text-xs text-gray-500 col-span-full">
-                                      No images yet.
+                                      No
+                                      images
+                                      yet.
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="space-y-2">
                                   <label className="block text-xs opacity-70">
-                                    Add image URLs (comma or newline
-                                    separated). Paste from “Recent Realty
-                                    Uploads” or wherever.
+                                    Add
+                                    image
+                                    URLs
+                                    (comma
+                                    or
+                                    newline
+                                    separated).
+                                    Paste
+                                    from
+                                    “Recent
+                                    Realty
+                                    Uploads”
+                                    or
+                                    wherever.
                                   </label>
 
                                   <textarea
                                     className="w-full h-20 text-xs dark:bg-gray-800 border rounded p-2"
-                                    value={newGalleryInput[propRow.id] || ''}
-                                    onChange={(e) =>
-                                      setNewGalleryInput((prev) => ({
-                                        ...prev,
-                                        [propRow.id]: e.target.value,
-                                      }))
+                                    value={
+                                      newGalleryInput[
+                                        propRow
+                                          .id
+                                      ] ||
+                                      ''
+                                    }
+                                    onChange={(
+                                      e
+                                    ) =>
+                                      setNewGalleryInput(
+                                        (
+                                          prev
+                                        ) => ({
+                                          ...prev,
+                                          [propRow.id]:
+                                            e
+                                              .target
+                                              .value,
+                                        })
+                                      )
                                     }
                                     placeholder={`https://.../photo1.webp\nhttps://.../photo2.webp`}
                                   />
@@ -537,10 +937,13 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                                     className="px-3 py-1 bg-gray-800 text-white rounded text-sm"
                                     type="button"
                                     onClick={() =>
-                                      addGalleryImages(propRow.id)
+                                      addGalleryImages(
+                                        propRow.id
+                                      )
                                     }
                                   >
-                                    Add to Gallery
+                                    Add to
+                                    Gallery
                                   </button>
                                 </div>
 
@@ -548,16 +951,40 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                                   <button
                                     className="px-4 py-2 bg-green-600 text-white rounded text-sm"
                                     type="button"
-                                    onClick={() => saveGallery(propRow)}
+                                    onClick={() =>
+                                      saveGallery(
+                                        propRow
+                                      )
+                                    }
                                   >
-                                    Save Gallery Changes
+                                    Save
+                                    Gallery
+                                    Changes
                                   </button>
                                 </div>
 
                                 <div className="text-[10px] opacity-60 leading-relaxed">
-                                  First image in this list shows as the big
-                                  hero on the property page. Reorder by
-                                  removing and re-adding (drag-and-drop later).
+                                  First
+                                  image
+                                  in
+                                  this
+                                  list
+                                  shows
+                                  as
+                                  the
+                                  big
+                                  hero
+                                  on
+                                  the
+                                  property
+                                  page.
+                                  Reorder
+                                  by
+                                  removing
+                                  and
+                                  re-adding
+                                  (drag-and-drop
+                                  later).
                                 </div>
                               </div>
                             </td>
@@ -568,7 +995,10 @@ export default function RealtyTab({ properties: allProperties, assets, refreshAl
                   })
                 ) : (
                   <tr>
-                    <td className="py-6 opacity-70" colSpan={7}>
+                    <td
+                      className="py-6 opacity-70"
+                      colSpan={7}
+                    >
                       No properties yet.
                     </td>
                   </tr>

@@ -19,6 +19,9 @@ import UsersTab from '@/components/admin/UsersTab';
 import AnalyticsTab from '@/components/admin/AnalyticsTab';
 import EventsTab from '@/components/admin/EventsTab';
 
+// 🔥 NEW: arrivals / upcoming stays dashboard
+import UpcomingStaysPanel from '@/components/admin/UpcomingStaysPanel';
+
 // little pill button for the tab nav
 const TabButton = ({ active, onClick, children }) => (
   <button
@@ -55,6 +58,8 @@ export default function Admin() {
 
   // ui state
   const [loading, setLoading] = useState(true);
+
+  // 👇 default tab can be whatever you want ("overview", "realty", etc)
   const [activeTab, setActiveTab] = useState('overview');
 
   // fetch everything for dashboard
@@ -166,7 +171,7 @@ export default function Admin() {
 
       setIsAdmin(true);
 
-      // load data
+      // load dashboard data
       await refreshAll();
       setLoading(false);
     })();
@@ -180,6 +185,7 @@ export default function Admin() {
     return <p className="p-6">Not authorized.</p>;
   }
 
+  // 🔥 UPDATED: we’re adding "upcoming" as its own tab
   const tabs = [
     'overview',
     'publishing',
@@ -188,6 +194,7 @@ export default function Admin() {
     'tech',
     'media',
     'realty',
+    'upcoming',  // 👈 NEW TAB in nav
     'assets',
     'blog',
     'affiliates',
@@ -254,6 +261,13 @@ export default function Admin() {
           />
         )}
 
+        {/* 👇 NEW TAB BODY */}
+        {activeTab === 'upcoming' && (
+          <section className="space-y-6">
+            <UpcomingStaysPanel />
+          </section>
+        )}
+
         {activeTab === 'assets' && (
           <AssetsTab assets={assets} refreshAll={refreshAll} />
         )}
@@ -263,7 +277,10 @@ export default function Admin() {
         )}
 
         {activeTab === 'affiliates' && (
-          <AffiliatesTab affiliates={affiliates} refreshAll={refreshAll} />
+          <AffiliatesTab
+            affiliates={affiliates}
+            refreshAll={refreshAll}
+          />
         )}
 
         {activeTab === 'bundles' && (

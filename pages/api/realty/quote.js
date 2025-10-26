@@ -17,13 +17,12 @@ const ymd = (d) =>
   ).padStart(2, '0')}`;
 
 /**
- * Core quote calculator that BOTH /quote and /create-checkout use.
- * Inputs:
- *   propRow: row from `properties`
- *   rates: rows from `realty_rates` for that property
- *   checkin, checkout: 'YYYY-MM-DD'
+ * Build nightly pricing and enforce seasonal overrides.
  *
- * Returns { ok, nights[], summary{...}, currency }
+ * NEW: We now also calculate the min night requirement for the stay,
+ * using the max() of any applicable min_nights for those dates.
+ *
+ * Returns { ok, nights[], summary{...}, min_nights_required, meets_min_stay, currency }
  */
 export function calculateQuote({ propRow, rates, checkin, checkout }) {
   if (!propRow) {
@@ -40,17 +39,20 @@ export function calculateQuote({ propRow, rates, checkin, checkout }) {
   const cleaningFee = Number(pr.cleaning_fee || 0);
   const taxRate = Number(pr.tax_rate || 0);
 
-  // Build a map of nightly prices for each night
+  // Track required min_nights across the stay
+  // We'll take the max requirement across all nights in the quote.
+  let requiredMinNights = 1; // default fallback
   const nights = [];
+
   for (const d of dateRangeUTC(checkin, checkout)) {
     const iso = ymd(d);
 
-    // seasonal overrides that include this date
+    // all override rows that cover this date
     const candidates = (rates || []).filter(
       (r) => iso >= r.start_date && iso <= r.end_date
     );
 
-    // pick highest priority
+    // choose the top candidate by priority, then fallback to base
     candidates.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
     let nightly = candidates.length
@@ -62,27 +64,57 @@ export function calculateQuote({ propRow, rates, checkin, checkout }) {
       nightly = weekend;
     }
 
+    // ADDED:
+    // pull min_nights from the chosen candidate and update requiredMinNights
+    if (candidates.length) {
+      const minN = candidates[0].min_nights
+        ? Number(candidates[0].min_nights)
+        : null;
+      if (minN && minN > requiredMinNights) {
+        requiredMinNights = minN;
+      }
+    }
+
     nights.push({ date: iso, nightly });
   }
 
   // money math
   const subtotal = nights.reduce((acc, n) => acc + Number(n.nightly), 0);
   const totalBeforeTax = subtotal + cleaningFee;
-  const taxAmt = Math.round((totalBeforeTax * taxRate + Number.EPSILON) * 100) / 100;
+  const taxAmt =
+    Math.round((totalBeforeTax * taxRate + Number.EPSILON) * 100) / 100;
   const total = totalBeforeTax + taxAmt;
+
+  const stayLength = nights.length;
+
+  // ADDED:
+  // If no seasonal override enforced anything, we still might want a global min
+  // For example, you might set metadata.pricing.min_nights = 2 in property.metadata.pricing
+  const globalMinNights =
+    typeof pr.min_nights === 'number' ? pr.min_nights : null;
+
+  if (globalMinNights && globalMinNights > requiredMinNights) {
+    requiredMinNights = globalMinNights;
+  }
+
+  // ADDED:
+  const meetsMinStay = stayLength >= requiredMinNights;
 
   return {
     ok: true,
     currency: 'usd',
     nights,
     summary: {
-      nights: nights.length,
+      nights: stayLength,
       base_subtotal: subtotal,
       cleaning_fee: cleaningFee,
       tax_rate: taxRate,
       tax_amount: taxAmt,
       total,
     },
+    // ADDED:
+    min_nights_required: requiredMinNights,
+    meets_min_stay: meetsMinStay,
   };
 }
 
@@ -94,12 +126,10 @@ export default async function handler(req, res) {
     const { property_id, checkin, checkout } = req.body || {};
 
     if (!property_id || !checkin || !checkout) {
-      return res
-        .status(400)
-        .json({
-          error:
-            'property_id, checkin, checkout required (YYYY-MM-DD)',
-        });
+      return res.status(400).json({
+        error:
+          'property_id, checkin, checkout required (YYYY-MM-DD)',
+      });
     }
 
     // Load property
@@ -131,12 +161,16 @@ export default async function handler(req, res) {
     });
 
     if (!quote.ok) {
-      return res.status(500).json({ error: quote.error || 'quote failed' });
+      return res
+        .status(500)
+        .json({ error: quote.error || 'quote failed' });
     }
 
     return res.status(200).json(quote);
   } catch (e) {
     console.error('quote handler crash:', e);
-    res.status(500).json({ error: e.message || 'internal error' });
+    res
+      .status(500)
+      .json({ error: e.message || 'internal error' });
   }
 }

@@ -15,8 +15,13 @@ const asList = (v) => {
   if (Array.isArray(v?.items)) return v.items;
   return [];
 };
+
 const pickImage = (p) =>
-  p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '';
+  p?.thumbnail_url ||
+  p?.display_image ||
+  p?.image_url ||
+  p?.image ||
+  '';
 
 export default function Capital() {
   const [products, setProducts] = useState([]);
@@ -24,18 +29,45 @@ export default function Capital() {
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
 
+  // pull the public price id for Basic Signals from env
+  const signalsPriceId =
+    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || '';
+
   useEffect(() => {
     (async () => {
       try {
+        // fetch only capital division products from your existing API
         const res = await fetch('/api/products?division=capital');
         const json = await res.json();
+
         const list = asList(json).map((p) => ({
           ...p,
           display_image: pickImage(p),
-          productType: p.productType || 'download',
+          // unify productType between db row and fallback logic:
+          productType:
+            p.metadata?.productType ||
+            p.productType ||
+            'download',
         }));
+
         if (list.length === 0) {
+          // fallback seed if DB is empty
           const fallback = [
+            {
+              id: 'signals-basic',
+              name: 'Basic Signals',
+              price: 29.99,
+              display_image:
+                'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp',
+              division: 'capital',
+              description:
+                'Daily trade entries & exits. Telegram alerts.',
+              productType: 'subscription',
+              metadata: {
+                productType: 'subscription',
+                plan_type: 'Basic Signals',
+              },
+            },
             {
               id: 'bot1',
               name: 'Trading Bot License',
@@ -43,10 +75,16 @@ export default function Capital() {
               display_image:
                 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
               division: 'capital',
-              description: 'Lifetime access to premium trading bot, trusted by 100K+ users.',
+              description:
+                'Lifetime access to premium trading bot, trusted by 100K+ users.',
               productType: 'download',
+              metadata: {
+                productType: 'download',
+                license_type: 'bot',
+              },
             },
           ];
+
           setProducts(fallback);
           setTotal(fallback.length);
         } else {
@@ -55,7 +93,24 @@ export default function Capital() {
         }
       } catch (error) {
         console.error('Capital fetch error:', error);
+
+        // on error, show the same useful fallback
         const fallback = [
+          {
+            id: 'signals-basic',
+            name: 'Basic Signals',
+            price: 29.99,
+            display_image:
+              'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/chart-hero.webp',
+            division: 'capital',
+            description:
+              'Daily trade entries & exits. Telegram alerts.',
+            productType: 'subscription',
+            metadata: {
+              productType: 'subscription',
+              plan_type: 'Basic Signals',
+            },
+          },
           {
             id: 'bot1',
             name: 'Trading Bot License',
@@ -63,10 +118,16 @@ export default function Capital() {
             display_image:
               'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/bot-license.webp',
             division: 'capital',
-            description: 'Lifetime access to premium trading bot, trusted by 100K+ users.',
+            description:
+              'Lifetime access to premium trading bot, trusted by 100K+ users.',
             productType: 'download',
+            metadata: {
+              productType: 'download',
+              license_type: 'bot',
+            },
           },
         ];
+
         setProducts(fallback);
         setTotal(fallback.length);
       } finally {
@@ -76,8 +137,13 @@ export default function Capital() {
   }, []);
 
   const handleAddToCart = (product) => {
-    const payload = { ...product, productType: 'download' };
-    if (!payload.display_image) payload.display_image = pickImage(product);
+    // this is only for non-subscription products
+    const payload = {
+      ...product,
+      productType: 'download',
+    };
+    if (!payload.display_image)
+      payload.display_image = pickImage(product);
     dispatch(addToCart(payload));
   };
 
@@ -100,7 +166,10 @@ export default function Capital() {
     <>
       <Head>
         <title>Manyagi Capital — Trusted Trading Insights</title>
-        <meta name="description" content="Access real-time signals and bots used by millions." />
+        <meta
+          name="description"
+          content="Access real-time signals and bots used by millions."
+        />
       </Head>
 
       <Hero
@@ -111,15 +180,21 @@ export default function Capital() {
         height="h-[600px]"
       >
         <Link
-          href="#subscribe" // point CTA to the restored subscribe section
+          href="#subscribe"
           className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
           Get Started
         </Link>
       </Hero>
-      
-      <section id="performance" className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold mb-6">Performance Charts</h2>
+
+      <section
+        id="performance"
+        className="container mx-auto px-4 py-16"
+      >
+        <h2 className="text-3xl font-bold mb-6">
+          Performance Charts
+        </h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Card
             title="Weekly Performance"
@@ -128,7 +203,6 @@ export default function Capital() {
             link="https://www.myfxbook.com/members/Blackkungfu/manyagi-meanpulse/11661957"
             category="capital"
           >
-            {/* NEW: MyFXBook embed */}
             <iframe
               src="https://www.myfxbook.com/widgets/11661957"
               width="100%"
@@ -137,6 +211,7 @@ export default function Capital() {
               className="mt-4"
             ></iframe>
           </Card>
+
           <Card
             title="Bot Insights"
             description="Automated trading with proven results."
@@ -153,6 +228,7 @@ export default function Capital() {
         </div>
       </section>
 
+      {/* PRODUCTS GRID */}
       <section
         id="products"
         className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-5"
@@ -162,23 +238,56 @@ export default function Capital() {
             No capital products found.
           </div>
         ) : (
-          list.map((product) => (
-            <Card
-              key={product.id}
-              title={product.name}
-              description={product.description}
-              image={product.display_image || pickImage(product)}
-              category="capital"
-              buyButton={product}
-              onBuy={() => handleAddToCart(product)}
-            />
-          ))
+          list.map((product) => {
+            const isSub =
+              product.metadata?.productType === 'subscription' ||
+              product.productType === 'subscription';
+
+            return (
+              <Card
+                key={product.id}
+                title={product.name}
+                description={product.description}
+                image={
+                  product.display_image || pickImage(product)
+                }
+                category="capital"
+                buyButton={
+                  isSub ? null : product /* for non-sub products */
+                }
+                onBuy={
+                  isSub
+                    ? undefined
+                    : () => handleAddToCart(product)
+                }
+              >
+                {/* If it's a subscription product, render inline subscribe CTA */}
+                {isSub && (
+                  <div className="mt-4 border rounded p-3 bg-white text-black">
+                    <div className="text-sm font-semibold mb-2">
+                      {product.price
+                        ? `$${Number(
+                            product.price
+                          ).toFixed(2)}/month`
+                        : '$/month'}
+                    </div>
+                    <SignalsSubscriptionForm
+                      priceId={signalsPriceId}
+                    />
+                  </div>
+                )}
+              </Card>
+            );
+          })
         )}
       </section>
 
-      {/* RESTORED: subscribe block from production */}
-      <section id="subscribe" className="container mx-auto px-4 py-16">
-        <SignalsSubscriptionForm />
+      {/* Big subscribe block / hero CTA */}
+      <section
+        id="subscribe"
+        className="container mx-auto px-4 py-16"
+      >
+        <SignalsSubscriptionForm priceId={signalsPriceId} />
       </section>
 
       <Recommender />

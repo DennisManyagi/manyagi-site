@@ -56,10 +56,13 @@ export default function Admin() {
   const [events, setEvents] = useState([]);
   const [posts, setPosts] = useState([]);
 
+  // 👇 NEW: we will also track realty_reservations so AffiliatesTab can attribute bookings
+  const [reservations, setReservations] = useState([]);
+
   // ui state
   const [loading, setLoading] = useState(true);
 
-  // 👇 default tab can be whatever you want ("overview", "realty", etc)
+  // 👇 default tab
   const [activeTab, setActiveTab] = useState('overview');
 
   // fetch everything for dashboard
@@ -76,46 +79,63 @@ export default function Admin() {
       aff,
       bund,
       ev,
+      rr, // 👈 NEW: realty_reservations
     ] = await Promise.all([
       supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('subscriptions')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('assets')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase.from('site_config').select('*'),
+
       supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('properties')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('affiliates')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('bundles')
         .select('*')
         .order('created_at', { ascending: false }),
+
       supabase
         .from('events')
+        .select('*')
+        .order('created_at', { ascending: false }),
+
+      // 👇 NEW: grab reservations so we can show revenue/commission per affiliate
+      supabase
+        .from('realty_reservations')
         .select('*')
         .order('created_at', { ascending: false }),
     ]);
@@ -136,6 +156,9 @@ export default function Admin() {
     setAffiliates(aff.data || []);
     setBundles(bund.data || []);
     setEvents(ev.data || []);
+
+    // 👇 NEW
+    setReservations(rr.data || []);
   }, []);
 
   // bootstrap auth + data
@@ -185,7 +208,7 @@ export default function Admin() {
     return <p className="p-6">Not authorized.</p>;
   }
 
-  // 🔥 UPDATED: we’re adding "upcoming" as its own tab
+  // tabs in nav
   const tabs = [
     'overview',
     'publishing',
@@ -194,7 +217,7 @@ export default function Admin() {
     'tech',
     'media',
     'realty',
-    'upcoming',  // 👈 NEW TAB in nav
+    'upcoming', // stays dashboard for realty arrivals
     'assets',
     'blog',
     'affiliates',
@@ -261,7 +284,6 @@ export default function Admin() {
           />
         )}
 
-        {/* 👇 NEW TAB BODY */}
         {activeTab === 'upcoming' && (
           <section className="space-y-6">
             <UpcomingStaysPanel />
@@ -279,6 +301,8 @@ export default function Admin() {
         {activeTab === 'affiliates' && (
           <AffiliatesTab
             affiliates={affiliates}
+            orders={orders}            // ✅ now giving to AffiliatesTab
+            reservations={reservations} // ✅ realty_reservations data
             refreshAll={refreshAll}
           />
         )}

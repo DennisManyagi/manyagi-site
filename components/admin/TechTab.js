@@ -31,44 +31,41 @@ export default function TechTab({ posts: allPosts, refreshAll }) {
                 key={p.id}
                 className="border-b dark:border-gray-800 align-top"
               >
-                <td className="py-2">{p.title}</td>
-                <td className="py-2">{p.slug}</td>
+                <td className="py-2 font-semibold">{p.title}</td>
+                <td className="py-2 text-xs text-gray-400">{p.slug}</td>
                 <td className="py-2">
                   {p.featured_image ? (
                     <img
                       src={p.featured_image}
                       className="w-16 h-16 object-cover rounded"
-                      alt=""
+                      alt={p.title}
                     />
                   ) : (
                     '—'
                   )}
                 </td>
-                <td className="py-2 min-w-[200px]">
+                <td className="py-2 min-w-[220px]">
                   <textarea
-                    className="w-full h-16 dark:bg-gray-800"
-                    value={JSON.stringify(p.metadata || {}, null, 0)}
+                    className="w-full h-20 dark:bg-gray-800 text-xs"
+                    value={JSON.stringify(p.metadata || {}, null, 2)}
                     readOnly
                   />
                 </td>
-                <td className="py-2 space-x-2">
+                <td className="py-2 space-y-2">
                   <button
-                    className="px-3 py-1 bg-blue-600 text-white rounded"
-                    onClick={() => {
-                      /* could load into edit form in future */
-                    }}
+                    className="px-3 py-1 bg-blue-600 text-white rounded w-full text-xs"
+                    onClick={() => alert('Edit feature coming soon!')}
                   >
                     Edit
                   </button>
-
                   <button
-                    className="px-3 py-1 bg-red-600 text-white rounded"
+                    className="px-3 py-1 bg-red-600 text-white rounded w-full text-xs"
                     onClick={() =>
                       deleteRow(
                         'posts',
                         p.id,
                         refreshAll,
-                        'Delete this post?'
+                        'Delete this Tech showcase item?'
                       )
                     }
                   >
@@ -80,7 +77,7 @@ export default function TechTab({ posts: allPosts, refreshAll }) {
 
             {techPosts.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 opacity-70">
+                <td colSpan={5} className="py-6 text-center opacity-70">
                   No showcase items yet.
                 </td>
               </tr>

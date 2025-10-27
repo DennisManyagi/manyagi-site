@@ -12,37 +12,60 @@ import Head from 'next/head';
 import { ThemeProvider } from 'next-themes';
 import SEO from '@/components/SEO';
 
+// 🔥 NEW: track affiliate codes from URL (?ref=ABC)
+import { rememberAffiliateFromURL } from '@/lib/affiliate';
+
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || '';
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
 
-  // Persist cart
+  // 🔥 NEW: capture & persist affiliate referral code from URL (once per mount / nav)
+  useEffect(() => {
+    rememberAffiliateFromURL();
+  }, []);
+
+  // Persist cart between refreshes
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
       try {
-        localStorage.setItem('cart', JSON.stringify(store.getState().cart.items || []));
-      } catch {/* ignore */}
+        localStorage.setItem(
+          'cart',
+          JSON.stringify(store.getState().cart.items || [])
+        );
+      } catch {
+        /* ignore */
+      }
     });
 
     try {
       const saved = localStorage.getItem('cart');
-      if (saved) store.dispatch({ type: 'cart/setItems', payload: JSON.parse(saved) });
-    } catch {/* ignore */}
+      if (saved)
+        store.dispatch({
+          type: 'cart/setItems',
+          payload: JSON.parse(saved),
+        });
+    } catch {
+      /* ignore */
+    }
 
     return unsubscribe;
   }, []);
 
-  // GA route changes
+  // Google Analytics: track route changes
   useEffect(() => {
     if (!GA_ID) return;
     const handleRouteChange = (url) => {
-      if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.gtag === 'function'
+      ) {
         window.gtag('config', GA_ID, { page_path: url });
       }
     };
     router.events.on('routeChangeComplete', handleRouteChange);
-    return () => router.events.off('routeChangeComplete', handleRouteChange);
+    return () =>
+      router.events.off('routeChangeComplete', handleRouteChange);
   }, [router.events]);
 
   return (
@@ -50,13 +73,19 @@ function MyApp({ Component, pageProps }) {
       <ErrorBoundary>
         <Head>
           {/* Viewport + icons */}
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1"
+          />
           <link rel="icon" href="/favicon.ico" />
         </Head>
 
         {GA_ID ? (
           <>
-            <Script strategy="afterInteractive" src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
+            <Script
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            />
             <Script id="ga-init" strategy="afterInteractive">
               {`
                 window.dataLayer = window.dataLayer || [];

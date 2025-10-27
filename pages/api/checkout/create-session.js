@@ -12,15 +12,20 @@ export default async function handler(req, res) {
       // Shared
       success_url,
       cancel_url,
+
       // SUBSCRIPTION path
       mode,                 // 'subscription' => create subscription checkout
       price_id,             // optional override; falls back to env
       email,                // optional prefill for subscription
       telegramId,           // from Signals form
+
       // ONE-TIME path
       product_id,           // required for one-time purchase
       quantity = 1,
       user_id = null,
+
+      // 🔥 NEW: track who referred this customer
+      affiliate_code = null,
     } = req.body || {};
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -31,7 +36,9 @@ export default async function handler(req, res) {
     if (mode === 'subscription') {
       const activePrice = price_id || process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
       if (!activePrice) {
-        return res.status(400).json({ error: 'Missing price_id. Set NEXT_PUBLIC_STRIPE_PRICE_ID or pass price_id in body.' });
+        return res.status(400).json({
+          error: 'Missing price_id. Set NEXT_PUBLIC_STRIPE_PRICE_ID or pass price_id in body.',
+        });
       }
 
       const session = await stripe.checkout.sessions.create({
@@ -39,32 +46,46 @@ export default async function handler(req, res) {
         line_items: [{ price: activePrice, quantity: 1 }],
         allow_promotion_codes: true,
         customer_email: email || undefined,
-        success_url: success_url || `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancel_url || `${baseUrl}/checkout/cancelled`,
+        success_url:
+          success_url ||
+          `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url:
+          cancel_url ||
+          `${baseUrl}/checkout/cancelled`,
         customer_creation: 'always', // ensures we have a Customer to store metadata on
+
         // put telegramId everywhere we might read it later
         metadata: {
           telegramId: telegramId ? String(telegramId) : '',
           plan: 'Basic Signals',
           division: 'capital',
+          affiliate_code: affiliate_code || '',    // NEW
         },
         subscription_data: {
           metadata: {
             telegramId: telegramId ? String(telegramId) : '',
             plan: 'Basic Signals',
             division: 'capital',
+            affiliate_code: affiliate_code || '',  // NEW
           },
         },
       });
 
-      return res.status(200).json({ ok: true, id: session.id, url: session.url });
+      return res.status(200).json({
+        ok: true,
+        id: session.id,
+        url: session.url,
+      });
     }
 
     // --------------------------------
     // 2) ONE-TIME (PRODUCT) CHECKOUT
     // --------------------------------
     if (!product_id) {
-      return res.status(400).json({ error: 'product_id is required for one-time checkout (or set mode: "subscription")' });
+      return res.status(400).json({
+        error:
+          'product_id is required for one-time checkout (or set mode: "subscription")',
+      });
     }
 
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
@@ -82,35 +103,59 @@ export default async function handler(req, res) {
     const meta = product.metadata || {};
     const stripePriceId = meta.stripe_price_id;
     if (!stripePriceId) {
-      return res.status(400).json({ error: 'Missing metadata.stripe_price_id on this product' });
+      return res
+        .status(400)
+        .json({ error: 'Missing metadata.stripe_price_id on this product' });
     }
 
     // Decide if we must collect shipping (for merch/physical items)
     const needsShipping =
-      !!meta.printful_sync_variant_id ||
-      meta.fulfill_with_printful === true;
+      !!meta.printful_sync_variant_id || meta.fulfill_with_printful === true;
 
+    // build Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [{ price: stripePriceId, quantity: qty }],
       allow_promotion_codes: true,
       automatic_tax: { enabled: true },
       shipping_address_collection: needsShipping
-        ? { allowed_countries: ['US','CA','GB','AU','NZ','DE','FR','ES','IT','NL','SE'] }
+        ? {
+            allowed_countries: [
+              'US',
+              'CA',
+              'GB',
+              'AU',
+              'NZ',
+              'DE',
+              'FR',
+              'ES',
+              'IT',
+              'NL',
+              'SE',
+            ],
+          }
         : undefined,
-      phone_number_collection: needsShipping ? { enabled: true } : undefined,
-      success_url: success_url || `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${baseUrl}/checkout/cancelled`,
+      phone_number_collection: needsShipping
+        ? { enabled: true }
+        : undefined,
+      success_url:
+        success_url ||
+        `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:
+        cancel_url ||
+        `${baseUrl}/checkout/cancelled`,
       metadata: {
         product_id: String(product.id),
         division: String(product.division || 'site'),
         quantity: String(qty),
         product_name: String(product.name || ''),
+        affiliate_code: affiliate_code || '',   // 🔥 NEW
       },
     });
 
     // Record a pending order for your webhook to finalize
     const estimatedTotal = Number(product.price || 0) * qty;
+
     await supabaseAdmin.from('orders').insert({
       user_id,
       product_id: product.id,
@@ -121,6 +166,7 @@ export default async function handler(req, res) {
       stripe_session_id: session.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      affiliate_code: affiliate_code || null, // 🔥 store ref so admin can see who drove it
       product_snapshot: {
         name: product.name,
         price: product.price,
@@ -129,7 +175,11 @@ export default async function handler(req, res) {
       },
     });
 
-    return res.status(200).json({ ok: true, id: session.id, url: session.url });
+    return res.status(200).json({
+      ok: true,
+      id: session.id,
+      url: session.url,
+    });
   } catch (err) {
     console.error('create-session error:', err);
     return res.status(500).json({ error: err.message || 'Internal error' });

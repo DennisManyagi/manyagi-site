@@ -37,6 +37,69 @@ export default function AssetsTab({ assets, refreshAll }) {
     }
   };
 
+  // 🔥 NEW: delete asset (both storage file + DB row)
+  const deleteAssetRow = async (a) => {
+    if (
+      !confirm(
+        `Delete asset "${a.filename || a.file_url}"?\nThis cannot be undone.`
+      )
+    ) {
+        return;
+    }
+
+    try {
+      //
+      // 1. Best-effort delete from Supabase Storage
+      //
+      // file_url will look like:
+      // https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path/to/file.ext>
+      //
+      // We split on "/storage/v1/object/public/" to pull out bucket + path.
+      //
+      const parts = (a.file_url || '').split(
+        '/storage/v1/object/public/'
+      );
+
+      if (parts.length > 1) {
+        // everything after /public/ is "<bucket>/<filePath...>"
+        const bucketAndPath = parts[1].split('?')[0]; // strip any query string
+        const bucket = bucketAndPath.split('/')[0];
+        const filePath = bucketAndPath.split('/').slice(1).join('/');
+
+        if (bucket && filePath) {
+          const { error: storageError } = await window.supabase.storage
+            .from(bucket)
+            .remove([filePath]);
+
+          // We don't throw on storageError, we just warn,
+          // because we still want to remove the DB row.
+          if (storageError) {
+            console.warn(
+              'Storage delete warning:',
+              storageError.message
+            );
+          }
+        }
+      }
+
+      //
+      // 2. Delete record from assets table
+      //
+      const { error } = await window.supabase
+        .from('assets')
+        .delete()
+        .eq('id', a.id);
+
+      if (error) throw error;
+
+      // refresh dashboard data so row disappears
+      refreshAll?.();
+      alert('Asset deleted.');
+    } catch (e) {
+      alert(`Delete failed: ${e.message}`);
+    }
+  };
+
   return (
     <SectionCard title="Assets Library">
       <p className="text-sm opacity-80 mb-3">
@@ -216,6 +279,15 @@ export default function AssetsTab({ assets, refreshAll }) {
                       onClick={() => saveAssetRow(a)}
                     >
                       Save
+                    </button>
+
+                    {/* 🔥 NEW DELETE BUTTON */}
+                    <button
+                      className="px-3 py-1 bg-red-600 text-white rounded"
+                      type="button"
+                      onClick={() => deleteAssetRow(a)}
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

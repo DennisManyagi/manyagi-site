@@ -2,84 +2,80 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { addToCart } from '../lib/cartSlice';
+
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
 
-// Helpers
+// normalize API response
 const asList = (v) => {
   if (Array.isArray(v)) return v;
   if (Array.isArray(v?.items)) return v.items;
   return [];
 };
-const pickImage = (p) =>
-  p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '';
 
 export default function Tech() {
-  const [products, setProducts] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
-  const dispatch = useDispatch();
 
+  // fetch "tech" showcase items from /api/posts
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/products?division=tech');
+        const res = await fetch('/api/posts?division=tech');
         const json = await res.json();
+
+        // expecting { items: [...] }
         const list = asList(json).map((p) => ({
-          ...p,
-          display_image: pickImage(p),
-          productType: p.productType || 'download',
+          id: p.id,
+          title: p.title,
+          excerpt: p.excerpt || p.content?.slice(0, 140) || '',
+          image:
+            p.featured_image ||
+            p.metadata?.screenshot ||
+            'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/app-placeholder.webp',
+          appUrl: p.metadata?.app_url || null,
+          appType: p.metadata?.app_type || 'app',
         }));
+
         if (list.length === 0) {
-          const fallback = [
+          // fallback demo card so page never looks empty
+          setApps([
             {
-              id: 'daito',
-              name: 'Daito App License',
-              price: 49.99,
-              display_image:
+              id: 'fallback-daito',
+              title: 'Daito Productivity App',
+              excerpt:
+                'Lightweight productivity and focus companion. Track tasks, lock in, get more done.',
+              image:
                 'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/daito-screenshot.webp',
-              division: 'tech',
-              description: 'Access to Daito productivity app',
-              productType: 'download',
+              appUrl: 'https://example.com/daito',
+              appType: 'app',
             },
-          ];
-          setProducts(fallback);
-          setTotal(fallback.length);
+          ]);
         } else {
-          setProducts(list);
-          setTotal(Number(json?.total ?? list.length));
+          setApps(list);
         }
-      } catch (error) {
-        console.error('Tech fetch error:', error);
-        const fallback = [
+      } catch (err) {
+        console.error('tech fetch error:', err);
+        // fallback if API blows up
+        setApps([
           {
-            id: 'daito',
-            name: 'Daito App License',
-            price: 49.99,
-            display_image:
+            id: 'fallback-daito',
+            title: 'Daito Productivity App',
+            excerpt:
+              'Lightweight productivity and focus companion. Track tasks, lock in, get more done.',
+            image:
               'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/daito-screenshot.webp',
-            division: 'tech',
-            description: 'Access to Daito productivity app',
-            productType: 'download',
+            appUrl: 'https://example.com/daito',
+            appType: 'app',
           },
-        ];
-        setProducts(fallback);
-        setTotal(fallback.length);
+        ]);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
-
-  const handleAddToCart = (product) => {
-    const payload = { ...product, productType: 'download' };
-    if (!payload.display_image) payload.display_image = pickImage(product);
-    dispatch(addToCart(payload));
-  };
 
   const carouselImages = [
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/app-carousel-1.webp',
@@ -90,70 +86,97 @@ export default function Tech() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        Loading tech products...
+        Loading apps...
       </div>
     );
   }
 
-  const list = asList(products);
-
   return (
     <>
       <Head>
-        <title>Manyagi Tech — Innovative Apps</title>
+        <title>Manyagi Tech — Apps & Tools</title>
         <meta
           name="description"
-          content="Explore our innovative apps for commerce and community."
+          content="Explore in-house tools, apps, bots, and platforms built by Manyagi Tech."
         />
       </Head>
 
       <Hero
         kicker="Tech"
         title="Innovate with Manyagi Tech"
-        lead="Apps designed for productivity and connection."
+        lead="Internal tools, public apps, and experimental platforms."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
         <Link
-          href="#products"
+          href="#apps"
           className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
         >
-          Explore Apps
+          Browse Apps
         </Link>
       </Hero>
 
+      {/* Showcase grid */}
       <section
-        id="products"
+        id="apps"
         className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5"
       >
-        {list.length === 0 ? (
+        {apps.length === 0 ? (
           <div className="col-span-full text-center text-lg">
-            No tech products found.
+            No apps yet. Check back soon.
           </div>
         ) : (
-          list.map((product) => (
+          apps.map((app) => (
             <Card
-              key={product.id}
-              title={product.name}
-              description={product.description}
-              image={product.display_image || pickImage(product)}
+              key={app.id}
+              title={
+                <div className="space-y-1">
+                  <div className="text-lg font-semibold leading-snug">
+                    {app.title}
+                  </div>
+                  <div className="text-[11px] inline-block bg-gray-800 text-white px-2 py-1 rounded uppercase tracking-wide">
+                    {app.appType === 'website'
+                      ? 'Web'
+                      : app.appType === 'review'
+                      ? 'Review'
+                      : 'App'}
+                  </div>
+                </div>
+              }
+              description={app.excerpt || '—'}
+              image={app.image}
               category="tech"
-              buyButton={product}
-              onBuy={() => handleAddToCart(product)}
-            />
+            >
+              {app.appUrl ? (
+                <a
+                  href={app.appUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition text-sm font-semibold inline-block"
+                >
+                  Visit / Download
+                </a>
+              ) : (
+                <span className="text-xs opacity-70">
+                  Coming soon
+                </span>
+              )}
+            </Card>
           ))
         )}
       </section>
 
+      {/* Email capture for new drops */}
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8427849"
           uid="637df68a02"
-          title="Stay Updated on Tech Releases"
-          description="Get notified about new apps and updates."
+          title="Get Early Access"
+          description="Be first in line for new app betas, tools, and private releases."
         />
       </section>
 
+      {/* Cross promo / recommendations */}
       <Recommender />
     </>
   );

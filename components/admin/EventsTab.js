@@ -11,6 +11,8 @@ export default function EventsTab({ events, refreshAll }) {
     description: '',
     start_date: '',
     end_date: '',
+    division: 'site',
+    metadataStr: '',
   });
 
   const createEvent = async () => {
@@ -19,8 +21,19 @@ export default function EventsTab({ events, refreshAll }) {
       description: draft.description,
       start_date: draft.start_date,
       end_date: draft.end_date,
-      division: 'site',
+      division: draft.division || 'site',
+      // safe parse metadataStr -> JSON or {}
+      metadata: draft.metadataStr
+        ? (() => {
+            try {
+              return JSON.parse(draft.metadataStr);
+            } catch {
+              return {};
+            }
+          })()
+        : {},
     };
+
     const { error } = await supabase.from('events').insert(payload);
     if (error) {
       alert(`Create failed: ${error.message}`);
@@ -30,6 +43,8 @@ export default function EventsTab({ events, refreshAll }) {
         description: '',
         start_date: '',
         end_date: '',
+        division: 'site',
+        metadataStr: '',
       });
       refreshAll?.();
       alert('Event created.');
@@ -38,10 +53,7 @@ export default function EventsTab({ events, refreshAll }) {
 
   const deleteEvent = async (id) => {
     if (!confirm('Delete this event?')) return;
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('events').delete().eq('id', id);
     if (error) alert(`Delete failed: ${error.message}`);
     else refreshAll?.();
   };
@@ -76,12 +88,35 @@ export default function EventsTab({ events, refreshAll }) {
           }
         />
 
+        <select
+          className="dark:bg-gray-800"
+          value={draft.division}
+          onChange={(e) =>
+            setDraft({ ...draft, division: e.target.value })
+          }
+        >
+          <option value="site">site</option>
+          <option value="tech">tech</option>
+          <option value="media">media</option>
+          <option value="capital">capital</option>
+          <option value="realty">realty</option>
+        </select>
+
         <textarea
-          className="md:col-span-3"
+          className="md:col-span-2"
           placeholder="Description"
           value={draft.description}
           onChange={(e) =>
             setDraft({ ...draft, description: e.target.value })
+          }
+        />
+
+        <textarea
+          className="md:col-span-3 h-24 text-xs dark:bg-gray-800"
+          placeholder='Metadata (JSON, optional) e.g. {"location":"123 Main St, LA"}'
+          value={draft.metadataStr}
+          onChange={(e) =>
+            setDraft({ ...draft, metadataStr: e.target.value })
           }
         />
 
@@ -105,6 +140,7 @@ export default function EventsTab({ events, refreshAll }) {
           <thead>
             <tr className="text-left border-b dark:border-gray-700">
               <th className="py-2">Title</th>
+              <th>Division</th>
               <th>Start Date</th>
               <th>End Date</th>
               <th>Actions</th>
@@ -118,6 +154,9 @@ export default function EventsTab({ events, refreshAll }) {
                 className="border-b dark:border-gray-800"
               >
                 <td className="py-2">{ev.title}</td>
+                <td className="py-2">
+                  {ev.division || 'site'}
+                </td>
                 <td className="py-2">
                   {ev.start_date
                     ? new Date(ev.start_date).toLocaleString()
@@ -141,7 +180,7 @@ export default function EventsTab({ events, refreshAll }) {
 
             {events.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-6 opacity-70">
+                <td colSpan={5} className="py-6 opacity-70">
                   No events yet.
                 </td>
               </tr>

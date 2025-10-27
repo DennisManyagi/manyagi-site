@@ -13,21 +13,43 @@ export default async function handler(req, res) {
       checkin,        // 'YYYY-MM-DD'
       checkout,       // 'YYYY-MM-DD' (exclusive)
       guests = 1,
-      quote_total_cents,        // from /api/realty/quote (server validates)
+      quote_total_cents,
       currency = 'usd',
-      // NEW guest details
+
+      // guest details
       guestName,
       guestEmail,
       guestPhone,
       notes,
-      // NEW deposit
+
       includeDamageDeposit = false,
       success_url,
       cancel_url,
+
+      // 🔥 NEW
+      affiliate_ref,
     } = req.body || {};
 
     if (!property_id || !checkin || !checkout || !quote_total_cents) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // helper to resolve affiliate
+    async function getAffiliateInfo(refCode) {
+      if (!refCode) return { affiliate_id: null, referral_code: null, commission_rate: null };
+      const { data: affRow, error: affErr } = await supabaseAdmin
+        .from('affiliates')
+        .select('id, referral_code, commission_rate')
+        .eq('referral_code', refCode)
+        .maybeSingle();
+      if (affErr || !affRow) {
+        return { affiliate_id: null, referral_code: null, commission_rate: null };
+      }
+      return {
+        affiliate_id: affRow.id,
+        referral_code: affRow.referral_code,
+        commission_rate: Number(affRow.commission_rate || 0),
+      };
     }
 
     // Load property for deposit & name
@@ -41,13 +63,22 @@ export default async function handler(req, res) {
     const meta = prop.metadata || {};
     const depositCents = includeDamageDeposit ? Number(meta.damage_deposit_cents || 0) : 0;
 
-    // Create or update pending reservation row (soft hold tied to Stripe session)
+    // nights
     const nights = Math.max(
       1,
       Math.round(
         (new Date(checkout).getTime() - new Date(checkin).getTime()) / (1000 * 60 * 60 * 24)
       )
     );
+
+    // figure affiliate commission (you can tweak calc: e.g. only on rent, not on deposit)
+    const affInfo = await getAffiliateInfo(affiliate_ref);
+    const subtotalCents = Number(quote_total_cents) + Number(depositCents || 0);
+    // commission stored in dollars just like orders.commission_amount
+    const commissionAmount =
+      affInfo.commission_rate != null
+        ? (subtotalCents / 100) * affInfo.commission_rate
+        : 0;
 
     // Stripe line items
     const line_items = [
@@ -97,26 +128,39 @@ export default async function handler(req, res) {
         guestPhone: guestPhone || '',
         notes: notes || '',
         includeDamageDeposit: includeDamageDeposit ? 'true' : 'false',
+
+        // affiliate trail for webhook visibility
+        affiliate_ref: affInfo.referral_code || '',
+        affiliate_id: affInfo.affiliate_id || '',
+        commission_rate: affInfo.commission_rate != null ? String(affInfo.commission_rate) : '',
       },
     });
 
-    // Create or update pending hold row keyed by session id
-    await supabaseAdmin.from('realty_reservations')
-      .upsert({
+    // Create or update pending reservation row keyed by session id
+    await supabaseAdmin.from('realty_reservations').upsert(
+      {
         property_id,
         checkin,
         checkout,
         nights,
         guests,
         status: 'pending',
-        amount_cents: Number(quote_total_cents) + Number(depositCents || 0),
+        amount_cents: subtotalCents,
         currency,
         stripe_session_id: session.id,
         guest_name: guestName || null,
         guest_email: guestEmail || null,
         guest_phone: guestPhone || null,
         notes: notes || null,
-      }, { onConflict: 'stripe_session_id' });
+
+        // 🔥 NEW affiliate tracking columns in DB
+        affiliate_id: affInfo.affiliate_id,
+        referral_code: affInfo.referral_code,
+        commission_rate: affInfo.commission_rate,
+        commission_amount: commissionAmount,
+      },
+      { onConflict: 'stripe_session_id' }
+    );
 
     return res.status(200).json({ ok: true, url: session.url, session_id: session.id });
   } catch (e) {

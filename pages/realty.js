@@ -1,3 +1,4 @@
+// pages/realty.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -5,6 +6,7 @@ import Hero from '../components/Hero';
 import Card from '../components/Card';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
+import RealtyLeadForm from '../components/RealtyLeadForm'; // ✅ NEW import
 
 // pick best image to show on the card
 const pickCardImage = (p) =>
@@ -69,6 +71,7 @@ export default function RealtyList() {
         </Link>
       </Hero>
 
+      {/* Rentals grid */}
       <section
         id="properties"
         className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5"
@@ -124,6 +127,41 @@ export default function RealtyList() {
         )}
       </section>
 
+      {/* ✅ NEW: Brokerage / Management / Seller Lead Capture */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold">
+              Buying, selling, or need management in California?
+            </h2>
+            <p className="text-base opacity-80 leading-relaxed">
+              Residential. Commercial. Short-term rentals.
+              We’ll help you find the deal, list the asset, or run it
+              for you like an Airbnb pro — without you touching messages,
+              cleaners, or pricing.
+            </p>
+
+            <ul className="text-sm list-disc pl-5 space-y-1 opacity-80">
+              <li>Sell your home off-market or on-market.</li>
+              <li>Get full-service Airbnb/VRBO management.</li>
+              <li>Find cash-flow or lifestyle properties.</li>
+            </ul>
+
+            <p className="text-xs opacity-50">
+              If you're already under contract with us as a seller,
+              your property will appear on this page as a featured
+              listing.
+            </p>
+          </div>
+
+          <div>
+            {/* This posts to /api/realty/lead and writes to realty_leads */}
+            <RealtyLeadForm />
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter opt-in stays the same */}
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8427851"

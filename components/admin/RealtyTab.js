@@ -271,6 +271,29 @@ export default function RealtyTab({
     }
   };
 
+  // 🔥 DELETE PROPERTY
+  const deleteProperty = async (propRow) => {
+    const name = propRow.name || propRow.slug || propRow.id;
+    const ok = confirm(
+      `Delete property "${name}"?\nThis will remove it from the database.\nBooked reservations and uploaded gallery assets are NOT automatically deleted.`
+    );
+    if (!ok) return;
+
+    try {
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', propRow.id);
+
+      if (error) throw error;
+
+      refreshAll?.();
+      alert('Property deleted.');
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    }
+  };
+
   // expand/collapse gallery editor for one property
   const toggleGalleryEditor = (propRow) => {
     setOpenGalleryFor((cur) =>
@@ -350,6 +373,33 @@ export default function RealtyTab({
     refreshAll?.();
   };
 
+  // 🔥 NEW: deleteAsset (for "Recent Realty Uploads")
+  // This removes the asset row from the assets table.
+  // NOTE: we're not deleting the actual storage object here because we don't
+  // know your bucket/path columns. If you store bucket/path in `assets`,
+  // you can extend this to also call supabase.storage.from(bucket).remove([path]).
+  const deleteAsset = async (assetRow) => {
+    const label = assetRow.filename || assetRow.file_url || assetRow.id;
+    const ok = confirm(
+      `Delete this uploaded file?\n${label}\n\nThis removes it from the assets table so it won't show up anymore.`
+    );
+    if (!ok) return;
+
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .delete()
+        .eq('id', assetRow.id);
+
+      if (error) throw error;
+
+      refreshAll?.();
+      alert('Asset deleted.');
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    }
+  };
+
   return (
     <SectionCard title="Realty / Rentals">
       <div className="space-y-6">
@@ -427,6 +477,8 @@ export default function RealtyTab({
                   <th>Filename</th>
                   <th>URL</th>
                   <th>Copy</th>
+                  {/* 🔥 NEW column header */}
+                  <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,13 +516,23 @@ export default function RealtyTab({
                           Copy URL
                         </button>
                       </td>
+                      {/* 🔥 NEW delete cell */}
+                      <td className="py-2">
+                        <button
+                          className="px-3 py-1 bg-red-600 text-white rounded text-xs"
+                          type="button"
+                          onClick={() => deleteAsset(a)}
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
                       className="py-6 opacity-70"
-                      colSpan={4}
+                      colSpan={5}
                     >
                       No realty uploads yet.
                     </td>
@@ -811,6 +873,17 @@ export default function RealtyTab({
                               propRow.id
                                 ? 'Close Gallery'
                                 : 'Gallery'}
+                            </button>
+
+                            <button
+                              className="px-3 py-1 bg-red-600 text-white rounded w-full"
+                              onClick={() =>
+                                deleteProperty(
+                                  propRow
+                                )
+                              }
+                            >
+                              Delete
                             </button>
                           </td>
                         </tr>

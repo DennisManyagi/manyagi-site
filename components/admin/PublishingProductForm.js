@@ -51,6 +51,9 @@ function PublishingProductForm({ onCreated }) {
       if (!name) return alert('Title required.');
       if (!coverUrl) return alert('Cover image URL required (upload or paste).');
 
+      const numericYear = Number(year);
+      const numericPrice = Number(price || 0);
+
       const metadata = {
         amazon_url: amazonUrl || undefined,
         paperback_url: paperbackUrl || undefined,
@@ -58,13 +61,13 @@ function PublishingProductForm({ onCreated }) {
         hardcover_url: hardcoverUrl || undefined,
         pdf_url: pdfUrl || undefined,
         format,
-        year: Number(year),
+        year: Number.isFinite(numericYear) ? numericYear : undefined,
         primary_store: primaryStore,
       };
 
       const payload = {
         name,
-        price: Number(price || 0),
+        price: Number.isFinite(numericPrice) ? numericPrice : 0,
         division: 'publishing',
         description,
         display_image: coverUrl,
@@ -72,12 +75,14 @@ function PublishingProductForm({ onCreated }) {
         status: 'active',
         tags: toArrayTags(tagsStr),
         metadata,
-        productType: 'book',
+        // ⛔️ DO NOT SEND productType — it is not a column in `products`
       };
 
-      const { error } = await supabase.from('products').insert(payload);
+      // Supabase prefers an array for inserts; select().single() is optional but convenient
+      const { error } = await supabase.from('products').insert([payload]).select().single();
       if (error) throw error;
 
+      // reset form
       setName('');
       setPrice('9.99');
       setDescription('');
@@ -118,6 +123,7 @@ function PublishingProductForm({ onCreated }) {
           <option value="paperback">paperback</option>
           <option value="hardcover">hardcover</option>
         </select>
+
         <input
           placeholder="Cover Image URL"
           className="md:col-span-2"
@@ -133,6 +139,7 @@ function PublishingProductForm({ onCreated }) {
           />
           Upload Cover…
         </label>
+
         <textarea
           className="md:col-span-3"
           placeholder="Description"
@@ -145,6 +152,7 @@ function PublishingProductForm({ onCreated }) {
           value={tagsStr}
           onChange={(e) => setTagsStr(e.target.value)}
         />
+
         <input
           className="md:col-span-3"
           placeholder="Amazon (general product) URL"
@@ -166,6 +174,7 @@ function PublishingProductForm({ onCreated }) {
           value={hardcoverUrl}
           onChange={(e) => setHardcoverUrl(e.target.value)}
         />
+
         <input
           className="md:col-span-2"
           placeholder="Sample PDF URL (Chapter 1)"
@@ -178,6 +187,7 @@ function PublishingProductForm({ onCreated }) {
           value={year}
           onChange={(e) => setYear(e.target.value)}
         />
+
         <div className="md:col-span-3 flex items-center gap-3">
           <label>Primary Store Button:</label>
           <select
@@ -191,6 +201,7 @@ function PublishingProductForm({ onCreated }) {
             <option value="hardcover">Hardcover</option>
             <option value="pdf">PDF (sample)</option>
           </select>
+
           <button
             type="button"
             onClick={create}

@@ -19,7 +19,7 @@ import UsersTab from '@/components/admin/UsersTab';
 import AnalyticsTab from '@/components/admin/AnalyticsTab';
 import EventsTab from '@/components/admin/EventsTab';
 
-// 🔥 NEW: arrivals / upcoming stays dashboard
+// arrivals / upcoming stays dashboard
 import UpcomingStaysPanel from '@/components/admin/UpcomingStaysPanel';
 
 // little pill button for the tab nav
@@ -56,13 +56,16 @@ export default function Admin() {
   const [events, setEvents] = useState([]);
   const [posts, setPosts] = useState([]);
 
-  // 👇 NEW: we will also track realty_reservations so AffiliatesTab can attribute bookings
+  // reservations from realty_reservations for revenue/ops/affiliates
   const [reservations, setReservations] = useState([]);
+
+  // leads from realty_leads (buy/sell/manage inquiries)
+  const [realtyLeads, setRealtyLeads] = useState([]);
 
   // ui state
   const [loading, setLoading] = useState(true);
 
-  // 👇 default tab
+  // default active tab
   const [activeTab, setActiveTab] = useState('overview');
 
   // fetch everything for dashboard
@@ -79,7 +82,8 @@ export default function Admin() {
       aff,
       bund,
       ev,
-      rr, // 👈 NEW: realty_reservations
+      rr,   // realty_reservations
+      leads // realty_leads
     ] = await Promise.all([
       supabase
         .from('products')
@@ -133,9 +137,15 @@ export default function Admin() {
         .select('*')
         .order('created_at', { ascending: false }),
 
-      // 👇 NEW: grab reservations so we can show revenue/commission per affiliate
+      // grab reservations so we can display arrivals/revenue and feed affiliates
       supabase
         .from('realty_reservations')
+        .select('*')
+        .order('created_at', { ascending: false }),
+
+      // grab brokerage / mgmt / seller / buyer leads
+      supabase
+        .from('realty_leads')
         .select('*')
         .order('created_at', { ascending: false }),
     ]);
@@ -157,8 +167,8 @@ export default function Admin() {
     setBundles(bund.data || []);
     setEvents(ev.data || []);
 
-    // 👇 NEW
     setReservations(rr.data || []);
+    setRealtyLeads(leads.data || []);
   }, []);
 
   // bootstrap auth + data
@@ -208,7 +218,7 @@ export default function Admin() {
     return <p className="p-6">Not authorized.</p>;
   }
 
-  // tabs in nav
+  // tab labels
   const tabs = [
     'overview',
     'publishing',
@@ -261,7 +271,11 @@ export default function Admin() {
         )}
 
         {activeTab === 'designs' && (
-          <DesignsTab products={products} refreshAll={refreshAll} />
+          <DesignsTab
+            products={products}
+            assets={assets}          // pass assets for Recent Uploads + copy URLs
+            refreshAll={refreshAll}
+          />
         )}
 
         {activeTab === 'capital' && (
@@ -277,11 +291,15 @@ export default function Admin() {
         )}
 
         {activeTab === 'realty' && (
-          <RealtyTab
-            properties={properties}
-            assets={assets}
-            refreshAll={refreshAll}
-          />
+          <>
+            {/* Pass captured leads into RealtyTab without inline prop comments */}
+            <RealtyTab
+              properties={properties}
+              assets={assets}
+              leads={realtyLeads}
+              refreshAll={refreshAll}
+            />
+          </>
         )}
 
         {activeTab === 'upcoming' && (
@@ -301,8 +319,8 @@ export default function Admin() {
         {activeTab === 'affiliates' && (
           <AffiliatesTab
             affiliates={affiliates}
-            orders={orders}            // ✅ now giving to AffiliatesTab
-            reservations={reservations} // ✅ realty_reservations data
+            orders={orders}
+            reservations={reservations}
             refreshAll={refreshAll}
           />
         )}

@@ -1,11 +1,35 @@
+// components/admin/MultiUploader.js
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
 
+function extFromName(name = '') {
+  const m = String(name).split('.').pop();
+  return (m || '').toLowerCase();
+}
+
+function logicalTypeFromExt(ext) {
+  if (['jpg','jpeg','png','webp','gif','svg','heic','heif'].includes(ext)) return 'image';
+  if (['mp4','mov','m4v','webm'].includes(ext)) return 'video';
+  if (['mp3','wav'].includes(ext)) return 'audio';
+  if (ext === 'pdf') return 'pdf';
+  return 'file';
+}
+
+function acceptFor(localType) {
+  switch (localType) {
+    case 'image': return 'image/*';
+    case 'video': return 'video/*';
+    case 'audio': return 'audio/*';
+    case 'pdf':   return 'application/pdf';
+    default:      return '*/*';
+  }
+}
+
 function MultiUploader({
   division = 'site',
   purpose = 'general',
-  fileType = 'image',
+  fileType = 'image',     // default UI selection
   metadata = {},
   onUploaded,
 }) {
@@ -15,7 +39,7 @@ function MultiUploader({
   const [localDivision, setLocalDivision] = useState(division);
   const [localType, setLocalType] = useState(fileType);
 
-  // how many files we send per request to avoid 413s
+  // how many files per request to avoid 413s
   const BATCH_SIZE = 2;
 
   async function fileToPayload(file) {
@@ -26,30 +50,36 @@ function MultiUploader({
       r.readAsDataURL(file);
     });
 
-    // "data:image/jpeg;base64,AAAA..."
     const base64Only = base64Full.includes('base64,')
       ? base64Full.split('base64,').pop()
       : base64Full;
 
+    const ext = extFromName(file?.name || '');
+    // Prefer the explicit dropdown selection, otherwise infer from extension
+    const inferredType = logicalTypeFromExt(ext);
+    const fileTypeToSend = localType || inferredType || 'file';
+    const contentTypeToSend = file?.type || (
+      ext === 'pdf' ? 'application/pdf' :
+      inferredType === 'image' ? 'image/*' :
+      inferredType === 'video' ? 'video/*' :
+      inferredType === 'audio' ? 'audio/*' : 'application/octet-stream'
+    );
+
     return {
       name: file.name,
       data: base64Only,
+      // Hints for the API (it will still sanitize/validate):
+      fileType: fileTypeToSend,       // 'image' | 'video' | 'audio' | 'pdf' | 'file'
+      contentType: contentTypeToSend, // e.g. 'image/jpeg', 'application/pdf'
     };
   }
 
   async function uploadBatch({ token, filesChunk }) {
-    // turn raw File objects -> {name,data} base64 payloads
     const encodedFiles = [];
     for (const f of filesChunk) {
       const payloadPiece = await fileToPayload(f);
       encodedFiles.push(payloadPiece);
     }
-
-    console.log(
-      '[MultiUploader] prepared chunk of',
-      encodedFiles.length,
-      'file(s)'
-    );
 
     const resp = await axios.post(
       '/api/admin/upload-asset-multi',
@@ -72,29 +102,17 @@ function MultiUploader({
     setBusy(true);
 
     try {
-      // 1. get supabase token
       const {
         data: { session },
       } = await supabase.auth.getSession();
       const token = session?.access_token || null;
-      console.log('[MultiUploader] session token?', token ? 'yes' : 'no');
 
-      // 2. break files into batches
-      const allFiles = [...files]; // FileList -> Array<File>
+      const allFiles = [...files];
       const batches = [];
       for (let i = 0; i < allFiles.length; i += BATCH_SIZE) {
         batches.push(allFiles.slice(i, i + BATCH_SIZE));
       }
 
-      console.log(
-        '[MultiUploader] total files:',
-        allFiles.length,
-        ' ->',
-        batches.length,
-        'batch(es)'
-      );
-
-      // 3. upload each batch sequentially
       const allItems = [];
       const allErrors = [];
 
@@ -104,24 +122,10 @@ function MultiUploader({
             token,
             filesChunk: chunk,
           });
-
           allItems.push(...items);
           allErrors.push(...errors);
-
-          console.log(
-            '[MultiUploader] batch result:',
-            items.length,
-            'items,',
-            errors.length,
-            'errors, ok=',
-            ok
-          );
         } catch (batchErr) {
-          // if the entire batch call itself exploded (network / 413 / etc)
-          console.error('[MultiUploader] batch upload failed:', batchErr);
-          const serverMsg =
-            batchErr?.response?.data?.error || batchErr.message;
-          // mark every file in this chunk as failed
+          const serverMsg = batchErr?.response?.data?.error || batchErr.message;
           for (const f of chunk) {
             allErrors.push({
               name: f?.name || '(unknown)',
@@ -131,7 +135,6 @@ function MultiUploader({
         }
       }
 
-      // 4. show a summary alert
       const successCount = allItems.length;
       const errorCount = allErrors.length;
 
@@ -142,19 +145,14 @@ function MultiUploader({
           .slice(0, 8)
           .map((e) => `• ${e.name}: ${e.reason}`)
           .join('\n');
-
         alert(
-          `Uploaded ${successCount} file(s), ${errorCount} failed:\n${errLines}${
-            allErrors.length > 8 ? '\n…' : ''
-          }`
+          `Uploaded ${successCount} file(s), ${errorCount} failed:\n${errLines}${allErrors.length > 8 ? '\n…' : ''}`
         );
       }
 
-      // 5. let parent know
       onUploaded?.({ ok: errorCount === 0, items: allItems, errors: allErrors });
     } catch (e) {
       const serverMsg = e?.response?.data?.error || e.message;
-      console.error('[MultiUploader] upload failed:', e);
       alert(`Upload failed: ${serverMsg}`);
     } finally {
       setBusy(false);
@@ -184,28 +182,16 @@ function MultiUploader({
       }`}
     >
       <div className="flex flex-wrap gap-3 mb-3">
-        {/* Division dropdown */}
         <select
           value={localDivision}
           onChange={(e) => setLocalDivision(e.target.value)}
           className="dark:bg-gray-900"
         >
-          {[
-            'site',
-            'publishing',
-            'designs',
-            'capital',
-            'tech',
-            'media',
-            'realty',
-          ].map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
+          {['site','publishing','designs','capital','tech','media','realty'].map((d) => (
+            <option key={d} value={d}>{d}</option>
           ))}
         </select>
 
-        {/* Purpose dropdown */}
         <select
           value={localPurpose}
           onChange={(e) => setLocalPurpose(e.target.value)}
@@ -215,9 +201,9 @@ function MultiUploader({
           <option value="hero">hero</option>
           <option value="carousel">carousel</option>
           <option value="gallery">gallery</option>
+          <option value="pdf">pdf</option>
         </select>
 
-        {/* File type dropdown (cosmetic / planning) */}
         <select
           value={localType}
           onChange={(e) => setLocalType(e.target.value)}
@@ -225,14 +211,16 @@ function MultiUploader({
         >
           <option value="image">image</option>
           <option value="video">video</option>
+          <option value="audio">audio</option>
           <option value="pdf">pdf</option>
+          <option value="file">file</option>
         </select>
 
-        {/* File chooser */}
         <label className="ml-auto inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-100 dark:bg-gray-800 cursor-pointer">
           <input
             type="file"
             multiple
+            accept={acceptFor(localType)}
             className="hidden"
             onChange={(e) => uploadFiles([...e.target.files])}
           />

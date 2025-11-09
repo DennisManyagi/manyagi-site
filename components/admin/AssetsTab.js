@@ -13,10 +13,10 @@ export default function AssetsTab({ assets, refreshAll }) {
       if (!Object.keys(edits).length) return;
 
       const payload = {
-        ...('filename' in edits ? { filename: edits.filename } : {}),
-        ...('division' in edits ? { division: edits.division } : {}),
-        ...('purpose' in edits ? { purpose: edits.purpose } : {}),
-        ...('tagsStr' in edits ? { tags: toArrayTags(edits.tagsStr) } : {}),
+        ...('filename'   in edits ? { filename: edits.filename } : {}),
+        ...('division'   in edits ? { division: edits.division } : {}),
+        ...('purpose'    in edits ? { purpose: edits.purpose } : {}),
+        ...('tagsStr'    in edits ? { tags: toArrayTags(edits.tagsStr) } : {}),
         ...('metadataStr' in edits
           ? { metadata: safeJSON(edits.metadataStr, a.metadata || {}) }
           : {}),
@@ -37,54 +37,22 @@ export default function AssetsTab({ assets, refreshAll }) {
     }
   };
 
-  // 🔥 NEW: delete asset (both storage file + DB row)
   const deleteAssetRow = async (a) => {
-    if (
-      !confirm(
-        `Delete asset "${a.filename || a.file_url}"?\nThis cannot be undone.`
-      )
-    ) {
-        return;
+    if (!confirm(`Delete asset "${a.filename || a.file_url}"?\nThis cannot be undone.`)) {
+      return;
     }
-
     try {
-      //
-      // 1. Best-effort delete from Supabase Storage
-      //
-      // file_url will look like:
-      // https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path/to/file.ext>
-      //
-      // We split on "/storage/v1/object/public/" to pull out bucket + path.
-      //
-      const parts = (a.file_url || '').split(
-        '/storage/v1/object/public/'
-      );
-
+      // Best-effort storage delete
+      const parts = (a.file_url || '').split('/storage/v1/object/public/');
       if (parts.length > 1) {
-        // everything after /public/ is "<bucket>/<filePath...>"
-        const bucketAndPath = parts[1].split('?')[0]; // strip any query string
+        const bucketAndPath = parts[1].split('?')[0];
         const bucket = bucketAndPath.split('/')[0];
         const filePath = bucketAndPath.split('/').slice(1).join('/');
-
         if (bucket && filePath) {
-          const { error: storageError } = await window.supabase.storage
-            .from(bucket)
-            .remove([filePath]);
-
-          // We don't throw on storageError, we just warn,
-          // because we still want to remove the DB row.
-          if (storageError) {
-            console.warn(
-              'Storage delete warning:',
-              storageError.message
-            );
-          }
+          await window.supabase.storage.from(bucket).remove([filePath]);
         }
       }
 
-      //
-      // 2. Delete record from assets table
-      //
       const { error } = await window.supabase
         .from('assets')
         .delete()
@@ -92,7 +60,6 @@ export default function AssetsTab({ assets, refreshAll }) {
 
       if (error) throw error;
 
-      // refresh dashboard data so row disappears
       refreshAll?.();
       alert('Asset deleted.');
     } catch (e) {
@@ -103,11 +70,11 @@ export default function AssetsTab({ assets, refreshAll }) {
   return (
     <SectionCard title="Assets Library">
       <p className="text-sm opacity-80 mb-3">
-        Upload once, reuse anywhere. Choose division + purpose to route
-        files into structured folders in Supabase Storage (e.g.
-        <code> designs/hero </code>).
+        Upload once, reuse anywhere. Choose division + purpose to route files into
+        structured folders in Supabase Storage (e.g., <code>designs/hero</code>).
       </p>
 
+      {/* Uploader (now sends contentType/fileType hints; server sanitizes) */}
       <MultiUploader
         division="site"
         purpose="general"
@@ -134,21 +101,16 @@ export default function AssetsTab({ assets, refreshAll }) {
             {assets.slice(0, 50).map((a) => {
               const row = assetEdits[a.id] || {};
               return (
-                <tr
-                  key={a.id}
-                  className="align-top border-b dark:border-gray-800"
-                >
+                <tr key={a.id} className="align-top border-b dark:border-gray-800">
                   <td className="py-2">
                     {a.file_type === 'image' ? (
-                      <img
-                        src={a.file_url}
-                        className="w-12 h-12 object-cover rounded"
-                        alt=""
-                      />
+                      <img src={a.file_url} className="w-12 h-12 object-cover rounded" alt="" />
                     ) : a.file_type === 'video' ? (
-                      '🎞️'
+                      <span title="video">🎞️</span>
+                    ) : a.file_type === 'pdf' ? (
+                      <span title="pdf">📄 PDF</span>
                     ) : (
-                      '📄'
+                      <span>📄</span>
                     )}
                   </td>
 
@@ -160,10 +122,7 @@ export default function AssetsTab({ assets, refreshAll }) {
                       onChange={(e) =>
                         setAssetEdits((prev) => ({
                           ...prev,
-                          [a.id]: {
-                            ...row,
-                            filename: e.target.value,
-                          },
+                          [a.id]: { ...row, filename: e.target.value },
                         }))
                       }
                     />
@@ -176,25 +135,12 @@ export default function AssetsTab({ assets, refreshAll }) {
                       onChange={(e) =>
                         setAssetEdits((prev) => ({
                           ...prev,
-                          [a.id]: {
-                            ...row,
-                            division: e.target.value,
-                          },
+                          [a.id]: { ...row, division: e.target.value },
                         }))
                       }
                     >
-                      {[
-                        'site',
-                        'publishing',
-                        'designs',
-                        'capital',
-                        'tech',
-                        'media',
-                        'realty',
-                      ].map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
+                      {['site','publishing','designs','capital','tech','media','realty'].map((d) => (
+                        <option key={d} value={d}>{d}</option>
                       ))}
                     </select>
                   </td>
@@ -206,10 +152,7 @@ export default function AssetsTab({ assets, refreshAll }) {
                       onChange={(e) =>
                         setAssetEdits((prev) => ({
                           ...prev,
-                          [a.id]: {
-                            ...row,
-                            purpose: e.target.value,
-                          },
+                          [a.id]: { ...row, purpose: e.target.value },
                         }))
                       }
                     >
@@ -217,6 +160,7 @@ export default function AssetsTab({ assets, refreshAll }) {
                       <option value="hero">hero</option>
                       <option value="carousel">carousel</option>
                       <option value="gallery">gallery</option>
+                      <option value="pdf">pdf</option>
                     </select>
                   </td>
 
@@ -224,17 +168,11 @@ export default function AssetsTab({ assets, refreshAll }) {
                     <input
                       className="w-full dark:bg-gray-800"
                       placeholder="comma,separated,tags"
-                      value={
-                        row.tagsStr ??
-                        (Array.isArray(a.tags) ? a.tags.join(', ') : '')
-                      }
+                      value={row.tagsStr ?? (Array.isArray(a.tags) ? a.tags.join(', ') : '')}
                       onChange={(e) =>
                         setAssetEdits((prev) => ({
                           ...prev,
-                          [a.id]: {
-                            ...row,
-                            tagsStr: e.target.value,
-                          },
+                          [a.id]: { ...row, tagsStr: e.target.value },
                         }))
                       }
                     />
@@ -244,25 +182,17 @@ export default function AssetsTab({ assets, refreshAll }) {
                     <textarea
                       className="w-full h-16 dark:bg-gray-800"
                       placeholder='{"scene":"exile-portal"}'
-                      value={
-                        row.metadataStr ??
-                        JSON.stringify(a.metadata || {}, null, 0)
-                      }
+                      value={row.metadataStr ?? JSON.stringify(a.metadata || {}, null, 0)}
                       onChange={(e) =>
                         setAssetEdits((prev) => ({
                           ...prev,
-                          [a.id]: {
-                            ...row,
-                            metadataStr: e.target.value,
-                          },
+                          [a.id]: { ...row, metadataStr: e.target.value },
                         }))
                       }
                     />
                   </td>
 
-                  <td className="py-2 max-w-[280px] truncate">
-                    {a.file_url}
-                  </td>
+                  <td className="py-2 max-w-[280px] truncate">{a.file_url}</td>
 
                   <td className="py-2 space-x-2">
                     <button
@@ -281,7 +211,6 @@ export default function AssetsTab({ assets, refreshAll }) {
                       Save
                     </button>
 
-                    {/* 🔥 NEW DELETE BUTTON */}
                     <button
                       className="px-3 py-1 bg-red-600 text-white rounded"
                       type="button"

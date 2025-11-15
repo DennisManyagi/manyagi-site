@@ -5,22 +5,59 @@ import { supabase } from '@/lib/supabase';
 import SectionCard from '@/components/admin/SectionCard';
 import { toArrayTags, copyText } from '@/lib/adminUtils';
 
+// Derive metadata from tags + title + description + thumbnail/asset
+function deriveMetadata({ tags, title, description, thumbnailUrl, assetUrl }) {
+  // Tags convention: [BOOKCODE, scene-code, P#, itemtype]
+  const bookCode = tags[0] || '';       // e.g. "COLLAPSE"
+  const sceneCode = tags[1] || '';      // e.g. "rotunda"
+  const promptTag = tags[2] || 'P1';    // e.g. "P1"
+
+  const bookMap = {
+    LOHC: 'Legacy of the Hidden Clans',
+    SHATTERPOINT: 'Shatterpoint Sky',
+    DREAMLESS: 'Dreamless',
+    NiceWorld: 'Nice World',
+    TW: 'The Wandering',
+    CHOICE: 'Choice',
+    LAMINA: 'Lamina',
+    MAGISCI: 'Magisci',
+    COLLAPSE: 'Collapse',
+  };
+
+  const promptNumber =
+    typeof promptTag === 'string' && promptTag.toUpperCase().startsWith('P')
+      ? Number(promptTag.slice(1)) || 1
+      : 1;
+
+  const scenePretty = sceneCode ? sceneCode.replace(/-/g, ' ') : '';
+  const year = new Date().getFullYear();
+
+  return {
+    book: bookCode,                          // e.g. "COLLAPSE"
+    series: bookMap[bookCode] || '',         // e.g. "Collapse"
+    prompt: promptNumber,                    // e.g. 1
+    scene: scenePretty,                      // e.g. "rotunda"
+    year,
+    drop: `${bookCode || 'GEN'}_P${promptNumber}`, // e.g. "COLLAPSE_P1"
+    asset_url: assetUrl || thumbnailUrl || '',
+    name: title || '',
+    description: description || '',
+    tags, // store tags snapshot in metadata as well
+  };
+}
+
 function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   const [artFile, setArtFile] = useState(null);
   const [assetUrl, setAssetUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('19.99');
   const [printfulId, setPrintfulId] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [description, setDescription] = useState('');
   const [tagsStr, setTagsStr] = useState('');
-  const [metaBook, setMetaBook] = useState('LOHC');
-  const [metaSeries, setMetaSeries] = useState('Legacy of the Hidden Clans');
-  const [metaPrompt, setMetaPrompt] = useState(1);
-  const [metaScene, setMetaScene] = useState('');
-  const [metaYear, setMetaYear] = useState(2025);
-  const [metaDrop, setMetaDrop] = useState('Drop_1');
+
   const [purpose, setPurpose] = useState('general');
   const [fileType, setFileType] = useState('image');
 
@@ -43,14 +80,15 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const metadata = {
-        book: metaBook,
-        series: metaSeries,
-        prompt: Number(metaPrompt),
-        scene: metaScene,
-        year: Number(metaYear),
-        drop: metaDrop,
-      };
+      // Use current tags/title/description to seed asset metadata
+      const tags = toArrayTags(tagsStr);
+      const metadata = deriveMetadata({
+        tags,
+        title,
+        description,
+        thumbnailUrl,
+        assetUrl: undefined,
+      });
 
       const res = await axios.post(
         '/api/admin/upload-asset',
@@ -80,15 +118,13 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
       if (!printfulId) return alert('Printful product ID is required.');
 
       const tags = toArrayTags(tagsStr);
-      const metadata = {
-        book: metaBook,
-        series: metaSeries,
-        prompt: Number(metaPrompt),
-        scene: metaScene,
-        year: Number(metaYear),
-        drop: metaDrop,
-        asset_url: assetUrl || undefined,
-      };
+      const metadata = deriveMetadata({
+        tags,
+        title,
+        description,
+        thumbnailUrl,
+        assetUrl,
+      });
 
       const payload = {
         name: title,
@@ -100,17 +136,22 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
         status: 'active',
         tags,
         metadata,
+        // NOTE: nft_url column is left null here; you can edit it later in DesignsTab
       };
+
       const { error } = await supabase.from('products').insert(payload);
       if (error) throw error;
 
+      // reset form
       setTitle('');
-      setPrice('');
+      setPrice('19.99');
       setPrintfulId('');
       setThumbnailUrl('');
       setDescription('');
       setTagsStr('');
       setArtFile(null);
+      setAssetUrl('');
+
       onCreated?.();
       alert('Product created.');
     } catch (e) {
@@ -121,10 +162,14 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
   return (
     <SectionCard title="Quick Product (Designs) — Upload → Copy URL → Create">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 1) Upload asset */}
         <div className="md:col-span-3 border rounded p-4 dark:border-gray-700">
           <h3 className="font-semibold mb-2">1) Upload asset (optional)</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-            <input type="file" onChange={(e) => setArtFile(e.target.files?.[0] || null)} />
+            <input
+              type="file"
+              onChange={(e) => setArtFile(e.target.files?.[0] || null)}
+            />
             <select
               value={fileType}
               onChange={(e) => setFileType(e.target.value)}
@@ -154,7 +199,11 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
           </div>
           {assetUrl && (
             <div className="mt-3 flex items-center gap-2">
-              <input value={assetUrl} readOnly className="w-full dark:bg-gray-800" />
+              <input
+                value={assetUrl}
+                readOnly
+                className="w-full dark:bg-gray-800"
+              />
               <button
                 type="button"
                 className="px-3 py-2 bg-blue-600 text-white rounded"
@@ -165,6 +214,8 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
             </div>
           )}
         </div>
+
+        {/* 2) Create product */}
         <div className="md:col-span-3 border rounded p-4 dark:border-gray-700">
           <h3 className="font-semibold mb-2">2) Create product</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -197,7 +248,7 @@ function QuickProductForm({ defaultDivision = 'designs', onCreated }) {
             />
             <input
               className="md:col-span-2"
-              placeholder="Tags (comma-separated)"
+              placeholder="Tags (comma-separated, e.g. COLLAPSE, rotunda, P1, mug)"
               value={tagsStr}
               onChange={(e) => setTagsStr(e.target.value)}
             />

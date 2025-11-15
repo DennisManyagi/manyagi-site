@@ -45,26 +45,37 @@ const toBuffer = (maybeBase64) => {
     typeof maybeBase64 === 'string'
       ? (maybeBase64.includes('base64,') ? maybeBase64.split('base64,').pop() : maybeBase64)
       : '';
-  try { return Buffer.from(base64, 'base64'); } catch { return null; }
+  try {
+    return Buffer.from(base64, 'base64');
+  } catch {
+    return null;
+  }
 };
 
-// Best-effort column-exists probe (cached per lambda run)
-let _columnsCache = null;
+// ---------- SAFE column detector (no pg_catalog / information_schema) ----------
+/**
+ * We infer column names by selecting a single row from the table
+ * and taking Object.keys(row). If the table is empty, we fall back
+ * to an empty array. Result is cached per table for this lambda run.
+ */
+const columnsCache = {};
 async function tableColumns(table) {
-  if (!_columnsCache) {
-    const { data } = await supabaseAdmin
-      .from('pg_catalog.pg_attribute') // will be blocked by RLS; use information_schema via rpc? Simpler: try-select.
-      .select('*')
-      .limit(0);
-    // In case the above is blocked, just fall back to a direct attempt below.
+  if (columnsCache[table]) return columnsCache[table];
+
+  try {
+    const { data, error } = await supabaseAdmin.from(table).select('*').limit(1);
+    if (error || !data || !data.length) {
+      columnsCache[table] = [];
+      return [];
+    }
+    const cols = Object.keys(data[0] || {});
+    columnsCache[table] = cols;
+    return cols;
+  } catch (e) {
+    console.warn(`[tableColumns] Failed to inspect table "${table}":`, e?.message || e);
+    columnsCache[table] = [];
+    return [];
   }
-  // Cheap fallback: ask information_schema
-  const { data } = await supabaseAdmin
-    .from('information_schema.columns')
-    .select('column_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', table);
-  return (data || []).map((r) => r.column_name);
 }
 
 export default async function handler(req, res) {
@@ -76,20 +87,26 @@ export default async function handler(req, res) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
     if (!token) return res.status(401).json({ error: 'Unauthorized (missing token)' });
 
-    const { data: u, error: userErr } = await supabaseAdmin.auth.getUser(token);
-    if (userErr || !u?.user?.id) return res.status(401).json({ error: 'Unauthorized (invalid token)' });
-    const userId = u.user.id;
+    const { data: userResult, error: userErr } = await supabaseAdmin.auth.getUser(token);
+    if (userErr || !userResult?.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized (invalid token)' });
+    }
+    const userId = userResult.user.id;
 
     const { data: roleRow, error: roleErr } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', userId)
       .maybeSingle();
-    if (roleErr || roleRow?.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    if (roleErr || roleRow?.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
     // ---------- 2) Parse inputs ----------
     const { file, file_type, division, purpose, metadata, tags } = req.body || {};
-    if (!file?.data || !file?.name) return res.status(400).json({ error: 'Missing file {data,name}' });
+    if (!file?.data || !file?.name) {
+      return res.status(400).json({ error: 'Missing file {data,name}' });
+    }
     if (!file_type || !division || !purpose) {
       return res.status(400).json({ error: 'Missing file_type/division/purpose' });
     }
@@ -101,7 +118,9 @@ export default async function handler(req, res) {
 
     // ---------- 3) Upload to Storage (handle duplicate path safely) ----------
     const bin = toBuffer(file.data);
-    if (!bin) return res.status(400).json({ error: 'Invalid base64 payload' });
+    if (!bin) {
+      return res.status(400).json({ error: 'Invalid base64 payload' });
+    }
 
     let finalKey = storage_key;
     let upErr = null;
@@ -120,18 +139,26 @@ export default async function handler(req, res) {
     }
     if (upErr) {
       console.error('[upload error]', upErr);
-      return res.status(500).json({ error: `Storage upload failed: ${upErr.message || 'unknown'}` });
+      return res
+        .status(500)
+        .json({ error: `Storage upload failed: ${upErr.message || 'unknown'}` });
     }
 
     const { data: pub } = await supabaseAdmin.storage.from('assets').getPublicUrl(finalKey);
     const file_url = pub?.publicUrl;
-    if (!file_url) return res.status(500).json({ error: 'Failed to compute public URL' });
+    if (!file_url) {
+      return res.status(500).json({ error: 'Failed to compute public URL' });
+    }
 
     // ---------- 4) Normalize metadata ----------
     let meta = {};
     if (metadata) {
       if (typeof metadata === 'string') {
-        try { meta = JSON.parse(metadata); } catch { meta = { raw: metadata }; }
+        try {
+          meta = JSON.parse(metadata);
+        } catch {
+          meta = { raw: metadata };
+        }
       } else if (typeof metadata === 'object') {
         meta = metadata;
       }
@@ -139,7 +166,7 @@ export default async function handler(req, res) {
 
     // ---------- 5) Insert into public.assets (supports assets.tags if present) ----------
     const cols = await tableColumns('assets').catch(() => []);
-    const hasTagsColumn = cols.includes('tags');          // text[]
+    const hasTagsColumn = cols.includes('tags'); // text[]
     const hasFilename = cols.includes('filename');
     const hasStorageKey = cols.includes('storage_key');
     const hasUploadedBy = cols.includes('uploaded_by');
@@ -149,8 +176,13 @@ export default async function handler(req, res) {
       file_type,
       division,
       purpose,
-      metadata: { ...meta, tags: tagSlugs }, // keep tags inside metadata too (handy)
+      metadata: {
+        ...meta,
+        // ensure tags are always mirrored inside metadata
+        tags: Array.isArray(meta?.tags) && meta.tags.length ? meta.tags : tagSlugs,
+      },
     };
+
     if (hasTagsColumn) insertPayload.tags = tagSlugs;
     if (hasFilename) insertPayload.filename = String(file.name);
     if (hasStorageKey) insertPayload.storage_key = finalKey;
@@ -158,7 +190,11 @@ export default async function handler(req, res) {
 
     let inserted = null;
     {
-      const { data, error } = await supabaseAdmin.from('assets').insert(insertPayload).select('*').single();
+      const { data, error } = await supabaseAdmin
+        .from('assets')
+        .insert(insertPayload)
+        .select('*')
+        .single();
       if (error) {
         console.error('[insert assets error]', error);
         return res.status(500).json({ error: `DB insert failed: ${error.message}` });
@@ -196,7 +232,10 @@ export default async function handler(req, res) {
       if (['hero', 'logo', 'favicon'].includes(purpose)) {
         await supabaseAdmin
           .from('site_config')
-          .upsert({ key: purpose, value: { asset_id: inserted.id, file_url } }, { onConflict: 'key' });
+          .upsert(
+            { key: purpose, value: { asset_id: inserted.id, file_url } },
+            { onConflict: 'key' }
+          );
       } else if (purpose === 'carousel') {
         const { data: existing } = await supabaseAdmin
           .from('site_config')
@@ -205,7 +244,9 @@ export default async function handler(req, res) {
           .maybeSingle();
         const arr = Array.isArray(existing?.value) ? existing.value : [];
         const updated = [...arr, file_url].slice(-5);
-        await supabaseAdmin.from('site_config').upsert({ key: 'carousel_images', value: updated }, { onConflict: 'key' });
+        await supabaseAdmin
+          .from('site_config')
+          .upsert({ key: 'carousel_images', value: updated }, { onConflict: 'key' });
       }
     } catch (e) {
       console.warn('[site_config hook skipped]', e?.message || e);
@@ -220,6 +261,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Asset upload fatal:', error);
-    return res.status(500).json({ error: error?.message || 'Failed to upload asset' });
+    return res
+      .status(500)
+      .json({ error: error?.message || 'Failed to upload asset' });
   }
 }

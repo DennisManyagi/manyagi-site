@@ -9,8 +9,15 @@ import Hero from '../components/Hero';
 import Card from '../components/Card';
 import { supabase } from '@/lib/supabase';
 
-const asList = (v) => (Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : []);
-const pickImage = (p) => p?.thumbnail_url || p?.display_image || p?.image_url || p?.image || '/placeholder.png';
+const asList = (v) =>
+  Array.isArray(v) ? v : Array.isArray(v?.items) ? v.items : [];
+
+const pickImage = (p) =>
+  p?.thumbnail_url ||
+  p?.display_image ||
+  p?.image_url ||
+  p?.image ||
+  '/placeholder.png';
 
 export default function Publishing() {
   const dispatch = useDispatch();
@@ -19,24 +26,36 @@ export default function Publishing() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // UX: allow readers to filter by series/universe
+  const [activeSeries, setActiveSeries] = useState('ALL');
+
   useEffect(() => {
     (async () => {
       try {
-        // Fetch products
+        // ---- 1) Fetch publishing products ----
         const res = await fetch('/api/products?division=publishing');
         const json = await res.json();
-        const list = asList(json).map((p) => ({ ...p, display_image: pickImage(p) }));
+        const list = asList(json).map((p) => ({
+          ...p,
+          display_image: pickImage(p),
+        }));
         setProducts(list);
         setTotal(Number(json?.total ?? list.length));
 
-        // Fetch carousel images from assets
-        const { data: assetData } = await supabase
+        // ---- 2) Fetch carousel images for hero ----
+        const { data: assetData, error: assetErr } = await supabase
           .from('assets')
           .select('file_url')
           .eq('division', 'publishing')
           .eq('purpose', 'carousel')
           .order('created_at', { ascending: false });
+
+        if (assetErr) {
+          console.warn('[publishing carousel assets error]', assetErr);
+        }
+
         const fetchedImages = assetData?.map((d) => d.file_url) || [];
+
         setCarouselImages(
           fetchedImages.length > 0
             ? fetchedImages
@@ -51,7 +70,7 @@ export default function Publishing() {
         console.error('Publishing fetch error:', err);
         setProducts([]);
         setTotal(0);
-        setCarouselImages([]); // No fallback here to encourage admin uploads
+        setCarouselImages([]);
       } finally {
         setLoading(false);
       }
@@ -62,6 +81,26 @@ export default function Publishing() {
     dispatch(addToCart({ ...product, productType: 'book' }));
   };
 
+  // ---- Derived data: series filters & filtered list ----
+
+  const seriesOptions = useMemo(() => {
+    const set = new Set();
+    products.forEach((p) => {
+      const m = p.metadata || {};
+      const label = m.series || m.book;
+      if (label) set.add(String(label));
+    });
+    return ['ALL', ...Array.from(set)];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (activeSeries === 'ALL') return products;
+    return products.filter((p) => {
+      const m = p.metadata || {};
+      return m.series === activeSeries || m.book === activeSeries;
+    });
+  }, [products, activeSeries]);
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -70,181 +109,269 @@ export default function Publishing() {
     );
   }
 
-  const list = asList(products);
+  const list = asList(filteredProducts);
 
   return (
     <>
       <Head>
         <title>Manyagi Publishing — Discover Epic Tales</title>
-        <meta name="description" content="Immerse yourself in captivating novels and poetry by D.N. Manyagi." />
+        <meta
+          name="description"
+          content="Immerse yourself in captivating novels and poetry by D.N. Manyagi across the Manyagi Universe."
+        />
       </Head>
 
+      {/* HERO */}
       <Hero
-        kicker="Publishing"
-        title="Uncover Hidden Worlds"
-        lead="Dive into stories that transport you to new realms — and take a piece home."
+        kicker="Manyagi Publishing"
+        title="Uncover Hidden Worlds & Lasting Characters"
+        lead="From grounded dystopias to hybrid magic-tech epics, explore stories built to live far beyond the page."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
-        <Link href="#books" className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-          Explore Our Library
-        </Link>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link
+            href="#books"
+            className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+          >
+            Explore the Library
+          </Link>
+          <Link
+            href="#subscribe"
+            className="btn bg-white/90 text-gray-900 border border-gray-200 py-2 px-4 rounded hover:bg-gray-100 transition dark:bg-gray-900 dark:text-white dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            Get New Release Alerts
+          </Link>
+        </div>
       </Hero>
 
-      {/* Testimonials */}
-      <section className="container mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold mb-6 text-center">What Readers Say</h2>
+      {/* SOCIAL PROOF / TESTIMONIALS */}
+      <section className="container mx-auto px-4 py-14">
+        <p className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700/80 text-center mb-2">
+          Reader Impressions
+        </p>
+        <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center text-gray-900 dark:text-gray-50">
+          Stories Made to Stay With You
+        </h2>
+        <p className="max-w-3xl mx-auto text-center text-gray-600 dark:text-gray-300 mb-10">
+          Readers describe the Manyagi Universe as emotionally grounded,
+          cinematic, and dangerously bingeable. Start with any book and
+          you&apos;ll feel the connective tissue running through them all.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="card p-4 text-center">
-            <p>"A masterpiece of fantasy!"</p>
-            <p className="text-sm mt-2">- Jenna Bush Hager</p>
+          <div className="card p-5 text-center bg-white/90 shadow-sm rounded-2xl dark:bg-gray-900/60">
+            <p className="italic text-sm md:text-base">
+              &quot;Felt like watching a prestige series in my head.&quot;
+            </p>
+            <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
+              — Early Reader
+            </p>
           </div>
-          <div className="card p-4 text-center">
-            <p>"Captivating from page one."</p>
-            <p className="text-sm mt-2">- Anonymous Reader</p>
+          <div className="card p-5 text-center bg-white/90 shadow-sm rounded-2xl dark:bg-gray-900/60">
+            <p className="italic text-sm md:text-base">
+              &quot;Grounded, human, and still wildly imaginative.&quot;
+            </p>
+            <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
+              — Beta Reader
+            </p>
           </div>
-          <div className="card p-4 text-center">
-            <p>"Poetry that resonates."</p>
-            <p className="text-sm mt-2">- Literary Critic</p>
+          <div className="card p-5 text-center bg-white/90 shadow-sm rounded-2xl dark:bg-gray-900/60">
+            <p className="italic text-sm md:text-base">
+              &quot;The kind of world you keep thinking about at work.&quot;
+            </p>
+            <p className="text-xs mt-3 text-gray-500 dark:text-gray-400">
+              — Advance Copy Reader
+            </p>
           </div>
         </div>
       </section>
 
-      <section id="books" className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5">
-        {list.length === 0 ? (
-          <div className="col-span-full text-center text-lg">
-            No publishing items found.
+      {/* SERIES FILTERS + LIBRARY */}
+      <section id="books" className="container mx-auto px-4 py-16">
+        {/* Filter bar */}
+        {seriesOptions.length > 1 && (
+          <div className="flex flex-wrap gap-3 justify-center mb-8">
+            {seriesOptions.map((series) => {
+              const isActive = activeSeries === series;
+              return (
+                <button
+                  key={series}
+                  type="button"
+                  onClick={() => setActiveSeries(series)}
+                  className={[
+                    'px-4 py-2 rounded-full text-sm border transition',
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-white/90 text-gray-800 border-gray-200 hover:bg-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800',
+                  ].join(' ')}
+                >
+                  {series === 'ALL' ? 'All Series' : series}
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          list.map((product) => {
-            const m = product.metadata || {};
-            const buyUrl =
-              m.amazon_url ||
-              m.kindle_url ||
-              m.paperback_url ||
-              m.store_url ||
-              null;
-
-            const alsoLinks = [
-              m.kindle_url ? { label: "Kindle", url: m.kindle_url } : null,
-              m.paperback_url ? { label: "Paperback", url: m.paperback_url } : null,
-            ].filter(Boolean);
-
-            const chips = [
-              m.format ? String(m.format).toUpperCase() : null,
-              m.year ? `Y${m.year}` : null,
-            ].filter(Boolean);
-
-            return (
-              <Card
-                key={product.id}
-                title={product.name}
-                description={product.description}
-                image={product.display_image || pickImage(product)}
-                category="publishing"
-                tags={Array.isArray(product.tags) ? product.tags : []}
-              >
-                {/* Meta chips */}
-                {chips.length > 0 && (
-                  <div className="flex flex-wrap gap-2 justify-center mb-2">
-                    {chips.map((c) => (
-                      <span key={c} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Primary CTAs */}
-                <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                  {buyUrl && (
-                    <a
-                      href={buyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
-                    >
-                      Get Your Copy
-                    </a>
-                  )}
-                  {m.pdf_url && (
-                    <a
-                      href={m.pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 transition"
-                    >
-                      Preview Chapter 1
-                    </a>
-                  )}
-                </div>
-
-                {/* Secondary storefront links */}
-                {alsoLinks.length > 0 && (
-                  <div className="text-xs text-gray-600 mt-3">
-                    Also available:{' '}
-                    {alsoLinks.map((l, i) => (
-                      <a
-                        key={l.label}
-                        href={l.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline hover:text-blue-700"
-                      >
-                        {l.label}{i < alsoLinks.length - 1 ? ', ' : ''}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            );
-          })
         )}
 
-        {/* Free chapter promo card (evergreen) */}
-        <Card
-          title="Legacy - Chapter 1 (Free)"
-          description="Sample the first chapter at no cost."
-          image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/legacy-chapter-1.webp"
-          category="publishing"
-        >
-          <a
-            href="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/pdfs/Legacy_of_the_Hidden_Clans_(Chapter_1)_by_D.N._Manyagi.pdf"
-            className="btn bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Download Free Preview
-          </a>
-        </Card>
+        {/* Counter / context */}
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
+          Showing {list.length} of {total || products.length} publishing items
+          {activeSeries !== 'ALL' ? ` in “${activeSeries}”` : ''}.
+        </p>
+
+        {/* Book grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {list.length === 0 ? (
+            <div className="col-span-full text-center text-lg">
+              No publishing items found for this filter yet.
+            </div>
+          ) : (
+            list.map((product) => {
+              const m = product.metadata || {};
+              const buyUrl =
+                m.amazon_url ||
+                m.kindle_url ||
+                m.paperback_url ||
+                m.store_url ||
+                null;
+
+              const alsoLinks = [
+                m.kindle_url ? { label: 'Kindle', url: m.kindle_url } : null,
+                m.paperback_url ? { label: 'Paperback', url: m.paperback_url } : null,
+              ].filter(Boolean);
+
+              const chips = [
+                m.series || m.book || null,
+                m.format ? String(m.format).toUpperCase() : null,
+                m.year ? `Published ${m.year}` : null,
+              ].filter(Boolean);
+
+              return (
+                <Card
+                  key={product.id}
+                  title={product.name}
+                  description={product.description}
+                  image={product.display_image || pickImage(product)}
+                  category="publishing"
+                  tags={Array.isArray(product.tags) ? product.tags : []}
+                >
+                  {/* Meta chips */}
+                  {chips.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center mb-3">
+                      {chips.map((c) => (
+                        <span
+                          key={c}
+                          className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Primary CTAs */}
+                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
+                    {buyUrl && (
+                      <a
+                        href={buyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                      >
+                        Get Your Copy
+                      </a>
+                    )}
+                    {m.pdf_url && (
+                      <a
+                        href={m.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 transition"
+                      >
+                        Read Sample
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Secondary storefront links */}
+                  {alsoLinks.length > 0 && (
+                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-3 text-center">
+                      Also available:{' '}
+                      {alsoLinks.map((l, i) => (
+                        <a
+                          key={l.label}
+                          href={l.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-blue-700"
+                        >
+                          {l.label}
+                          {i < alsoLinks.length - 1 ? ', ' : ''}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Optional add-to-cart for future store integration */}
+                  {!buyUrl && (
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(product)}
+                        className="text-xs px-3 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                      >
+                        Add to Manyagi Cart
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })
+          )}
+        </div>
       </section>
 
-      {/* Curated Recommendations */}
-      <section className="container mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold mb-6 text-center">Our Top Picks</h2>
+      {/* CURATED RECOMMENDATIONS */}
+      <section className="container mx-auto px-4 py-16">
+        <p className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700/80 text-center mb-2">
+          Start Here
+        </p>
+        <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center text-gray-900 dark:text-gray-50">
+          Where to Start
+        </h2>
+        <p className="max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-300 mb-8">
+          Not sure which book to pick up first? Here are a few entry points
+          into the Manyagi Universe, mixing standalone experiences and series
+          openers.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {products.slice(0, 3).map((p) => (
             <Card
               key={p.id}
               title={p.name}
               description={p.description}
-              image={p.display_image}
+              image={p.display_image || pickImage(p)}
+              category="publishing"
             />
           ))}
-          {products.length < 3 && <p className="col-span-full text-center opacity-70">Add more products in admin to populate recommendations.</p>}
+          {products.length < 3 && (
+            <p className="col-span-full text-center opacity-70 text-sm">
+              Add more publishing products in admin to populate this section.
+            </p>
+          )}
         </div>
       </section>
 
-      {/* RESTORED: subscribe block from production */}
+      {/* SUBSCRIBE */}
       <section id="subscribe" className="container mx-auto px-4 py-16">
         <SubscriptionForm
           formId="8427848"
           uid="637df68a01"
           title="Subscribe to Publishing Updates"
-          description="Get new chapters, poetry releases."
+          description="Get launch dates, exclusive previews, and behind-the-scenes notes from the Manyagi Universe."
         />
       </section>
 
+      {/* GLOBAL RECOMMENDER (cross-division) */}
       <Recommender />
     </>
   );

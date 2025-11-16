@@ -11,6 +11,16 @@ const MDXRemote = dynamic(
   { ssr: false }
 );
 
+// simple slug helper so you don't have to type it every time
+function slugify(str = '') {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export default function BlogTab({ posts, refreshAll, user }) {
   const [postForm, setPostForm] = useState({
     id: null,
@@ -21,7 +31,7 @@ export default function BlogTab({ posts, refreshAll, user }) {
     featured_image: '',
     status: 'draft',
     division: 'site',
-    description: '', // used also by EventsTab but harmless here
+    description: '', // unused here but fine for shared table
     start_date: '',
     end_date: '',
   });
@@ -30,26 +40,31 @@ export default function BlogTab({ posts, refreshAll, user }) {
   const [postQuery, setPostQuery] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [mdx, setMdx] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  // derived filtered list
+  // sort newest → oldest, then apply filters/search
   const filteredPosts = useMemo(() => {
-    return posts
+    const sorted = [...posts].sort((a, b) => {
+      const da = new Date(a.created_at || 0).getTime();
+      const db = new Date(b.created_at || 0).getTime();
+      return db - da;
+    });
+
+    return sorted
       .filter((p) =>
         postFilter === 'all'
           ? true
           : (p.status || 'draft') ===
             (postFilter === 'draft' ? 'draft' : 'published')
       )
-      .filter((p) =>
-        !postQuery
-          ? true
-          : (p.title || '')
-              .toLowerCase()
-              .includes(postQuery.toLowerCase()) ||
-            (p.slug || '')
-              .toLowerCase()
-              .includes(postQuery.toLowerCase())
-      );
+      .filter((p) => {
+        if (!postQuery) return true;
+        const q = postQuery.toLowerCase();
+        return (
+          (p.title || '').toLowerCase().includes(q) ||
+          (p.slug || '').toLowerCase().includes(q)
+        );
+      });
   }, [posts, postFilter, postQuery]);
 
   const clearPostForm = () =>
@@ -90,17 +105,28 @@ export default function BlogTab({ posts, refreshAll, user }) {
 
   const savePost = async (e) => {
     e.preventDefault();
+    if (!postForm.title.trim()) {
+      alert('Title is required.');
+      return;
+    }
+    if (!postForm.slug.trim()) {
+      alert('Slug is required.');
+      return;
+    }
+
+    setSaving(true);
     try {
       const payload = {
-        title: postForm.title,
-        slug: postForm.slug,
-        excerpt: postForm.excerpt,
+        title: postForm.title.trim(),
+        slug: postForm.slug.trim(),
+        excerpt: postForm.excerpt.trim(),
         content: postForm.content,
-        featured_image: postForm.featured_image,
+        featured_image: postForm.featured_image.trim(),
         status: postForm.status,
         division: postForm.division || 'site',
-        author_id: user.id,
+        author_id: user?.id ?? null,
       };
+
       if (postForm.id) {
         const { error } = await supabase
           .from('posts')
@@ -111,11 +137,14 @@ export default function BlogTab({ posts, refreshAll, user }) {
         const { error } = await supabase.from('posts').insert(payload);
         if (error) throw error;
       }
+
       clearPostForm();
       refreshAll?.();
       alert('Saved post.');
     } catch (err) {
       alert(`Failed to save post: ${err.message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -156,7 +185,7 @@ export default function BlogTab({ posts, refreshAll, user }) {
         description="Manage blog posts for Manyagi divisions."
       />
 
-      {/* filters */}
+      {/* filters / search */}
       <div className="flex flex-col md:flex-row gap-3 mb-4">
         <select
           value={postFilter}
@@ -189,13 +218,28 @@ export default function BlogTab({ posts, refreshAll, user }) {
           }
         />
 
-        <input
-          placeholder="Slug"
-          value={postForm.slug}
-          onChange={(e) =>
-            setPostForm({ ...postForm, slug: e.target.value })
-          }
-        />
+        <div className="flex gap-2">
+          <input
+            className="flex-1"
+            placeholder="Slug (auto from title or custom)"
+            value={postForm.slug}
+            onChange={(e) =>
+              setPostForm({ ...postForm, slug: e.target.value })
+            }
+          />
+          <button
+            type="button"
+            onClick={() =>
+              setPostForm((prev) => ({
+                ...prev,
+                slug: prev.slug || slugify(prev.title),
+              }))
+            }
+            className="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700"
+          >
+            Auto
+          </button>
+        </div>
 
         <input
           className="col-span-2"
@@ -224,19 +268,13 @@ export default function BlogTab({ posts, refreshAll, user }) {
             setPostForm({ ...postForm, division: e.target.value })
           }
         >
-          {[
-            'site',
-            'publishing',
-            'designs',
-            'capital',
-            'tech',
-            'media',
-            'realty',
-          ].map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
+          {['site', 'publishing', 'designs', 'capital', 'tech', 'media', 'realty'].map(
+            (d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            )
+          )}
         </select>
 
         <select
@@ -259,8 +297,11 @@ export default function BlogTab({ posts, refreshAll, user }) {
         />
 
         <div className="flex gap-2 flex-wrap">
-          <button className="p-2 bg-black text-white rounded dark:bg-gray-700">
-            Save Post
+          <button
+            className="p-2 bg-black text-white rounded dark:bg-gray-700 disabled:opacity-50"
+            disabled={saving}
+          >
+            {saving ? 'Saving…' : 'Save Post'}
           </button>
 
           <button
@@ -287,9 +328,14 @@ export default function BlogTab({ posts, refreshAll, user }) {
 
       {/* preview */}
       {showPreview && mdx && (
-        <SectionCard>
-          <MDXRemote {...mdx} />
-        </SectionCard>
+        <div className="mb-6 rounded border bg-white p-4 dark:bg-gray-900 dark:border-gray-700">
+          <h3 className="text-sm font-semibold mb-2 opacity-70">
+            Live MDX Preview
+          </h3>
+          <div className="prose max-w-none dark:prose-invert">
+            <MDXRemote {...mdx} />
+          </div>
+        </div>
       )}
 
       {/* posts list */}
@@ -311,8 +357,8 @@ export default function BlogTab({ posts, refreshAll, user }) {
               className="border-t dark:border-gray-800 align-top"
             >
               <td className="py-2">{p.title}</td>
-              <td className="py-2">{p.slug}</td>
-              <td className="py-2">{p.division || 'site'}</td>
+              <td className="py-2 text-xs">{p.slug}</td>
+              <td className="py-2 text-xs">{p.division || 'site'}</td>
               <td className="py-2">
                 <span
                   className={`px-2 py-1 rounded text-xs ${
@@ -324,7 +370,7 @@ export default function BlogTab({ posts, refreshAll, user }) {
                   {p.status || 'draft'}
                 </span>
               </td>
-              <td className="py-2 space-x-2">
+              <td className="py-2 space-x-3 text-xs">
                 <button
                   onClick={() => loadPostToForm(p)}
                   className="text-blue-500"
@@ -347,6 +393,15 @@ export default function BlogTab({ posts, refreshAll, user }) {
                     ? 'Unpublish'
                     : 'Publish'}
                 </button>
+
+                <a
+                  href={`/blog/${p.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-gray-600 hover:underline"
+                >
+                  View
+                </a>
 
                 <button
                   onClick={() => deletePost(p.id)}

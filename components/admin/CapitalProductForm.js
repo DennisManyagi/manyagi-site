@@ -10,7 +10,7 @@ function CapitalProductForm({ onCreated }) {
   const [description, setDescription] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [tagsStr, setTagsStr] = useState('trading, signals');
-  const [licenseType, setLicenseType] = useState('bot');
+  const [licenseType, setLicenseType] = useState('bot'); // bot | ebook | course | api | signals
   const [apiAccess, setApiAccess] = useState(false);
   const [metadataStr, setMetadataStr] = useState('');
 
@@ -36,12 +36,14 @@ function CapitalProductForm({ onCreated }) {
         status: 'active',
         tags: toArrayTags(tagsStr),
         metadata,
-        productType: 'download',
+        // IMPORTANT: we no longer send `productType` to Supabase.
+        // Capital page derives type from metadata.productType.
       };
 
       const { error } = await supabase.from('products').insert(payload);
       if (error) throw error;
 
+      // reset
       setName('');
       setPrice('99.99');
       setDescription('');
@@ -58,15 +60,15 @@ function CapitalProductForm({ onCreated }) {
   };
 
   return (
-    <SectionCard title="Capital — Add Product (Bot License, eBook, etc.)">
+    <SectionCard title="Capital — Add Product (Signals, Bot License, eBook, etc.)">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input
-          placeholder="Product Title (e.g., Trading Bot License)"
+          placeholder="Product Title (e.g., Crypto Signals)"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <input
-          placeholder="Price"
+          placeholder="Price (e.g., 39.99)"
           type="number"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
@@ -77,28 +79,33 @@ function CapitalProductForm({ onCreated }) {
           className="dark:bg-gray-800"
         >
           <option value="bot">Bot License</option>
-          <option value="ebook">eBook</option>
+          <option value="ebook">eBook (PDF)</option>
           <option value="course">Course</option>
           <option value="api">API Access</option>
+          <option value="signals">Signals Tier</option>
         </select>
+
         <input
           placeholder="Thumbnail URL"
           className="md:col-span-2"
           value={thumbnailUrl}
           onChange={(e) => setThumbnailUrl(e.target.value)}
         />
+
         <textarea
           className="md:col-span-3"
-          placeholder="Description"
+          placeholder="Description (what this tier or product is about)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
         <input
           className="md:col-span-2"
           placeholder="Tags (comma-separated)"
           value={tagsStr}
           onChange={(e) => setTagsStr(e.target.value)}
         />
+
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -107,12 +114,14 @@ function CapitalProductForm({ onCreated }) {
           />
           Includes API Access
         </label>
+
         <textarea
           className="md:col-span-3"
-          placeholder='Additional Metadata (JSON, e.g., {"strategy":"mean-reversion"})'
+          placeholder='Additional Metadata (JSON, e.g., {"productType":"subscription","plan_type":"Crypto Signals"})'
           value={metadataStr}
           onChange={(e) => setMetadataStr(e.target.value)}
         />
+
         <button
           type="button"
           onClick={create}

@@ -9,14 +9,19 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import SectionIntro from '../components/SectionIntro';
 
 const PAGE_SIZE = 16;
 
 // Prefer higher-quality image fields when available
 function pickImage(p) {
   return (
-    (p?.thumbnail_url && typeof p.thumbnail_url === 'string' && p.thumbnail_url) ||
-    (p?.display_image && typeof p.display_image === 'string' && p.display_image) ||
+    (p?.thumbnail_url &&
+      typeof p.thumbnail_url === 'string' &&
+      p.thumbnail_url) ||
+    (p?.display_image &&
+      typeof p.display_image === 'string' &&
+      p.display_image) ||
     (p?.image_url && typeof p.image_url === 'string' && p.image_url) ||
     (p?.image && typeof p.image === 'string' && p.image) ||
     '/placeholder.png' // CSP-safe local fallback
@@ -101,7 +106,8 @@ export default function Designs() {
             display_image:
               'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/mock-tee-1.webp',
             division: 'designs',
-            description: 'Fallback design merchandise. Made with 100% cotton for comfort.',
+            description:
+              'Fallback design merchandise. Made with 100% cotton for comfort.',
             printful_product_id: 'fallback-tee-id',
             productType: 'merch',
             metadata: { book: 'Sample', prompt: 1 },
@@ -188,17 +194,24 @@ export default function Designs() {
     );
   }
 
+  const filtersActive =
+    q || collection || tag || (sort && sort !== 'new');
+
   return (
     <>
       <Head>
         <title>Manyagi Designs — Premium Apparel & Gear</title>
-        <meta name="description" content="High-quality T-shirts, mugs, and prints inspired by our stories. Shop now for exclusive designs." />
+        <meta
+          name="description"
+          content="High-quality T-shirts, mugs, and prints inspired by the Manyagi Universe. Exclusive drops, story-linked collections, and premium merch."
+        />
       </Head>
 
+      {/* HERO */}
       <Hero
-        kicker="Designs"
-        title="Elevate Your Style"
-        lead="Discover apparel and gear crafted with premium materials, inspired by epic tales."
+        kicker="Manyagi Designs"
+        title="Wear the Universe"
+        lead="Story-linked apparel, posters, and gear forged from the worlds of the Manyagi Universe. Designed to feel like limited drops, not generic merch."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
@@ -206,106 +219,153 @@ export default function Designs() {
           href="#products"
           className="btn bg-blue-600 text-white py-3 px-5 rounded hover:scale-105 transition"
         >
-          Browse Collection
+          Browse the Collection
         </Link>
       </Hero>
 
-      {/* Trust Badges */}
-      <section className="container mx-auto px-4 py-8 flex justify-center gap-6">
-        <div className="flex items-center gap-2">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-          Secure Payment
-        </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z"/><path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z"/></svg>
-          Free Shipping
-        </div>
-        <div className="flex items-center gap-2">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-          30-Day Returns
+      {/* INTRO TO DESIGNS */}
+      <SectionIntro
+        id="designs-overview"
+        kicker="Merch, But Cinematic"
+        title="Designs Made to Feel Like Scenes"
+        lead="Each piece is tied to a moment, character, or location from the Manyagi stories—so when you wear it, it feels like a frame pulled from a prestige series."
+        tone="warm"
+      />
+
+      {/* TRUST BADGES */}
+      <section className="container mx-auto px-4 pb-10 -mt-6">
+        <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+          {[
+            { label: 'Premium Printful Fulfillment', sub: 'Global, on-demand production' },
+            { label: 'Secure Payment', sub: 'Stripe, PayPal & major cards' },
+            { label: '30-Day Returns', sub: 'On misprints & damaged items' },
+          ].map((badge) => (
+            <div
+              key={badge.label}
+              className="flex flex-col items-center px-4 py-3 rounded-2xl bg-white/80 shadow-sm border border-amber-100 text-xs md:text-sm text-gray-700 dark:bg-gray-900/70 dark:border-amber-800/50 dark:text-gray-100"
+            >
+              <span className="font-semibold">{badge.label}</span>
+              <span className="opacity-80">{badge.sub}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Filter Bar */}
-      <section className="container mx-auto px-4 mt-8">
-        <form
-          onSubmit={applyFilters}
-          className="flex flex-col md:flex-row gap-3 items-stretch md:items-end"
-        >
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1">Search</label>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search title, scene, book…"
-              className="w-full border rounded px-3 py-2 dark:bg-gray-900"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Collection</label>
-            <select
-              value={collection}
-              onChange={(e) => setCollection(e.target.value)}
-              className="border rounded px-3 py-2 w-48 dark:bg-gray-900"
-            >
-              <option value="">All</option>
-              {collectionOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Tag</label>
-            <select
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              className="border rounded px-3 py-2 w-48 dark:bg-gray-900"
-            >
-              <option value="">All</option>
-              {tagOptions.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Sort</label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="border rounded px-3 py-2 w-40 dark:bg-gray-900"
-            >
-              <option value="new">Newest</option>
-              <option value="price_asc">Price ↑</option>
-              <option value="price_desc">Price ↓</option>
-            </select>
-          </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded">
-              Apply
-            </button>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="px-4 py-2 bg-gray-200 rounded dark:bg-gray-800"
-            >
-              Clear
-            </button>
-          </div>
-        </form>
+      {/* FILTER BAR */}
+      <section className="container mx-auto px-4 pt-4">
+        <div className="rounded-3xl bg-white/80 dark:bg-gray-900/80 border border-amber-100/80 dark:border-gray-800 shadow-sm px-4 md:px-6 py-5 md:py-6">
+          <form
+            onSubmit={applyFilters}
+            className="flex flex-col md:flex-row gap-4 items-stretch md:items-end"
+          >
+            <div className="flex-1">
+              <label className="block text-xs font-semibold tracking-wide uppercase mb-1 text-gray-600 dark:text-gray-300">
+                Search
+              </label>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search title, scene, book…"
+                className="w-full border rounded-xl px-3 py-2 text-sm dark:bg-gray-950 dark:border-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold tracking-wide uppercase mb-1 text-gray-600 dark:text-gray-300">
+                Collection
+              </label>
+              <select
+                value={collection}
+                onChange={(e) => setCollection(e.target.value)}
+                className="border rounded-xl px-3 py-2 w-40 md:w-48 text-sm dark:bg-gray-950 dark:border-gray-700"
+              >
+                <option value="">All</option>
+                {collectionOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold tracking-wide uppercase mb-1 text-gray-600 dark:text-gray-300">
+                Tag
+              </label>
+              <select
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+                className="border rounded-xl px-3 py-2 w-40 md:w-48 text-sm dark:bg-gray-950 dark:border-gray-700"
+              >
+                <option value="">All</option>
+                {tagOptions.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold tracking-wide uppercase mb-1 text-gray-600 dark:text-gray-300">
+                Sort
+              </label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="border rounded-xl px-3 py-2 w-32 md:w-40 text-sm dark:bg-gray-950 dark:border-gray-700"
+              >
+                <option value="new">Newest</option>
+                <option value="price_asc">Price ↑</option>
+                <option value="price_desc">Price ↓</option>
+              </select>
+            </div>
+            <div className="flex gap-2 md:gap-3">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        </div>
       </section>
 
-      {/* Products Grid */}
+      {/* SNAPSHOT BAR + PRODUCTS GRID */}
       <section id="products" className="container mx-auto px-4 py-10">
+        {/* Snapshot pill */}
+        <div className="max-w-3xl mx-auto mb-8">
+          <div className="flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-white/80 border border-amber-200/70 shadow-sm text-sm text-gray-700 text-center dark:bg-gray-900/70 dark:border-amber-800/60 dark:text-gray-100">
+            <span className="text-[11px] font-semibold tracking-[0.26em] uppercase text-amber-700/80 dark:text-amber-300/80">
+              Design Gallery
+            </span>
+            <span>
+              Showing{' '}
+              <span className="font-semibold">{items.length}</span> of{' '}
+              <span className="font-semibold">{total}</span> designs
+              {filtersActive && ' in your filtered view.'}
+              {!filtersActive && '.'}
+            </span>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-50/70 px-3 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-700/80 dark:bg-amber-900/40 dark:text-amber-50 dark:hover:bg-amber-900/60"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </div>
+
         {items.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-lg">No products found for your filters.</p>
             <button
               onClick={clearFilters}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl"
             >
               Reset Filters
             </button>
@@ -317,7 +377,7 @@ export default function Designs() {
                 <Card
                   key={product.id}
                   title={product.name}
-                  description={`${product.description} Made with premium cotton for lasting comfort.`}
+                  description={`${product.description} Made with premium materials for lasting comfort.`}
                   image={product.display_image}
                   category="designs"
                   buyButton={product}
@@ -331,9 +391,9 @@ export default function Designs() {
                 <button
                   disabled={fetchingMore}
                   onClick={loadMore}
-                  className="px-5 py-2 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  className="px-5 py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-sm font-medium dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
-                  {fetchingMore ? 'Loading…' : 'Load more'}
+                  {fetchingMore ? 'Loading…' : 'Load more designs'}
                 </button>
               </div>
             )}
@@ -341,20 +401,20 @@ export default function Designs() {
         )}
       </section>
 
-      {/* RESTORED: subscribe block from production */}
+      {/* SUBSCRIBE */}
       <section id="subscribe" className="container mx-auto px-4 pb-16">
         <SubscriptionForm
           formId="8432506"
           uid="a194031db7"
           title="Stay Updated on New Designs"
-          description="Get notified about new drops and exclusive offers."
+          description="Get notified about new drops, limited runs, and exclusive offers from Manyagi Designs."
         />
       </section>
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-6 rounded shadow-lg text-center dark:bg-gray-900">
-            <p className="text-base">Added to cart!</p>
+          <div className="bg-white p-6 rounded-xl shadow-lg text-center dark:bg-gray-900">
+            <p className="text-base font-medium">Added to cart!</p>
             <Link
               href="/cart"
               className="text-blue-600 hover:underline mt-4 inline-block"
@@ -365,6 +425,7 @@ export default function Designs() {
         </div>
       )}
 
+      {/* GLOBAL RECOMMENDER */}
       <Recommender />
     </>
   );

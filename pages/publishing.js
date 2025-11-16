@@ -7,6 +7,7 @@ import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Hero from '../components/Hero';
 import Card from '../components/Card';
+import SectionIntro from '../components/SectionIntro';
 import { supabase } from '@/lib/supabase';
 
 const asList = (v) =>
@@ -145,19 +146,17 @@ export default function Publishing() {
         </div>
       </Hero>
 
-      {/* SOCIAL PROOF / TESTIMONIALS */}
-      <section className="container mx-auto px-4 py-14">
-        <p className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700/80 text-center mb-2">
-          Reader Impressions
-        </p>
-        <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center text-gray-900 dark:text-gray-50">
-          Stories Made to Stay With You
-        </h2>
-        <p className="max-w-3xl mx-auto text-center text-gray-600 dark:text-gray-300 mb-10">
-          Readers describe the Manyagi Universe as emotionally grounded,
-          cinematic, and dangerously bingeable. Start with any book and
-          you&apos;ll feel the connective tissue running through them all.
-        </p>
+      {/* SOCIAL PROOF / TESTIMONIALS INTRO */}
+      <SectionIntro
+        id="reader-impressions"
+        kicker="Reader Impressions"
+        title="Stories Made to Stay With You"
+        lead="Readers describe the Manyagi Universe as emotionally grounded, cinematic, and dangerously bingeable. Start with any book and you'll feel the connective tissue running through them all."
+        tone="warm"
+      />
+
+      {/* SOCIAL PROOF / TESTIMONIALS CONTENT */}
+      <section className="container mx-auto px-4 pb-10 -mt-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="card p-5 text-center bg-white/90 shadow-sm rounded-2xl dark:bg-gray-900/60">
             <p className="italic text-sm md:text-base">
@@ -187,10 +186,10 @@ export default function Publishing() {
       </section>
 
       {/* SERIES FILTERS + LIBRARY */}
-      <section id="books" className="container mx-auto px-4 py-16">
+      <section id="books" className="container mx-auto px-4 pt-10 pb-16">
         {/* Filter bar */}
         {seriesOptions.length > 1 && (
-          <div className="flex flex-wrap gap-3 justify-center mb-8">
+          <div className="flex flex-wrap gap-3 justify-center mb-6">
             {seriesOptions.map((series) => {
               const isActive = activeSeries === series;
               return (
@@ -212,11 +211,40 @@ export default function Publishing() {
           </div>
         )}
 
-        {/* Counter / context */}
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Showing {list.length} of {total || products.length} publishing items
-          {activeSeries !== 'ALL' ? ` in “${activeSeries}”` : ''}.
-        </p>
+        {/* Counter / context bar */}
+        <div className="mb-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-white/80 border border-amber-200/70 shadow-sm text-sm text-gray-700 text-center dark:bg-gray-900/70 dark:border-amber-800/60 dark:text-gray-100">
+              <span className="text-[11px] font-semibold tracking-[0.26em] uppercase text-amber-700/80 dark:text-amber-300/80">
+                Library Snapshot
+              </span>
+              <span>
+                Showing <span className="font-semibold">{list.length}</span> of{' '}
+                <span className="font-semibold">
+                  {total || products.length}
+                </span>{' '}
+                books &amp; collections
+                {activeSeries !== 'ALL' && (
+                  <>
+                    {' '}
+                    in <span className="italic">“{activeSeries}”</span>
+                  </>
+                )}
+                .
+              </span>
+
+              {activeSeries !== 'ALL' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveSeries('ALL')}
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-50/70 px-3 py-1 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-700/80 dark:bg-amber-900/40 dark:text-amber-50 dark:hover:bg-amber-900/60"
+                >
+                  <span>Clear filter</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Book grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -235,8 +263,12 @@ export default function Publishing() {
                 null;
 
               const alsoLinks = [
-                m.kindle_url ? { label: 'Kindle', url: m.kindle_url } : null,
-                m.paperback_url ? { label: 'Paperback', url: m.paperback_url } : null,
+                m.kindle_url
+                  ? { label: 'Kindle', url: m.kindle_url }
+                  : null,
+                m.paperback_url
+                  ? { label: 'Paperback', url: m.paperback_url }
+                  : null,
               ].filter(Boolean);
 
               const chips = [
@@ -330,19 +362,17 @@ export default function Publishing() {
         </div>
       </section>
 
-      {/* CURATED RECOMMENDATIONS */}
-      <section className="container mx-auto px-4 py-16">
-        <p className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700/80 text-center mb-2">
-          Start Here
-        </p>
-        <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-center text-gray-900 dark:text-gray-50">
-          Where to Start
-        </h2>
-        <p className="max-w-2xl mx-auto text-center text-gray-600 dark:text-gray-300 mb-8">
-          Not sure which book to pick up first? Here are a few entry points
-          into the Manyagi Universe, mixing standalone experiences and series
-          openers.
-        </p>
+      {/* CURATED RECOMMENDATIONS INTRO */}
+      <SectionIntro
+        id="where-to-start"
+        kicker="Start Here"
+        title="Where to Start"
+        lead="Not sure which book to pick up first? Here are a few entry points into the Manyagi Universe, mixing standalone experiences and series openers."
+        tone="warm"
+      />
+
+      {/* CURATED RECOMMENDATIONS CONTENT */}
+      <section className="container mx-auto px-4 pb-16 -mt-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {products.slice(0, 3).map((p) => (
             <Card

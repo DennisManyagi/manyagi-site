@@ -1,151 +1,371 @@
 // components/admin/TechShowcaseForm.js
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import SectionCard from '@/components/admin/SectionCard';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase'; // ✅ client-side Supabase
 
-// helper: turn "Daito App: AI Focus" -> "daito-app-ai-focus"
-function slugify(str) {
-  return str
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '') // remove non alphanum / space / dash
-    .trim()
-    .replace(/\s+/g, '-'); // collapse whitespace to hyphen
+function parseList(str) {
+  return (str || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
-function TechShowcaseForm({ onCreated }) {
+export default function TechShowcaseForm({
+  onCreated,
+  editingPost, // optional post to edit
+  clearEditing, // callback to exit edit mode
+}) {
+  const isEditing = Boolean(editingPost?.id);
+
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [excerpt, setExcerpt] = useState('');
-  const [content, setContent] = useState('');
+  const [description, setDescription] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
+  const [tagline, setTagline] = useState('');
   const [appUrl, setAppUrl] = useState('');
-  const [appType, setAppType] = useState('app');
+  const [platformsText, setPlatformsText] = useState('');
+  const [labelsText, setLabelsText] = useState('');
+  const [appCategory, setAppCategory] = useState('flagship'); // 'flagship' | 'upcoming'
+  const [appType, setAppType] = useState('app'); // 'app' | 'website'
+  const [status, setStatus] = useState('Live'); // UI status badge
 
-  // NEW: track if user has manually edited slug
-  const [slugTouched, setSlugTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  // whenever title changes, if slug has NOT been manually touched yet,
-  // keep slug in sync
+  // Hydrate form when entering/exiting edit mode
   useEffect(() => {
-    if (!slugTouched && title) {
-      setSlug(slugify(title));
-    }
-  }, [title, slugTouched]);
-
-  async function create() {
-    try {
-      if (!title) return alert('Title required.');
-      if (!slug) return alert('Slug required.');
-
-      const payload = {
-        title,
-        slug,
-        excerpt,
-        content,
-        featured_image: featuredImage || null,
-        status: 'published',
-        division: 'tech',
-        metadata: {
-          app_type: appType,
-          app_url: appUrl || null,
-        },
-      };
-
-      const { error } = await supabase.from('posts').insert(payload);
-      if (error) throw error;
-
-      // reset form
+    if (!editingPost) {
       setTitle('');
       setSlug('');
       setExcerpt('');
-      setContent('');
+      setDescription('');
       setFeaturedImage('');
+      setTagline('');
       setAppUrl('');
+      setPlatformsText('');
+      setLabelsText('');
+      setAppCategory('flagship');
       setAppType('app');
-      setSlugTouched(false);
+      setStatus('Live');
+      setError('');
+      return;
+    }
+
+    const meta = editingPost.metadata || {};
+
+    setTitle(editingPost.title || '');
+    setSlug(editingPost.slug || '');
+    setExcerpt(editingPost.excerpt || '');
+    setDescription(editingPost.content || '');
+    setFeaturedImage(editingPost.featured_image || '');
+    setTagline(meta.tagline || '');
+    setAppUrl(meta.app_url || '');
+    setPlatformsText(
+      Array.isArray(meta.platforms) ? meta.platforms.join(', ') : ''
+    );
+    setLabelsText(
+      Array.isArray(meta.labels) ? meta.labels.join(', ') : ''
+    );
+    setAppCategory(meta.app_category || 'flagship');
+    setAppType(meta.app_type || 'app');
+    setStatus(meta.status || 'Live');
+    setError('');
+  }, [editingPost]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      if (!title) throw new Error('Title is required');
+
+      const finalSlug =
+        slug ||
+        title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+
+      const metadata = {
+        app_category: appCategory,
+        app_type: appType,
+        status,
+        app_url: appUrl,
+        tagline,
+        platforms: parseList(platformsText),
+        labels: parseList(labelsText),
+      };
+
+      if (isEditing) {
+        // UPDATE existing row (keep posts.status as-is)
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({
+            title,
+            slug: finalSlug,
+            division: 'tech',
+            excerpt: excerpt || (description || '').slice(0, 180),
+            content: description,
+            featured_image: featuredImage,
+            metadata,
+          })
+          .eq('id', editingPost.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+      } else {
+        // INSERT new row with posts.status = 'published'
+        const { error: insertError } = await supabase
+          .from('posts')
+          .insert({
+            title,
+            slug: finalSlug,
+            division: 'tech',
+            status: 'published',
+            excerpt: excerpt || (description || '').slice(0, 180),
+            content: description,
+            featured_image: featuredImage,
+            metadata,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+      }
 
       onCreated?.();
-      alert('✅ Tech showcase item created.');
-    } catch (e) {
-      alert(`❌ Create failed: ${e.message}`);
+
+      if (isEditing) {
+        clearEditing?.();
+      } else {
+        // reset for next create
+        setTitle('');
+        setSlug('');
+        setExcerpt('');
+        setDescription('');
+        setFeaturedImage('');
+        setTagline('');
+        setAppUrl('');
+        setPlatformsText('');
+        setLabelsText('');
+        setAppCategory('flagship');
+        setAppType('app');
+        setStatus('Live');
+      }
+    } catch (err) {
+      console.error('TechShowcaseForm save error', err);
+      setError(err.message || 'Failed to save showcase item');
+    } finally {
+      setSaving(false);
     }
-  }
+  };
 
   return (
-    <SectionCard title="Tech — Add Showcase Item (App / Site / Tool)">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Title */}
-        <input
-          placeholder="Title (e.g. Daito App)"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="dark:bg-gray-800"
-        />
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h3 className="font-semibold">
+          {isEditing ? 'Edit Tech Showcase Item' : 'Add Tech Showcase Item'}
+        </h3>
 
-        {/* Slug */}
-        <input
-          placeholder="Slug (auto or custom)"
-          value={slug}
-          onChange={(e) => {
-            setSlug(e.target.value);
-            setSlugTouched(true); // lock slug so it won't keep auto-updating
-          }}
-          className="dark:bg-gray-800"
-        />
+        {isEditing && (
+          <button
+            type="button"
+            onClick={clearEditing}
+            className="text-xs px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Cancel editing
+          </button>
+        )}
+      </div>
 
-        {/* App Type */}
-        <select
-          value={appType}
-          onChange={(e) => setAppType(e.target.value)}
-          className="dark:bg-gray-800"
-        >
-          <option value="app">App</option>
-          <option value="website">Website</option>
-          <option value="review">Review</option>
-        </select>
+      <p className="text-xs mb-4 opacity-80">
+        Use this to add or edit <strong>Daito</strong>, <strong>Nexu</strong>,{' '}
+        <strong>RealKenyans</strong>, <strong>Manyagi.net</strong>, and any
+        future Manyagi Tech apps. Everything you put here will drive the
+        <code> /tech</code> page.
+      </p>
 
-        {/* Featured Image */}
-        <input
-          placeholder="Featured Image URL (screenshot)"
-          className="md:col-span-2 dark:bg-gray-800"
-          value={featuredImage}
-          onChange={(e) => setFeaturedImage(e.target.value)}
-        />
+      <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+        {/* Title + slug */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Title</label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="Daito — Delivery & Marketplace"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
 
-        {/* App URL */}
-        <input
-          placeholder="App/Website URL (App Store, Play Store, etc.)"
-          className="md:col-span-1 dark:bg-gray-800"
-          value={appUrl}
-          onChange={(e) => setAppUrl(e.target.value)}
-        />
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Slug (optional)
+            </label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="daito-delivery-app"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+            />
+            <p className="text-[11px] text-gray-500 mt-1">
+              Leave blank to auto-generate from the title.
+            </p>
+          </div>
+        </div>
 
-        {/* Short Excerpt */}
-        <textarea
-          className="md:col-span-3 dark:bg-gray-800"
-          placeholder="Short excerpt (tagline / what this app does)"
-          value={excerpt}
-          onChange={(e) => setExcerpt(e.target.value)}
-        />
+        {/* Tagline + URL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1">Tagline</label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="Buy, sell, and get anything delivered across your city."
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+            />
+          </div>
 
-        {/* Long Content */}
-        <textarea
-          className="md:col-span-3 h-32 dark:bg-gray-800"
-          placeholder="Content / Description (optional long text or MDX)"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-        />
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              App / Site URL
+            </label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="https://daitoapp.net"
+              value={appUrl}
+              onChange={(e) => setAppUrl(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Featured image */}
+        <div>
+          <label className="block text-xs font-semibold mb-1">
+            Featured Image URL
+          </label>
+          <input
+            className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+            placeholder="https://.../daito-screenshot.webp"
+            value={featuredImage}
+            onChange={(e) => setFeaturedImage(e.target.value)}
+          />
+          <p className="text-[11px] text-gray-500 mt-1">
+            Use a Supabase image URL or static <code>/images/...</code> path.
+          </p>
+        </div>
+
+        {/* Excerpt + description */}
+        <div>
+          <label className="block text-xs font-semibold mb-1">
+            Short Excerpt
+          </label>
+          <textarea
+            className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 h-16"
+            placeholder="One or two sentences that summarize the product."
+            value={excerpt}
+            onChange={(e) => setExcerpt(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold mb-1">
+            Full Description
+          </label>
+          <textarea
+            className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 h-28"
+            placeholder="Longer description of what this app does, who it serves, and any key features."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+
+        {/* Platforms + labels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Platforms (comma-separated)
+            </label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="iOS, Android, Web"
+              value={platformsText}
+              onChange={(e) => setPlatformsText(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Labels / Tags (comma-separated)
+            </label>
+            <input
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              placeholder="Delivery, E-commerce, Logistics"
+              value={labelsText}
+              onChange={(e) => setLabelsText(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Category + type + status */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-semibold mb-1">
+              Category
+            </label>
+            <select
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              value={appCategory}
+              onChange={(e) => setAppCategory(e.target.value)}
+            >
+              <option value="flagship">Flagship / Live</option>
+              <option value="upcoming">Upcoming / Labs</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Type</label>
+            <select
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              value={appType}
+              onChange={(e) => setAppType(e.target.value)}
+            >
+              <option value="app">App</option>
+              <option value="website">Website</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1">Status</label>
+            <select
+              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option>Live</option>
+              <option>Beta</option>
+              <option>Prototype</option>
+              <option>In Design</option>
+            </select>
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
 
         <button
-          type="button"
-          onClick={create}
-          className="md:col-span-3 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+          type="submit"
+          disabled={saving}
+          className="px-4 py-2 rounded bg-blue-600 text-white text-xs font-semibold disabled:opacity-60"
         >
-          Create Showcase Item
+          {saving
+            ? isEditing
+              ? 'Saving changes…'
+              : 'Saving…'
+            : isEditing
+            ? 'Save Changes'
+            : 'Add Showcase Item'}
         </button>
-      </div>
-    </SectionCard>
+      </form>
+    </div>
   );
 }
-
-export default TechShowcaseForm;

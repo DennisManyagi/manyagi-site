@@ -1,3 +1,4 @@
+// pages/publishing.js
 import Head from 'next/head';
 import Link from 'next/link';
 import { useEffect, useState, useMemo } from 'react';
@@ -19,6 +20,16 @@ const pickImage = (p) =>
   p?.image_url ||
   p?.image ||
   '/placeholder.png';
+
+// simple Fisher–Yates shuffle for light randomization
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
 
 export default function Publishing() {
   const dispatch = useDispatch();
@@ -102,6 +113,46 @@ export default function Publishing() {
     });
   }, [products, activeSeries]);
 
+  // ---- Multi-rail slices ----
+
+  // 1) “Start Here” rail – prefer metadata.start_here
+  const startHereBooks = useMemo(() => {
+    if (!products.length) return [];
+    const flagged = products.filter((p) => p?.metadata?.start_here);
+    if (flagged.length >= 3) return shuffle(flagged).slice(0, 3);
+
+    const sorted = [...products].sort(
+      (a, b) => (b?.metadata?.year || 0) - (a?.metadata?.year || 0)
+    );
+    return sorted.slice(0, 3);
+  }, [products]);
+
+  // 2) Books with samples (PDF / chapter)
+  const sampleBooks = useMemo(
+    () =>
+      shuffle(
+        products.filter((p) => p?.metadata?.pdf_url)
+      ).slice(0, 4),
+    [products]
+  );
+
+  // 3) Books that clearly have merch
+  const merchLinkedBooks = useMemo(
+    () =>
+      shuffle(
+        products.filter((p) => {
+          const m = p.metadata || {};
+          const tags = p.tags || [];
+          return (
+            m.has_merch ||
+            tags.includes('has_merch') ||
+            tags.includes('designs')
+          );
+        })
+      ).slice(0, 4),
+    [products]
+  );
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -118,7 +169,7 @@ export default function Publishing() {
         <title>Manyagi Publishing — Discover Epic Tales</title>
         <meta
           name="description"
-          content="Immerse yourself in captivating novels and poetry by D.N. Manyagi across the Manyagi Universe."
+          content="Immerse yourself in cinematic novels and poetry by D.N. Manyagi across the connected Manyagi Universe."
         />
       </Head>
 
@@ -132,19 +183,41 @@ export default function Publishing() {
       >
         <div className="flex flex-wrap gap-3 justify-center">
           <Link
-            href="#books"
+            href="#where-to-start"
             className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
           >
-            Explore the Library
+            Start Reading
           </Link>
           <Link
-            href="#subscribe"
+            href="#books"
             className="btn bg-white/90 text-gray-900 border border-gray-200 py-2 px-4 rounded hover:bg-gray-100 transition dark:bg-gray-900 dark:text-white dark:border-gray-700 dark:hover:bg-gray-800"
           >
-            Get New Release Alerts
+            Browse the Library
           </Link>
         </div>
       </Hero>
+
+      {/* MICRO-NAV (Disney+ style) */}
+      <section className="container mx-auto px-4 -mt-8 mb-10">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar justify-center text-xs md:text-[13px]">
+          {[
+            { href: '#where-to-start', label: 'Start Here' },
+            { href: '#books', label: 'All Books' },
+            { href: '#samples', label: 'Samples' },
+            { href: '#books-with-merch', label: 'With Merch' },
+            { href: '#subscribe', label: 'Updates' },
+            { href: '#reader-impressions', label: 'Praise' },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="whitespace-nowrap px-3 py-2 rounded-full border border-gray-200/80 bg-white/80 text-gray-800 hover:bg-gray-100 hover:border-blue-400 transition dark:bg-gray-900/80 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </section>
 
       {/* SOCIAL PROOF / TESTIMONIALS INTRO */}
       <SectionIntro
@@ -185,7 +258,7 @@ export default function Publishing() {
         </div>
       </section>
 
-      {/* SERIES FILTERS + LIBRARY */}
+      {/* SERIES FILTERS + LIBRARY (ALL BOOKS RAIL) */}
       <section id="books" className="container mx-auto px-4 pt-10 pb-16">
         {/* Filter bar */}
         {seriesOptions.length > 1 && (
@@ -362,19 +435,18 @@ export default function Publishing() {
         </div>
       </section>
 
-      {/* CURATED RECOMMENDATIONS INTRO */}
+      {/* “START HERE” RAIL */}
       <SectionIntro
         id="where-to-start"
         kicker="Start Here"
-        title="Where to Start"
-        lead="Not sure which book to pick up first? Here are a few entry points into the Manyagi Universe, mixing standalone experiences and series openers."
+        title="Entry Points Into the Manyagi Universe"
+        lead="Not sure which book to pick up first? These titles are designed as clean on-ramps into the wider universe."
         tone="warm"
+        align="center"
       />
-
-      {/* CURATED RECOMMENDATIONS CONTENT */}
       <section className="container mx-auto px-4 pb-16 -mt-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {products.slice(0, 3).map((p) => (
+          {startHereBooks.map((p) => (
             <Card
               key={p.id}
               title={p.name}
@@ -383,13 +455,95 @@ export default function Publishing() {
               category="publishing"
             />
           ))}
-          {products.length < 3 && (
+          {startHereBooks.length < 3 && (
             <p className="col-span-full text-center opacity-70 text-sm">
-              Add more publishing products in admin to populate this section.
+              Flag more titles with <code>metadata.start_here = true</code> in
+              admin to fill this rail.
             </p>
           )}
         </div>
       </section>
+
+      {/* FREE TO READ / SAMPLES RAIL */}
+      {sampleBooks.length > 0 && (
+        <>
+          <SectionIntro
+            id="samples"
+            kicker="Free to Read"
+            title="Books with Sample Chapters"
+            lead="Dip into the worlds before you commit — these titles include free PDF samples or first chapters."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-16 -mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              {sampleBooks.map((p) => {
+                const m = p.metadata || {};
+                return (
+                  <Card
+                    key={p.id}
+                    title={p.name}
+                    description={p.description}
+                    image={p.display_image || pickImage(p)}
+                    category="publishing"
+                  >
+                    {m.pdf_url && (
+                      <div className="mt-3 flex justify-center">
+                        <a
+                          href={m.pdf_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn bg-gray-800 text-white py-2 px-4 rounded text-xs hover:bg-black transition"
+                        >
+                          Read Sample
+                        </a>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* BOOKS WITH MERCH RAIL */}
+      {merchLinkedBooks.length > 0 && (
+        <>
+          <SectionIntro
+            id="books-with-merch"
+            kicker="Books With Merch"
+            title="Stories With Their Own Collections"
+            lead="These books have T-shirts, posters, or other designs tied directly to their worlds."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-16 -mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              {merchLinkedBooks.map((p) => (
+                <Card
+                  key={p.id}
+                  title={p.name}
+                  description={p.description}
+                  image={p.display_image || pickImage(p)}
+                  category="publishing"
+                >
+                  <div className="mt-3 flex justify-center">
+                    <Link
+                      href={`/designs?collection=${encodeURIComponent(
+                        p.metadata?.series || p.metadata?.book || p.name
+                      )}`}
+                      className="text-xs font-semibold text-blue-600 hover:underline"
+                    >
+                      View merch for this book →
+                    </Link>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
       {/* SUBSCRIBE */}
       <section id="subscribe" className="container mx-auto px-4 py-16">

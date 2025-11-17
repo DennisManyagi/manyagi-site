@@ -12,6 +12,7 @@ import Card from '../components/Card';
 import SectionIntro from '../components/SectionIntro';
 
 const PAGE_SIZE = 16;
+const RAILS_LIMIT = 200; // larger pull just for rails
 
 // Prefer higher-quality image fields when available
 function pickImage(p) {
@@ -28,13 +29,34 @@ function pickImage(p) {
   );
 }
 
+// Simple shuffle for light randomization of rails
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Stable key for dedupe across rails
+function productKey(p) {
+  return p?.id || p?.slug || p?.sku || p?.name || '';
+}
+
 export default function Designs() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // Grid state (paged)
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
+
+  // Rails state (global, non-paged)
+  const [railItems, setRailItems] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [railsLoading, setRailsLoading] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -63,6 +85,7 @@ export default function Designs() {
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/merch-carousel-5.webp',
   ];
 
+  // --- GRID FETCH (paged, respects filters) ---
   const fetchProducts = async ({ offset = 0, append = false } = {}) => {
     const params = new URLSearchParams({
       division: 'designs',
@@ -87,7 +110,6 @@ export default function Designs() {
         ? data
         : [];
 
-      // Normalize the image field so cards never break
       const nextItems = nextItemsRaw.map((p) => ({
         ...p,
         display_image: pickImage(p),
@@ -122,12 +144,53 @@ export default function Designs() {
     }
   };
 
+  // --- RAIL FETCH (global, not paged, no filters; just used for rails) ---
+  const fetchRailProducts = async () => {
+    const params = new URLSearchParams({
+      division: 'designs',
+      limit: String(RAILS_LIMIT),
+      offset: '0',
+      sort: 'new',
+    });
+
+    try {
+      setRailsLoading(true);
+      const res = await fetch(`/api/products?${params.toString()}`);
+      const data = await res.json();
+
+      const raw = Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data)
+        ? data
+        : [];
+
+      const normalized = raw.map((p) => ({
+        ...p,
+        display_image: pickImage(p),
+      }));
+
+      setRailItems(normalized);
+    } catch (e) {
+      console.error('Designs rails fetch error:', e);
+      // Fallback: at least use whatever is already in the grid
+      setRailItems((prev) => (prev.length ? prev : items));
+    } finally {
+      setRailsLoading(false);
+    }
+  };
+
   useEffect(() => {
     setQ(initial.q);
     setCollection(initial.collection);
     setTag(initial.tag);
     setSort(initial.sort || 'new');
+
+    // fetch paged grid (respects filters)
     fetchProducts({ offset: 0, append: false });
+
+    // Always keep rails based on the *global* pool, independent of filters
+    // so NFTs, bestsellers, etc. can appear even if not on the first page.
+    fetchRailProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial.q, initial.collection, initial.tag, initial.sort]);
 
@@ -186,7 +249,121 @@ export default function Designs() {
     setTimeout(() => setShowModal(false), 1600);
   };
 
-  if (loading) {
+  const filtersActive =
+    q || collection || tag || (sort && sort !== 'new');
+
+  // ---- Multi-rail derived slices (based on global railItems) ----
+  const rails = useMemo(() => {
+    const base = railItems.length ? railItems : items;
+    const usedIds = new Set();
+
+    const pickUnique = (candidates, limit) => {
+      if (!candidates || !candidates.length || limit <= 0) return [];
+      const out = [];
+      const pool = shuffle(candidates);
+      for (const p of pool) {
+        const key = productKey(p);
+        if (!key || usedIds.has(key)) continue;
+        out.push(p);
+        usedIds.add(key);
+        if (out.length >= limit) break;
+      }
+      return out;
+    };
+
+    // Featured collections (drop/series/book), flagged via metadata or tags
+    const featuredCandidatesMap = new Map();
+    base.forEach((p) => {
+      const m = p.metadata || {};
+      const tags = p.tags || [];
+      const isFeatured =
+        m.featured_collection || tags.includes('featured_collection');
+      if (!isFeatured) return;
+      const label =
+        m.drop || m.series || m.book || (m.year && String(m.year)) || p.name;
+      if (!label) return;
+      if (!featuredCandidatesMap.has(label)) {
+        featuredCandidatesMap.set(label, p);
+      }
+    });
+    const featuredCandidates = Array.from(featuredCandidatesMap.values());
+
+    // NFTs (PRIORITY lane – make sure OpenSea URLs are always in here)
+    const nftCandidates = base.filter((p) => {
+      const m = p.metadata || {};
+      const tags = (p.tags || []).map((t) => t.toLowerCase());
+      const nftUrl = m.nft_url || m.nft_link || '';
+
+      const hasOpenSea =
+        typeof nftUrl === 'string' && nftUrl.includes('opensea.io');
+
+      return (
+        hasOpenSea ||
+        m.nft ||
+        tags.includes('nft') ||
+        tags.includes('token') ||
+        tags.includes('onchain')
+      );
+    });
+
+    // Bestsellers (metadata or tag)
+    const bestsellerCandidates = base.filter((p) => {
+      const m = p.metadata || {};
+      const tags = (p.tags || []).map((t) => t.toLowerCase());
+      return m.bestseller || tags.includes('bestseller');
+    });
+
+    // Wall / studio art
+    const wallArtCandidates = base.filter((p) => {
+      const m = p.metadata || {};
+      const tags = (p.tags || []).map((t) => t.toLowerCase());
+      const type = String(m.product_type || '').toLowerCase();
+      return (
+        tags.includes('poster') ||
+        tags.includes('print') ||
+        tags.includes('wall_art') ||
+        tags.includes('canvas') ||
+        type === 'poster' ||
+        type === 'print'
+      );
+    });
+
+    // Under $25
+    const under25Candidates = base.filter((p) => {
+      const price = Number(p.price || p.metadata?.price);
+      return price > 0 && price < 25;
+    });
+
+    // ORDER MATTERS:
+    // 1) Featured collections
+    // 2) NFTs (OpenSea & other on-chain)
+    // 3) Bestsellers
+    // 4) Wall art
+    // 5) Under $25
+    const featuredCollections = pickUnique(featuredCandidates, 4);
+    const nftDesigns = pickUnique(nftCandidates, 8);
+    const bestsellerDesigns = pickUnique(bestsellerCandidates, 8);
+    const wallArtDesigns = pickUnique(wallArtCandidates, 8);
+    const under25Designs = pickUnique(under25Candidates, 8);
+
+    return {
+      featuredCollections,
+      nftDesigns,
+      bestsellerDesigns,
+      wallArtDesigns,
+      under25Designs,
+    };
+  }, [railItems, items]);
+
+  const {
+    featuredCollections,
+    nftDesigns,
+    bestsellerDesigns,
+    wallArtDesigns,
+    under25Designs,
+  } = rails;
+
+  if (loading && railsLoading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         Loading designs…
@@ -194,16 +371,13 @@ export default function Designs() {
     );
   }
 
-  const filtersActive =
-    q || collection || tag || (sort && sort !== 'new');
-
   return (
     <>
       <Head>
         <title>Manyagi Designs — Premium Apparel & Gear</title>
         <meta
           name="description"
-          content="High-quality T-shirts, mugs, and prints inspired by the Manyagi Universe. Exclusive drops, story-linked collections, and premium merch."
+          content="High-quality T-shirts, mugs, prints, and digital collectibles inspired by the Manyagi Universe. Exclusive drops, story-linked collections, and premium merch."
         />
       </Head>
 
@@ -223,6 +397,29 @@ export default function Designs() {
         </Link>
       </Hero>
 
+      {/* MICRO-NAV STRIP (Disney+ style) */}
+      <section className="container mx-auto px-4 -mt-8 mb-10">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar justify-center text-xs md:text-[13px]">
+          {[
+            { href: '#products', label: 'All Designs' },
+            { href: '#collections', label: 'Collections' },
+            { href: '#nfts', label: 'NFTs' },
+            { href: '#bestsellers', label: 'Bestsellers' },
+            { href: '#wall-art', label: 'Wall Art' },
+            { href: '#under-25', label: 'Under $25' },
+            { href: '#subscribe', label: 'Updates' },
+          ].map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="whitespace-nowrap px-3 py-2 rounded-full border border-gray-200/80 bg-white/80 text-gray-800 hover:bg-gray-100 hover:border-blue-400 transition dark:bg-gray-900/80 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </section>
+
       {/* INTRO TO DESIGNS */}
       <SectionIntro
         id="designs-overview"
@@ -236,9 +433,18 @@ export default function Designs() {
       <section className="container mx-auto px-4 pb-10 -mt-6">
         <div className="flex flex-wrap justify-center gap-4 md:gap-8">
           {[
-            { label: 'Premium Printful Fulfillment', sub: 'Global, on-demand production' },
-            { label: 'Secure Payment', sub: 'Stripe, PayPal & major cards' },
-            { label: '30-Day Returns', sub: 'On misprints & damaged items' },
+            {
+              label: 'Premium Printful Fulfillment',
+              sub: 'Global, on-demand production',
+            },
+            {
+              label: 'Secure Payment',
+              sub: 'Stripe, PayPal & major cards',
+            },
+            {
+              label: '30-Day Returns',
+              sub: 'On misprints & damaged items',
+            },
           ].map((badge) => (
             <div
               key={badge.label}
@@ -333,7 +539,7 @@ export default function Designs() {
         </div>
       </section>
 
-      {/* SNAPSHOT BAR + PRODUCTS GRID */}
+      {/* SNAPSHOT BAR + PRODUCTS GRID (All Designs rail) */}
       <section id="products" className="container mx-auto px-4 py-10">
         {/* Snapshot pill */}
         <div className="max-w-3xl mx-auto mb-8">
@@ -401,13 +607,261 @@ export default function Designs() {
         )}
       </section>
 
+      {/* FEATURED COLLECTIONS RAIL */}
+      {featuredCollections.length > 0 && (
+        <>
+          <SectionIntro
+            id="collections"
+            kicker="Featured Collections"
+            title="Story-Linked Capsules & Drops"
+            lead="Curated sets of tees, posters, and accessories tied to specific books, arcs, and seasons in the Manyagi Universe."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-12 -mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              {featuredCollections.map((p) => {
+                const m = p.metadata || {};
+                return (
+                  <Card
+                    key={p.id}
+                    title={m.drop || m.series || p.name}
+                    description={p.description}
+                    image={p.display_image}
+                    category="designs"
+                  >
+                    {m.book && (
+                      <div className="mb-2 flex justify-center">
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                          From {m.book}
+                        </span>
+                      </div>
+                    )}
+                    <div className="mt-3 flex justify-center">
+                      <Link
+                        href={`/designs?collection=${encodeURIComponent(
+                          m.drop || m.series || m.book || ''
+                        )}`}
+                        className="text-xs font-semibold text-blue-600 hover:underline"
+                      >
+                        View this collection →
+                      </Link>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* NFT RAIL */}
+      {nftDesigns.length > 0 && (
+        <>
+          <SectionIntro
+            id="nfts"
+            kicker="Digital Collectibles"
+            title="On-Chain Scenes & Covers"
+            lead="Select designs are available as NFTs or digital collectibles — made for collectors who want a stake in the universe."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-12 -mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              {nftDesigns.map((product) => {
+                const m = product.metadata || {};
+                const nftUrl = m.nft_url || m.nft_link || '';
+                return (
+                  <Card
+                    key={product.id}
+                    title={product.name}
+                    description={product.description}
+                    image={product.display_image}
+                    category="designs"
+                  >
+                    <div className="flex flex-wrap gap-2 justify-center mb-3">
+                      <span className="text-[11px] px-2 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">
+                        NFT / Digital Collectible
+                      </span>
+                      {m.book && (
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                          {m.book}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex justify-center gap-2 flex-wrap">
+                      {nftUrl && (
+                        <a
+                          href={nftUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn bg-purple-600 text-white py-2 px-4 rounded text-xs hover:bg-purple-700 transition"
+                        >
+                          View NFT
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(product)}
+                        className="btn bg-gray-900 text-white py-2 px-4 rounded text-xs hover:bg-black transition"
+                      >
+                        Get the Physical
+                      </button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* BESTSELLERS RAIL */}
+      {bestsellerDesigns.length > 0 && (
+        <>
+          <SectionIntro
+            id="bestsellers"
+            kicker="Bestsellers"
+            title="Pieces People Keep Reordering"
+            lead="Quiet fan favorites — the designs that get reordered, gifted, and spotted the most."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-12 -mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              {bestsellerDesigns.map((product) => {
+                const m = product.metadata || {};
+                return (
+                  <Card
+                    key={product.id}
+                    title={product.name}
+                    description={product.description}
+                    image={product.display_image}
+                    category="designs"
+                  >
+                    {m.book && (
+                      <div className="mb-2 flex justify-center">
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200">
+                          Fan favorite from {m.book}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(product)}
+                      className="mt-3 w-full inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* WALL ART RAIL */}
+      {wallArtDesigns.length > 0 && (
+        <>
+          <SectionIntro
+            id="wall-art"
+            kicker="Wall & Studio"
+            title="Posters & Prints"
+            lead="Build a Manyagi wall — key scenes, characters, and emblems framed as high-resolution art."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-12 -mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              {wallArtDesigns.map((product) => {
+                const m = product.metadata || {};
+                return (
+                  <Card
+                    key={product.id}
+                    title={product.name}
+                    description={product.description}
+                    image={product.display_image}
+                    category="designs"
+                  >
+                    <div className="flex flex-wrap gap-2 justify-center mb-2">
+                      <span className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                        Poster / Wall Art
+                      </span>
+                      {m.book && (
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                          {m.book}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(product)}
+                      className="mt-3 w-full inline-flex justify-center rounded-md bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-black transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* UNDER $25 RAIL */}
+      {under25Designs.length > 0 && (
+        <>
+          <SectionIntro
+            id="under-25"
+            kicker="Everyday Pieces"
+            title="Under $25"
+            lead="Low-friction entries into the universe — perfect for gifts, first-time buyers, or stacking multiple designs."
+            tone="neutral"
+            align="center"
+          />
+          <section className="container mx-auto px-4 pb-12 -mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+              {under25Designs.map((product) => {
+                const m = product.metadata || {};
+                return (
+                  <Card
+                    key={product.id}
+                    title={product.name}
+                    description={product.description}
+                    image={product.display_image}
+                    category="designs"
+                  >
+                    {m.book && (
+                      <div className="mb-2 flex justify-center">
+                        <span className="text-[11px] px-2 py-1 rounded-full bg-green-50 text-green-800 dark:bg-green-900/40 dark:text-green-200">
+                          From {m.book}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(product)}
+                      className="mt-3 w-full inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                    >
+                      Add to Cart
+                    </button>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
       {/* SUBSCRIBE */}
       <section id="subscribe" className="container mx-auto px-4 pb-16">
         <SubscriptionForm
           formId="8432506"
           uid="a194031db7"
           title="Stay Updated on New Designs"
-          description="Get notified about new drops, limited runs, and exclusive offers from Manyagi Designs."
+          description="Get notified about new drops, limited runs, NFT releases, and exclusive offers from Manyagi Designs."
         />
       </section>
 

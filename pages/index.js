@@ -1,12 +1,17 @@
+// pages/index.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../lib/cartSlice';
+
 import Hero from '../components/Hero';
 import SubscriptionForm from '../components/SubscriptionForm';
 import Recommender from '../components/Recommender';
 import Card from '../components/Card';
-import { useEffect, useState } from 'react';
+import SectionIntro from '../components/SectionIntro';
+
+// ---------- Shared helpers ----------
 
 function getCfgImg(val, fallback) {
   // site_config values might be a plain string URL or { file_url }
@@ -16,35 +21,192 @@ function getCfgImg(val, fallback) {
   return fallback;
 }
 
+function productKey(p) {
+  return p?.id || p?.slug || p?.name || '';
+}
+
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Picks up to `count` items from `list` while respecting usedIds
+function pickFrom(list, count, usedIds) {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  const picked = [];
+  const pool = shuffle(list);
+
+  for (const item of pool) {
+    const key = productKey(item);
+    if (!key || usedIds.has(key)) continue;
+    picked.push(item);
+    usedIds.add(key);
+    if (picked.length >= count) break;
+  }
+  return picked;
+}
+
+// ---------- Tech helpers (mirrors /pages/tech.js) ----------
+
+const asList = (v) => {
+  if (Array.isArray(v)) return v;
+  if (v && Array.isArray(v.items)) return v.items;
+  return [];
+};
+
+const parseList = (v) => {
+  if (Array.isArray(v)) return v;
+  if (!v) return [];
+  if (typeof v === 'string') {
+    return v
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const pickTechImage = (p) =>
+  p?.featured_image ||
+  p?.metadata?.screenshot ||
+  'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/app-placeholder.webp';
+
 export default function Home() {
   const dispatch = useDispatch();
+
   const [siteConfig, setSiteConfig] = useState({});
   const [products, setProducts] = useState([]);
 
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [bookProducts, setBookProducts] = useState([]);
+  const [merchProducts, setMerchProducts] = useState([]);
+
+  const [techApps, setTechApps] = useState([]); // from /api/posts?division=tech
+  const [blogPosts, setBlogPosts] = useState([]);
+
+  // --- Fetch site config + products (books/merch/featured) ---
   useEffect(() => {
     (async () => {
       try {
-        // 1) site config
         const cfg = await fetch('/api/site-config')
           .then((r) => r.json())
           .catch(() => ({}));
         setSiteConfig(cfg || {});
 
-        // 2) products (accept both array and { items, total })
-        const res = await fetch('/api/products?limit=12');
+        const res = await fetch('/api/products?limit=48');
         const json = await res.json().catch(() => []);
-        const items = Array.isArray(json) ? json : Array.isArray(json.items) ? json.items : [];
+        const items = Array.isArray(json)
+          ? json
+          : Array.isArray(json.items)
+          ? json.items
+          : [];
 
-        // normalize image field so Card gets a valid image
         const normalized = items.map((p) => ({
           ...p,
-          image_url: p.image_url || p.thumbnail_url || p.image || p.imageUrl || p.display_image || '',
+          image_url:
+            p.image_url ||
+            p.thumbnail_url ||
+            p.image ||
+            p.imageUrl ||
+            p.display_image ||
+            '',
         }));
 
         setProducts(normalized);
+
+        // Build sections without overlap (books, merch, featured)
+        const usedIds = new Set();
+
+        const publishing = normalized.filter(
+          (p) => (p.division || '').toLowerCase() === 'publishing'
+        );
+        const designs = normalized.filter(
+          (p) => (p.division || '').toLowerCase() === 'designs'
+        );
+
+        const books = pickFrom(publishing, 3, usedIds);
+        const merch = pickFrom(designs, 3, usedIds);
+
+        // Featured can be from any division, but must not reuse usedIds
+        const featuredPool = normalized;
+        const featured = pickFrom(featuredPool, 3, usedIds);
+
+        setBookProducts(books);
+        setMerchProducts(merch);
+        setFeaturedProducts(
+          featured.length ? featured : normalized.slice(0, 3)
+        );
       } catch (e) {
         console.error('Home fetch error:', e);
-        setProducts([]); // stay safe
+        setProducts([]);
+        setFeaturedProducts([]);
+      }
+    })();
+  }, []);
+
+  // --- Fetch Tech apps (same source as /pages/tech.js) ---
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/posts?division=tech');
+        const json = await res.json().catch(() => ({}));
+
+        const list = asList(json);
+        const normalized = list.map((p) => {
+          const meta = p.metadata || {};
+          return {
+            id: p.id,
+            slug: p.slug,
+            name: p.title,
+            tagline: meta.tagline || '',
+            description: p.content || p.excerpt || '',
+            excerpt: p.excerpt || '',
+            image: pickTechImage(p),
+            domain: meta.app_url || '',
+            appCategory: meta.app_category || 'flagship',
+            appType: meta.app_type || 'app',
+            status: meta.status || 'Live',
+            platforms: parseList(meta.platforms),
+            labels: parseList(meta.labels),
+          };
+        });
+
+        setTechApps(normalized);
+      } catch (e) {
+        console.error('Home tech fetch error:', e);
+        setTechApps([]);
+      }
+    })();
+  }, []);
+
+  // --- Fetch latest blog posts for the home page ---
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/posts?limit=6');
+        const json = await res.json().catch(() => []);
+        const posts = Array.isArray(json)
+          ? json
+          : Array.isArray(json.items)
+          ? json.items
+          : [];
+
+        const sorted = posts
+          .slice()
+          .sort(
+            (a, b) =>
+              new Date(b.created_at || 0).getTime() -
+              new Date(a.created_at || 0).getTime()
+          );
+
+        setBlogPosts(sorted.slice(0, 3));
+      } catch (e) {
+        console.error('Home blog fetch error:', e);
+        setBlogPosts([]);
       }
     })();
   }, []);
@@ -54,20 +216,173 @@ export default function Home() {
     '/images/home-carousel-2.webp',
     '/images/home-carousel-3.webp',
   ];
+
   const heroImage = getCfgImg(siteConfig.hero, '/videos/hero-bg.mp4');
 
   // Division card images with safe fallbacks
-  const publishingImg = getCfgImg(siteConfig.publishing_hero, '/images/legacy-chapter-1.webp');
-  const designsImg = getCfgImg(siteConfig.designs_hero, '/images/mock-tee-1.webp');
-  const capitalImg = getCfgImg(siteConfig.capital_hero, '/images/chart-hero.webp');
-  const techImg = getCfgImg(siteConfig.tech_hero, '/images/daito-screenshot.webp');
-  const mediaImg = getCfgImg(siteConfig.media_hero, '/images/og-media.webp');
-
-  // IMPORTANT: use Supabase URL as fallback so it won't 404 locally
+  const publishingImg = getCfgImg(
+    siteConfig.publishing_hero,
+    '/images/legacy-chapter-1.webp'
+  );
+  const designsImg = getCfgImg(
+    siteConfig.designs_hero,
+    '/images/mock-tee-1.webp'
+  );
+  const capitalImg = getCfgImg(
+    siteConfig.capital_hero,
+    '/images/chart-hero.webp'
+  );
+  const techImg = getCfgImg(
+    siteConfig.tech_hero,
+    '/images/daito-screenshot.webp'
+  );
+  const mediaImg = getCfgImg(
+    siteConfig.media_hero,
+    '/images/og-media.webp'
+  );
   const realtyImg = getCfgImg(
     siteConfig.realty_hero,
     'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/realty-hero.webp'
   );
+
+  const BLOG_PLACEHOLDER =
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/og-blog.webp';
+
+  // Compute Tech showcase: random flagship apps (non-"upcoming")
+  const flagshipApps = techApps.filter(
+    (app) => (app.appCategory || '').toLowerCase() !== 'upcoming'
+  );
+  const techShowcase =
+    flagshipApps.length > 0 ? shuffle(flagshipApps).slice(0, 3) : [];
+
+  // --- Card render helpers (products) ---
+
+  const renderPublishingCard = (product) => {
+    const m = product.metadata || {};
+    const buyUrl =
+      m.amazon_url ||
+      m.kindle_url ||
+      m.paperback_url ||
+      m.store_url ||
+      null;
+
+    const alsoLinks = [
+      m.kindle_url ? { label: 'Kindle', url: m.kindle_url } : null,
+      m.paperback_url ? { label: 'Paperback', url: m.paperback_url } : null,
+    ].filter(Boolean);
+
+    const chips = [
+      m.format ? String(m.format).toUpperCase() : null,
+      m.year ? `Y${m.year}` : null,
+    ].filter(Boolean);
+
+    return (
+      <Card
+        key={productKey(product)}
+        title={product.name}
+        description={product.description}
+        image={product.image_url}
+        category={product.division}
+        tags={Array.isArray(product.tags) ? product.tags : []}
+      >
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mb-2">
+            {chips.map((c) => (
+              <span
+                key={c}
+                className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3 mt-2 justify-center">
+          {buyUrl && (
+            <a
+              href={buyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition text-xs font-semibold"
+            >
+              Get Your Copy
+            </a>
+          )}
+          {m.pdf_url && (
+            <a
+              href={m.pdf_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn bg-gray-900 text-white py-2 px-4 rounded hover:bg-black transition text-xs font-semibold"
+            >
+              Read Chapter 1
+            </a>
+          )}
+        </div>
+
+        {alsoLinks.length > 0 && (
+          <p className="mt-3 text-[11px] text-gray-600">
+            Also available:{' '}
+            {alsoLinks.map((l, i) => (
+              <a
+                key={l.label}
+                href={l.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-700"
+              >
+                {l.label}
+                {i < alsoLinks.length - 1 ? ', ' : ''}
+              </a>
+            ))}
+          </p>
+        )}
+      </Card>
+    );
+  };
+
+  const renderProductCard = (product) => {
+    if (!product) return null;
+
+    if ((product.division || '').toLowerCase() === 'publishing') {
+      return renderPublishingCard(product);
+    }
+
+    return (
+      <Card
+        key={productKey(product)}
+        title={product.name}
+        description={product.description}
+        image={product.image_url}
+        category={product.division}
+        buyButton={product}
+        onBuy={() =>
+          dispatch(
+            addToCart({
+              ...product,
+              productType:
+                (product.division || '').toLowerCase() === 'designs'
+                  ? 'merch'
+                  : (product.division || '').toLowerCase() === 'capital'
+                  ? 'download'
+                  : 'product',
+            })
+          )
+        }
+      />
+    );
+  };
+
+  // Micro-nav rails under hero
+  const rails = [
+    { label: 'Read', href: '#books' },
+    { label: 'Wear', href: '#merch' },
+    { label: 'Trade', href: '#featured' },
+    { label: 'Build', href: '#tech' },
+    { label: 'Watch', href: '#blog' },
+    { label: 'Live', href: '#divisions' },
+  ];
 
   return (
     <>
@@ -75,202 +390,341 @@ export default function Home() {
         <title>Manyagi — Creativity Meets Innovation</title>
         <meta
           name="description"
-          content="Manyagi unifies Publishing, Designs, Capital, Tech, and Media."
+          content="Manyagi is a story-first studio and product lab building books, designs, tools, apps, and experiences that live in one connected universe."
         />
         {getCfgImg(siteConfig.favicon, null) && (
           <link rel="icon" href={getCfgImg(siteConfig.favicon)} />
         )}
       </Head>
 
+      {/* HERO */}
       <Hero
-        kicker="Welcome"
-        title="Explore Our Worlds"
-        lead="One HQ powering books, fashion, trading, audio, and apps."
+        kicker="The Manyagi Universe"
+        title="One Brand. Many Worlds."
+        lead="Stories, products, and platforms built to talk to each other — from novels and merch to trading tools and apps. Creativity meets innovation under one roof."
         carouselImages={carouselImages}
         videoSrc={heroImage}
         height="h-[600px]"
       >
-        <Link
-          href="#divisions"
-          className="btn bg-blue-600 text-white py-2 px-4 rounded hover:scale-105 transition"
-        >
-          Explore
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="#featured"
+            className="btn bg-blue-600 text-white py-2 px-4 rounded hover:scale-105 transition text-sm font-semibold"
+          >
+            Enter the Universe
+          </Link>
+          <Link
+            href="#divisions"
+            className="btn bg-white/90 text-gray-900 border border-gray-300 py-2 px-4 rounded hover:bg-gray-50 transition text-sm font-semibold"
+          >
+            Explore the Divisions
+          </Link>
+        </div>
       </Hero>
 
-      <section
+      {/* MICRO NAV RAILS */}
+      <section className="border-b border-black/5 dark:border-white/10 bg-white/70 dark:bg-gray-950/70 backdrop-blur">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex gap-3 overflow-x-auto text-[11px] font-semibold tracking-[0.25em] uppercase">
+            {rails.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="inline-flex items-center rounded-full px-3 py-1.5 bg-white dark:bg-gray-900 shadow-sm border border-gray-200/70 dark:border-gray-700/70 hover:shadow-md hover:-translate-y-[1px] transition text-gray-800 dark:text-gray-100 whitespace-nowrap"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DIVISIONS OVERVIEW */}
+      <SectionIntro
         id="divisions"
-        className="container mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-3 gap-5"
-      >
+        kicker="A Manyagi Company"
+        title="Six Divisions, One Connected Ecosystem"
+        lead="Publishing, Designs, Capital, Tech, Media, and Realty — each with its own focus, all serving the same long-term universe."
+        tone="neutral"
+        align="center"
+      />
+
+      <section className="container mx-auto px-4 pb-16 grid grid-cols-1 md:grid-cols-3 gap-5">
         <Card
           title="Publishing"
-          description="Two novels + poetry. Read the opening chapter."
+          description="Novels, poetry, and written worlds designed to travel beyond the page."
           image={publishingImg}
           link="/publishing"
           category="publishing"
         />
         <Card
           title="Designs"
-          description="Wear our stories with T-shirts, mugs."
+          description="Apparel, posters, and collectibles that let you wear the worlds you love."
           image={designsImg}
           link="/designs"
           category="designs"
         />
         <Card
           title="Capital"
-          description="Trading signals and bot charts for success."
+          description="Signals, strategies, and tools focused on practical, steady growth."
           image={capitalImg}
           link="/capital"
           category="capital"
         />
         <Card
           title="Tech"
-          description="Apps for commerce and community."
+          description="Apps and platforms for commerce, community, and creators."
           image={techImg}
           link="/tech"
           category="tech"
         />
         <Card
           title="Media"
-          description="Stories in motion with videos and audio."
+          description="Audio, video, and social storytelling built for the modern feed."
           image={mediaImg}
           link="/media"
           category="media"
         />
         <Card
           title="Realty"
-          description="Premium properties and rentals."
+          description="Future-facing real estate concepts to anchor the digital worlds."
           image={realtyImg}
           link="/realty"
           category="realty"
         />
       </section>
 
-      <section id="featured" className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold mb-6">Featured Products</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {(Array.isArray(products) ? products : []).slice(0, 3).map((product) => {
-            if (product.division === 'publishing') {
-              const m = product.metadata || {};
-              const buyUrl =
-                m.amazon_url ||
-                m.kindle_url ||
-                m.paperback_url ||
-                m.store_url ||
-                null;
+      {/* FEATURED PRODUCTS & DROPS */}
+      <SectionIntro
+        id="featured"
+        kicker="Spotlight"
+        title="Featured Products & Drops"
+        lead="A rotating showcase from across the universe — books, designs, tools, and apps that capture where Manyagi is right now."
+        tone="card"
+        align="center"
+      />
 
-              const alsoLinks = [
-                m.kindle_url ? { label: "Kindle", url: m.kindle_url } : null,
-                m.paperback_url ? { label: "Paperback", url: m.paperback_url } : null,
-              ].filter(Boolean);
-
-              const chips = [
-                m.format ? String(m.format).toUpperCase() : null,
-                m.year ? `Y${m.year}` : null,
-              ].filter(Boolean);
-
-              return (
-                <Card
-                  key={product.id}
-                  title={product.name}
-                  description={product.description}
-                  image={product.image_url}
-                  category={product.division}
-                  tags={Array.isArray(product.tags) ? product.tags : []}
-                >
-                  {/* Meta chips */}
-                  {chips.length > 0 && (
-                    <div className="flex flex-wrap gap-2 justify-center mb-2">
-                      {chips.map((c) => (
-                        <span key={c} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Primary CTAs */}
-                  <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                    {buyUrl && (
-                      <a
-                        href={buyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
-                      >
-                        Get Your Copy
-                      </a>
-                    )}
-                    {m.pdf_url && (
-                      <a
-                        href={m.pdf_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 transition"
-                      >
-                        Preview Chapter 1
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Secondary storefront links */}
-                  {alsoLinks.length > 0 && (
-                    <div className="text-xs text-gray-600 mt-3">
-                      Also available:{' '}
-                      {alsoLinks.map((l, i) => (
-                        <a
-                          key={l.label}
-                          href={l.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline hover:text-blue-700"
-                        >
-                          {l.label}{i < alsoLinks.length - 1 ? ', ' : ''}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              );
-            }
-
-            // Non-publishing products keep buyButton
-            return (
-              <Card
-                key={product.id}
-                title={product.name}
-                description={product.description}
-                image={product.image_url}
-                category={product.division}
-                buyButton={product}
-                onBuy={() =>
-                  dispatch(
-                    addToCart({
-                      ...product,
-                      productType:
-                        product.division === 'designs'
-                          ? 'merch'
-                          : product.division === 'capital'
-                          ? 'download'
-                          : 'book',
-                    })
-                  )
-                }
-              />
-            );
-          })}
+      <section className="container mx-auto px-4 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {(featuredProducts.length ? featuredProducts : products.slice(0, 3)).map(
+            (product) => renderProductCard(product)
+          )}
         </div>
       </section>
 
-      <section id="subscribe" className="container mx-auto px-4 py-16">
+      {/* BOOKS SECTION */}
+      <SectionIntro
+        id="books"
+        kicker="Manyagi Publishing"
+        title="Books From the Universe"
+        lead="Story-first IP — novels and poetry that seed the rest of the ecosystem, from merch and media to future adaptations."
+        tone="neutral"
+        align="center"
+      >
+        <Link
+          href="/publishing"
+          className="inline-flex items-center text-xs font-semibold text-blue-700 hover:underline"
+        >
+          Visit Publishing →
+        </Link>
+      </SectionIntro>
+
+      <section className="container mx-auto px-4 pb-16">
+        {bookProducts.length === 0 ? (
+          <p className="text-center text-sm opacity-70">
+            New titles are being prepared behind the scenes.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {bookProducts.map((product) => renderPublishingCard(product))}
+          </div>
+        )}
+      </section>
+
+      {/* MERCH & NFTS SECTION */}
+      <SectionIntro
+        id="merch"
+        kicker="Designs & Collectibles"
+        title="Merch, Art & Future NFTs"
+        lead="Wear the worlds, frame the scenes, and collect moments from the stories — built through Designs and future digital drops."
+        tone="neutral"
+        align="center"
+      >
+        <Link
+          href="/designs"
+          className="inline-flex items-center text-xs font-semibold text-blue-700 hover:underline"
+        >
+          Explore Designs →
+        </Link>
+      </SectionIntro>
+
+      <section className="container mx-auto px-4 pb-16">
+        {merchProducts.length === 0 ? (
+          <p className="text-center text-sm opacity-70">
+            New drops are being staged. Check back soon.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {merchProducts.map((product) => renderProductCard(product))}
+          </div>
+        )}
+      </section>
+
+      {/* TECH SECTION — pulls from /api/posts?division=tech */}
+      <SectionIntro
+        id="tech"
+        kicker="Manyagi Tech"
+        title="Platforms, Apps & Tools"
+        lead="Digital infrastructure for the universe — from commerce and community to productivity and trading."
+        tone="neutral"
+        align="center"
+      >
+        <Link
+          href="/tech"
+          className="inline-flex items-center text-xs font-semibold text-blue-700 hover:underline"
+        >
+          Visit Tech →
+        </Link>
+      </SectionIntro>
+
+      <section className="container mx-auto px-4 pb-16">
+        {techShowcase.length === 0 ? (
+          <p className="text-center text-sm opacity-70">
+            New builds are in development — launches will appear here first.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {techShowcase.map((app) => (
+              <Card
+                key={app.id}
+                title={app.name}
+                description={app.description || app.excerpt}
+                image={app.image}
+                category="tech"
+              >
+                {app.tagline && (
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                      {app.tagline}
+                    </p>
+                  </div>
+                )}
+
+                {app.labels.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {app.labels.map((label) => (
+                      <span
+                        key={label}
+                        className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2.5 py-0.5 text-[11px] font-medium text-gray-700 dark:text-gray-200"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {app.platforms.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    {app.platforms.map((plat) => (
+                      <span
+                        key={plat}
+                        className="inline-flex items-center rounded-full border border-gray-200 dark:border-gray-700 px-2.5 py-0.5 text-[11px] text-gray-700 dark:text-gray-200"
+                      >
+                        {plat}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {app.domain ? (
+                  <a
+                    href={app.domain}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition"
+                  >
+                    Open Site / Download
+                  </a>
+                ) : (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Coming soon
+                  </span>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* BLOG SECTION */}
+      <SectionIntro
+        id="blog"
+        kicker="Manyagi Blog"
+        title="Notes From the Build"
+        lead="Strategy, behind-the-scenes logs, and creative process entries as the universe grows in public."
+        tone="card"
+        align="center"
+      >
+        <Link
+          href="/blog"
+          className="inline-flex items-center text-xs font-semibold text-blue-700 hover:underline"
+        >
+          Read all posts →
+        </Link>
+      </SectionIntro>
+
+      <section className="container mx-auto px-4 pb-16">
+        {blogPosts.length === 0 ? (
+          <p className="text-center text-sm opacity-70">
+            First entries are coming soon.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {blogPosts.map((post) => (
+              <Card
+                key={post.slug || post.id}
+                title={post.title}
+                description={
+                  post.excerpt ||
+                  'A new dispatch from the Manyagi universe — strategy, systems, and story-first building.'
+                }
+                image={post.featured_image || BLOG_PLACEHOLDER}
+                category={post.division || 'Manyagi Blog'}
+              >
+                <div className="pt-2 flex justify-center">
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="text-sm font-semibold text-blue-600 hover:underline"
+                  >
+                    Read story →
+                  </Link>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* EMAIL CAPTURE / NEWSLETTER */}
+      <SectionIntro
+        id="subscribe"
+        kicker="Stay Ahead"
+        title="Get Chapter 1, New Drops & Early Access"
+        lead="Short, focused updates from across the universe — books, merch, tools, apps, and more. No spam, just signal."
+        tone="neutral"
+        align="center"
+      />
+
+      <section className="container mx-auto px-4 pt-4 pb-16">
         <SubscriptionForm
           formId="8427635"
           uid="db12290300"
-          title="Get Chapter 1 + Drops + Early Access"
-          description="Be the first to know about updates."
+          title="Join the Manyagi List"
+          description="Be first in line for new releases, beta invites, and behind-the-scenes notes."
         />
       </section>
 
+      {/* CROSS-DIVISION RECOMMENDER */}
       <Recommender />
     </>
   );

@@ -8,106 +8,14 @@ import {
   updateProduct,
   deleteProduct,
 } from '@/lib/adminUtils';
-import { supabase } from '@/lib/supabase';
-
-const FOUNDATION_MARKETS = ['stocks', 'crypto', 'forex'];
 
 export default function CapitalTab({ products: allProducts, refreshAll }) {
   const [edits, setEdits] = useState({});
 
-  // products filtered to capital division
+  // All capital division products
   const capitalProducts = (allProducts || []).filter(
     (p) => p.division === 'capital'
   );
-
-  // ---------- FOUNDATIONS IMAGES STATE ----------
-  const [foundationImages, setFoundationImages] = useState({
-    stocks: '',
-    crypto: '',
-    forex: '',
-  });
-  const [foundationSaving, setFoundationSaving] = useState(false);
-
-  // map existing foundation-image rows by market
-  const foundationRowsByMarket = {};
-  capitalProducts.forEach((p) => {
-    const role = p.metadata?.role;
-    const market = p.metadata?.market;
-    if (
-      role === 'foundation-image' &&
-      FOUNDATION_MARKETS.includes(market)
-    ) {
-      foundationRowsByMarket[market] = p;
-    }
-  });
-
-  // hydrate inputs from existing rows whenever capitalProducts change
-  useEffect(() => {
-    const next = { stocks: '', crypto: '', forex: '' };
-
-    FOUNDATION_MARKETS.forEach((m) => {
-      const row = foundationRowsByMarket[m];
-      if (row) {
-        next[m] =
-          row.thumbnail_url ||
-          row.display_image ||
-          '';
-      }
-    });
-
-    setFoundationImages(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allProducts?.length]);
-
-  const saveFoundations = async () => {
-    try {
-      setFoundationSaving(true);
-
-      const payloads = FOUNDATION_MARKETS.map((market) => {
-        const url = (foundationImages[market] || '').trim();
-        if (!url) return null;
-
-        const existing = foundationRowsByMarket[market];
-
-        const base = {
-          division: 'capital',
-          name:
-            market === 'stocks'
-              ? 'Foundation — Stocks'
-              : market === 'crypto'
-              ? 'Foundation — Crypto'
-              : 'Foundation — Forex',
-          thumbnail_url: url,
-          display_image: url,
-          price: 0,
-          description: `Hero image used for the ${market} foundation card on /capital.`,
-          tags: ['foundation', market],
-          metadata: {
-            role: 'foundation-image',
-            market,
-          },
-        };
-
-        return existing ? { ...base, id: existing.id } : base;
-      }).filter(Boolean);
-
-      if (!payloads.length) {
-        alert('Add at least one image URL before saving.');
-        return;
-      }
-
-      const { error } = await supabase.from('products').upsert(payloads);
-      if (error) throw error;
-
-      await refreshAll?.();
-      alert('Foundation images saved.');
-    } catch (e) {
-      console.error(e);
-      alert(`Failed to save foundation images: ${e.message}`);
-    } finally {
-      setFoundationSaving(false);
-    }
-  };
 
   // ---------- SUBSCRIPTIONS DASHBOARD ----------
   const [subsLoading, setSubsLoading] = useState(true);
@@ -171,84 +79,8 @@ export default function CapitalTab({ products: allProducts, refreshAll }) {
 
   return (
     <SectionCard title="Capital Division">
-      {/* 0. FOUNDATION IMAGES (STOCKS/CRYPTO/FOREX) */}
-      <div className="space-y-2 mb-8">
-        <h3 className="text-xl font-bold">
-          Foundation Images (Stocks / Crypto / Forex)
-        </h3>
-        <p className="text-sm opacity-80">
-          These images power the three market cards at the top of{' '}
-          <code>/capital</code>. Paste Supabase URLs here and click
-          &quot;Save Foundations&quot;. They&apos;re stored as special{' '}
-          <code>products</code> rows with{' '}
-          <code>metadata.role = "foundation-image"</code>.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              Stocks Image URL
-            </label>
-            <input
-              className="w-full dark:bg-gray-800"
-              placeholder="https://.../capital-stocks.webp"
-              value={foundationImages.stocks}
-              onChange={(e) =>
-                setFoundationImages((prev) => ({
-                  ...prev,
-                  stocks: e.target.value,
-                }))
-              }
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              Crypto Image URL
-            </label>
-            <input
-              className="w-full dark:bg-gray-800"
-              placeholder="https://.../capital-crypto.webp"
-              value={foundationImages.crypto}
-              onChange={(e) =>
-                setFoundationImages((prev) => ({
-                  ...prev,
-                  crypto: e.target.value,
-                }))
-              }
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold mb-1">
-              Forex Image URL
-            </label>
-            <input
-              className="w-full dark:bg-gray-800"
-              placeholder="https://.../capital-forex.webp"
-              value={foundationImages.forex}
-              onChange={(e) =>
-                setFoundationImages((prev) => ({
-                  ...prev,
-                  forex: e.target.value,
-                }))
-              }
-            />
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={saveFoundations}
-          disabled={foundationSaving}
-          className="mt-3 px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
-        >
-          {foundationSaving ? 'Saving…' : 'Save Foundations'}
-        </button>
-      </div>
-
       {/* 1. ADD NEW PRODUCT */}
-      <div className="space-y-2 mb-8 border-t pt-6">
+      <div className="space-y-2 mb-8">
         <h3 className="text-xl font-bold">Add Capital Product</h3>
         <p className="text-sm opacity-80">
           Use this to create signals tiers, bot licenses, and trading ebooks

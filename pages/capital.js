@@ -24,14 +24,14 @@ const pickImage = (p) =>
   p?.image ||
   '/placeholder.png';
 
-// hard defaults if no foundation-image rows exist yet
-const FOUNDATION_DEFAULTS = {
+// 🔹 Hard-coded foundation images (top 3 cards)
+const FOUNDATION_IMAGES = {
   stocks:
-    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/capital-stocks.webp',
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/site/general/2025/11/6R5CJc-blackkungfu_stock_market_thumbnail_-v_7_fed2b20f-2a5b-451e-9c24-c790004e0a43_2.png',
   crypto:
-    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/capital-crypto.webp',
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/site/general/2025/11/A6LoAJ-blackkungfu_crypto_signals_thumbnail_-v_7_4aed0a87-0bf1-423b-8485-77758cf84c70_1.png',
   forex:
-    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/capital-forex.webp',
+    'https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/site/general/2025/11/bjEUUV-blackkungfu_forex_signals_thumbnail_-v_7_b6c6132a-cb53-46c4-99d0-fec7e95352e7_3.png',
 };
 
 export default function Capital() {
@@ -49,7 +49,9 @@ export default function Capital() {
         const res = await fetch('/api/products?division=capital');
         const json = await res.json();
 
-        const list = asList(json).map((p) => ({
+        const rawList = asList(json);
+
+        const list = rawList.map((p) => ({
           ...p,
           display_image: pickImage(p),
           productType:
@@ -147,24 +149,8 @@ export default function Capital() {
 
   const list = asList(products);
 
-  // Split out foundation-image configs so they drive the Stocks/Crypto/Forex cards
-  const foundationImages = { ...FOUNDATION_DEFAULTS };
-  const offers = [];
-
-  list.forEach((p) => {
-    const role = p.metadata?.role;
-    const market = p.metadata?.market;
-
-    if (
-      p.division === 'capital' &&
-      role === 'foundation-image' &&
-      ['stocks', 'crypto', 'forex'].includes(market)
-    ) {
-      foundationImages[market] = pickImage(p);
-    } else {
-      offers.push(p);
-    }
-  });
+  // 🔹 All products are just offers now
+  const offers = list;
 
   return (
     <>
@@ -208,7 +194,7 @@ export default function Capital() {
           <Card
             title="Stocks"
             description="Ownership in real companies. Great for long-term compounding, dividends, and riding macro trends with position sizing that fits your risk."
-            image={foundationImages.stocks}
+            image={FOUNDATION_IMAGES.stocks}
             category="capital"
           >
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 mt-2">
@@ -222,7 +208,7 @@ export default function Capital() {
           <Card
             title="Crypto"
             description="24/7 markets with higher volatility, on-chain narratives, and cycles that reward patience and risk control more than raw aggression."
-            image={foundationImages.crypto}
+            image={FOUNDATION_IMAGES.crypto}
             category="capital"
           >
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 mt-2">
@@ -236,7 +222,7 @@ export default function Capital() {
           <Card
             title="Forex"
             description="Currencies driven by macro data, interest rates, and global flows. Highly liquid, but punishes undisciplined leverage more than any other market."
-            image={foundationImages.forex}
+            image={FOUNDATION_IMAGES.forex}
             category="capital"
           >
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 mt-2">
@@ -344,8 +330,7 @@ export default function Capital() {
               const hasPlanType = !!product.metadata?.plan_type;
               const hasLicenseType = !!product.metadata?.license_type;
 
-              // Treat anything with a plan_type (and no license_type) as a subscription,
-              // even if productType was set wrong in the admin form.
+              // Treat anything with a plan_type (and no license_type) as a subscription
               const isSub =
                 productKind === 'subscription' ||
                 (hasPlanType && !hasLicenseType);

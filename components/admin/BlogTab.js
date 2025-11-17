@@ -230,10 +230,17 @@ export default function BlogTab({ posts, refreshAll, user }) {
           <button
             type="button"
             onClick={() =>
-              setPostForm((prev) => ({
-                ...prev,
-                slug: prev.slug || slugify(prev.title),
-              }))
+              setPostForm((prev) => {
+                const base = slugify(prev.title || '');
+                if (!base) return prev;
+                const div = prev.division || 'site';
+                const prefix = div === 'site' ? 'site' : div;
+                const autoSlug = `${prefix}-${base}`;
+                return {
+                  ...prev,
+                  slug: prev.slug || autoSlug,
+                };
+              })
             }
             className="px-3 py-1 text-xs rounded bg-gray-200 dark:bg-gray-700"
           >
@@ -268,13 +275,19 @@ export default function BlogTab({ posts, refreshAll, user }) {
             setPostForm({ ...postForm, division: e.target.value })
           }
         >
-          {['site', 'publishing', 'designs', 'capital', 'tech', 'media', 'realty'].map(
-            (d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            )
-          )}
+          {[
+            'site',
+            'publishing',
+            'designs',
+            'capital',
+            'tech',
+            'media',
+            'realty',
+          ].map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
         </select>
 
         <select

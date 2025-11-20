@@ -15,10 +15,10 @@ export default function Contact() {
   return (
     <>
       <Head>
-        <title>Contact Manyagi — Get in Touch</title>
+        <title>Contact Manyagi — Global Creative & Capital Group</title>
         <meta
           name="description"
-          content="Reach out to Manyagi for general questions, collaborations, and division-specific inquiries."
+          content="Contact Manyagi LLC for publishing, media, design, tech, capital, and realty collaborations, partnerships, and general inquiries."
         />
       </Head>
 
@@ -26,7 +26,7 @@ export default function Contact() {
       <Hero
         kicker="Contact"
         title="Get in Touch with Manyagi"
-        lead="Questions, ideas, or collaborations — we’d love to hear from you."
+        lead="Partnerships, licensing, publishing, media, tech, and capital — this is your direct line into the Manyagi ecosystem."
         carouselImages={carouselImages}
         height="h-[500px]"
       />
@@ -35,8 +35,8 @@ export default function Contact() {
       <SectionIntro
         id="contact-overview"
         kicker="Start a Conversation"
-        title="Talk to the Right Team"
-        lead="Use the form below for general inquiries, or reach out directly to a specific division using the emails listed."
+        title="Talk to the Right Division"
+        lead="Use the form below for general inquiries, or reach out directly to a specific division using the dedicated emails."
         tone="neutral"
         align="center"
         maxWidth="max-w-3xl"
@@ -47,50 +47,50 @@ export default function Contact() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
           {/* General */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
-            <h3 className="font-semibold mb-1">General</h3>
-            <p className="text-xs text-gray-500 mb-2">Questions &amp; inquiries</p>
+            <h3 className="font-semibold mb-1">General / HQ</h3>
+            <p className="text-xs text-gray-500 mb-2">Group-level questions &amp; opportunities</p>
             <p className="font-mono text-xs break-all">info@manyagi.net</p>
           </div>
 
           {/* Publishing */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Publishing</h3>
-            <p className="text-xs text-gray-500 mb-2">Books, writing, and content</p>
+            <p className="text-xs text-gray-500 mb-2">Books, IP, adaptations &amp; rights</p>
             <p className="font-mono text-xs break-all">publishing@manyagi.net</p>
           </div>
 
           {/* Designs */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Designs</h3>
-            <p className="text-xs text-gray-500 mb-2">Branding, visuals, apparel</p>
+            <p className="text-xs text-gray-500 mb-2">Branding, visuals, apparel &amp; merch</p>
             <p className="font-mono text-xs break-all">designs@manyagi.net</p>
           </div>
 
           {/* Media */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Media</h3>
-            <p className="text-xs text-gray-500 mb-2">Video, audio, digital content</p>
+            <p className="text-xs text-gray-500 mb-2">Content, channels, and campaigns</p>
             <p className="font-mono text-xs break-all">media@manyagi.net</p>
           </div>
 
           {/* Tech */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Tech</h3>
-            <p className="text-xs text-gray-500 mb-2">Apps, platforms, web projects</p>
+            <p className="text-xs text-gray-500 mb-2">Apps, platforms, web &amp; integrations</p>
             <p className="font-mono text-xs break-all">tech@manyagi.net</p>
           </div>
 
           {/* Capital */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Capital</h3>
-            <p className="text-xs text-gray-500 mb-2">Finance &amp; strategic growth</p>
+            <p className="text-xs text-gray-500 mb-2">Capital, strategy &amp; financial collaborations</p>
             <p className="font-mono text-xs break-all">capital@manyagi.net</p>
           </div>
 
           {/* Realty */}
           <div className="rounded-2xl border bg-white/90 dark:bg-gray-950/90 p-4 shadow-sm text-center">
             <h3 className="font-semibold mb-1">Realty</h3>
-            <p className="text-xs text-gray-500 mb-2">Real estate &amp; future spaces</p>
+            <p className="text-xs text-gray-500 mb-2">Real estate &amp; physical brand concepts</p>
             <p className="font-mono text-xs break-all">realty@manyagi.net</p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function Contact() {
         id="form"
         kicker="Contact Form"
         title="Send Us a Message"
-        lead="Prefer a single channel? Use this form and we’ll route your note to the right place."
+        lead="If you’re not sure where your message fits, use this form — we’ll route it to the right division internally."
         tone="card"
         align="center"
         maxWidth="max-w-2xl"
@@ -158,7 +158,7 @@ export default function Contact() {
 
             {state.succeeded && (
               <p className="mt-2 text-sm text-green-600">
-                Thanks for your message — we’ll get back to you soon.
+                Thanks for your message — the Manyagi team will get back to you soon.
               </p>
             )}
           </form>
@@ -171,7 +171,7 @@ export default function Contact() {
           formId="8427853"
           uid="637df68a06"
           title="Stay Connected"
-          description="Get updates, releases, and insights from across the Manyagi ecosystem."
+          description="Join the Manyagi ecosystem for launch announcements, opportunities, and cross-division updates."
         />
       </section>
 

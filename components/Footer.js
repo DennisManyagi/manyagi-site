@@ -1,4 +1,3 @@
-// components/Footer.js
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -12,7 +11,7 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 
-// ===== Social handles you provided =====
+// ===== Social handles (parent + divisions) =====
 const SOCIAL_HANDLES = {
   parent: {
     label: "Manyagi",
@@ -89,22 +88,22 @@ const DIVISION_EMAIL = {
   realty: "realty@manyagi.net",
 };
 
-// ===== Short “blurb” to add context + pizazz =====
+// ===== Short “blurb” to give billion-dollar-conglomerate energy =====
 const DIVISION_BLURB = {
   parent:
-    "Manyagi is a creative technology company building IP across publishing, media, commerce, capital, tech, and realty.",
+    "Manyagi is a modern creative & capital group building IP, media, brands, and systems across publishing, designs, media, tech, capital, and realty.",
   publishing:
-    "Original fiction, poetry, and world-building IP — released as ebooks, print, and collectors’ editions.",
+    "Manyagi Publishing develops original fiction, poetry, and story universes engineered for long-term readership and cross-media adaptation.",
   designs:
-    "Wear the worlds we build — tees, posters, mugs, and collectibles inspired by our stories.",
+    "Manyagi Designs turns worlds and symbols into apparel, posters, collectibles, and visual identities that feel premium and timeless.",
   media:
-    "Shorts, reels, and long-form content documenting how we build a modern IP studio in public.",
+    "Manyagi Media documents the build, grows the audience, and distributes our IP through series, shorts, documentaries, and digital storytelling.",
   capital:
-    "The creator’s capital desk — systematic trading and portfolio construction, shared transparently.",
+    "Manyagi Capital focuses on disciplined frameworks for wealth, income, and allocation — treating creators like asset classes, not side projects.",
   tech:
-    "Sites, tools, automations — shipping product daily and showing our work along the way.",
+    "Manyagi Tech ships the infrastructure: sites, apps, tools, and automations powering the Manyagi ecosystem and future platforms.",
   realty:
-    "Story-inspired stays and property content in destinations we love.",
+    "Manyagi Realty explores real estate and physical spaces that extend the brand into the real world through stays, sets, and experiences.",
 };
 
 // ===== helpers =====
@@ -194,7 +193,10 @@ export default function Footer({ division: override }) {
           <h5 className="font-semibold mb-2 flex items-center gap-2">
             <FaEnvelope /> Contact
           </h5>
-          <a href={`mailto:${email}`} className="underline hover:text-yellow-600 break-all">
+          <a
+            href={`mailto:${email}`}
+            className="underline hover:text-yellow-600 break-all"
+          >
             {email}
           </a>
           <div className="mt-4 flex flex-wrap gap-3 text-xl">
@@ -214,7 +216,7 @@ export default function Footer({ division: override }) {
         </div>
       </div>
 
-      {/* Legal row + tagline moved from Header to Footer */}
+      {/* Legal row + tagline */}
       <div className="border-t border-gray-200">
         <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-700">
           <div>© {new Date().getFullYear()} {cfg.label}. All rights reserved.</div>

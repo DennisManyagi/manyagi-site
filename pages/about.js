@@ -15,18 +15,18 @@ export default function About() {
   return (
     <>
       <Head>
-        <title>About Manyagi — Creativity Meets Innovation</title>
+        <title>About Manyagi — A Modern Creative & Capital Group</title>
         <meta
           name="description"
-          content="Manyagi is a multi-division brand uniting creativity, technology, design, and digital culture under one vision."
+          content="Manyagi LLC is a multi-division creative, media, capital, and technology group building stories, products, and platforms designed to scale globally."
         />
       </Head>
 
       {/* HERO */}
       <Hero
         kicker="About Manyagi"
-        title="Creativity Meets Innovation."
-        lead="A modern, multi-division brand where storytelling, digital products, and design work together under one unified vision."
+        title="A Modern Creative & Capital Conglomerate."
+        lead="Manyagi unites publishing, design, media, capital, tech, and realty into one connected ecosystem designed for long-term IP, cash flow, and global scale."
         carouselImages={carouselImages}
         height="h-[600px]"
       >
@@ -43,13 +43,15 @@ export default function About() {
         id="story"
         kicker="A Unified Vision"
         title="Who We Are"
-        lead="Manyagi is a creative-led, innovation-focused company building meaningful products, stories, and digital experiences."
+        lead="Manyagi LLC is a creator-led, systems-driven company focused on turning ideas into durable intellectual property, products, and platforms."
         tone="neutral"
         align="center"
       >
         <p className="text-sm md:text-base mt-3 max-w-3xl mx-auto">
-          From digital platforms and creative publishing to apparel, media, and future-facing technology,
-          Manyagi brings ideas to life in ways that feel thoughtful, refined, and built for the long term.
+          We operate like a modern studio and holding company in one. Under the Manyagi umbrella, we build
+          stories, brands, financial engines, and digital infrastructure that work together instead of
+          competing for attention. From novels and apparel to media channels, software, and capital strategies,
+          every division is designed to feed the rest of the ecosystem and compound over time.
         </p>
       </SectionIntro>
 
@@ -58,7 +60,7 @@ export default function About() {
         id="divisions"
         kicker="A Manyagi Company"
         title="Our Divisions"
-        lead="Each division contributes to a connected ecosystem built on quality, innovation, and culture."
+        lead="Each division is a standalone brand with a shared backbone: world-class storytelling, clean design, smart systems, and disciplined capital."
         tone="card"
         align="center"
       />
@@ -68,7 +70,7 @@ export default function About() {
 
           <Card
             title="Publishing"
-            description="Stories, literature, and creative works that inspire imagination and explore new worlds."
+            description="Original IP across fiction, poetry, and worlds designed for adaptation into books, film, animation, games, and long-term franchises."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/publishing.webp"
             category="publishing"
           >
@@ -77,7 +79,7 @@ export default function About() {
 
           <Card
             title="Designs"
-            description="Visual identities, apparel, and branded assets that give ideas a distinct and memorable look."
+            description="Apparel, posters, collectibles, and brand systems that let people wear the worlds, symbols, and stories that define the Manyagi Universe."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/designs.webp"
             category="designs"
           >
@@ -86,7 +88,7 @@ export default function About() {
 
           <Card
             title="Tech"
-            description="Digital experiences, platforms, and apps built with a focus on usability, community, and modern innovation."
+            description="Websites, apps, automation, and internal tools that power our brands, storefronts, communities, and future platforms."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/app-carousel-1.webp"
             category="tech"
           >
@@ -95,7 +97,7 @@ export default function About() {
 
           <Card
             title="Media"
-            description="Video, audio, and visual storytelling tailored for today’s digital-first audiences."
+            description="Faceless and branded channels, shorts, series, and documentaries that show the process, promote the IP, and build the audience in public."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/media.webp"
             category="media"
           >
@@ -104,7 +106,7 @@ export default function About() {
 
           <Card
             title="Capital"
-            description="A forward-looking division focused on financial literacy, stewardship, and sustainable growth principles."
+            description="A disciplined capital desk focused on long-term investing, income streams, and frameworks for creators and builders to grow real wealth."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/capital.webp"
             category="capital"
           >
@@ -113,7 +115,7 @@ export default function About() {
 
           <Card
             title="Realty"
-            description="Exploring real estate and future physical spaces that complement our digital ecosystem."
+            description="Real estate concepts and future physical spaces that extend the Manyagi brand into the offline world through stays, sets, and experiences."
             image="https://dlbbjeohndiwtofitwec.supabase.co/storage/v1/object/public/assets/images/realty.webp"
             category="realty"
           >
@@ -125,29 +127,28 @@ export default function About() {
       {/* BRAND VALUES */}
       <SectionIntro
         id="values"
-        kicker="Our Values"
+        kicker="Our Operating System"
         title="What We Stand For"
-        lead="Principles that guide how we build, collaborate, and show up across every division."
+        lead="These principles are baked into every story, product, partnership, and investment decision we make."
         tone="neutral"
         align="center"
       />
 
       <section className="container mx-auto px-4 pb-20">
-        {/* Center the row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto text-sm md:text-base">
           <div className="rounded-3xl border bg-white/90 dark:bg-gray-950/90 p-5 shadow-sm text-center">
-            <h3 className="font-semibold mb-2">Integrity</h3>
-            <p>We build with honesty, clarity, and consistency.</p>
+            <h3 className="font-semibold mb-2">Craft & Clarity</h3>
+            <p>We obsess over the details but ship with intention, making things that feel sharp, timeless, and easy to understand.</p>
           </div>
 
           <div className="rounded-3xl border bg-white/90 dark:bg-gray-950/90 p-5 shadow-sm text-center">
-            <h3 className="font-semibold mb-2">Innovation</h3>
-            <p>We use modern tools, thoughtful design, and long-term thinking.</p>
+            <h3 className="font-semibold mb-2">Systems & Scale</h3>
+            <p>We design brands, products, and workflows to compound over years, not weeks — with automation and leverage built in.</p>
           </div>
 
           <div className="rounded-3xl border bg-white/90 dark:bg-gray-950/90 p-5 shadow-sm text-center">
-            <h3 className="font-semibold mb-2">Community</h3>
-            <p>We build products and stories that connect people and ideas.</p>
+            <h3 className="font-semibold mb-2">Ownership & Community</h3>
+            <p>We believe creators should own their worlds, and audiences should feel like they’re part of something bigger than a single product.</p>
           </div>
         </div>
       </section>
@@ -155,14 +156,14 @@ export default function About() {
       {/* CONTACT CTA */}
       <SectionIntro
         id="contact"
-        kicker="Reach Out"
-        title="Get in Touch"
-        lead="Have a project, question, or collaboration idea? We’d love to hear from you."
+        kicker="Partnerships, Publishing & Beyond"
+        title="Connect with the Manyagi Team"
+        lead="Whether you’re a reader, investor, creator, or collaborator, we’d love to explore what we can build together."
         tone="card"
         align="center"
         maxWidth="max-w-2xl"
       >
-        <p className="text-xs text-gray-500 font-mono">contact@manyagi.net</p>
+        <p className="text-xs text-gray-500 font-mono">info@manyagi.net</p>
       </SectionIntro>
 
       {/* NEWSLETTER */}
@@ -171,7 +172,7 @@ export default function About() {
           formId="8427853"
           uid="637df68a06"
           title="Stay Connected"
-          description="Get updates, releases, and highlights from across the Manyagi ecosystem."
+          description="Get launches, behind-the-scenes building, and cross-division updates from the Manyagi ecosystem."
         />
       </section>
 
